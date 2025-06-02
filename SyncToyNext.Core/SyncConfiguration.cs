@@ -45,5 +45,33 @@ namespace SyncToyNext.Core
             var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, json);
         }
+
+        /// <summary>
+        /// Saves a marker file indicating a clean shutdown.
+        /// </summary>
+        public static void WriteCleanShutdownMarker()
+        {
+            var markerPath = Path.Combine(AppContext.BaseDirectory, "SyncToyNext.clean_shutdown");
+            File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+        }
+
+        /// <summary>
+        /// Checks if a clean shutdown marker exists.
+        /// </summary>
+        public static bool WasCleanShutdown()
+        {
+            var markerPath = Path.Combine(AppContext.BaseDirectory, "SyncToyNext.clean_shutdown");
+            return File.Exists(markerPath);
+        }
+
+        /// <summary>
+        /// Removes the clean shutdown marker (should be called at startup if a full sync is needed).
+        /// </summary>
+        public static void RemoveCleanShutdownMarker()
+        {
+            var markerPath = Path.Combine(AppContext.BaseDirectory, "SyncToyNext.clean_shutdown");
+            if (File.Exists(markerPath))
+                File.Delete(markerPath);
+        }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SyncToyNext.Client
 {
@@ -46,4 +47,5 @@ namespace SyncToyNext.Client
         /// </summary>
         public bool Has(string key) => _args.ContainsKey(key);
     }
+
 }

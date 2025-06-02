@@ -58,6 +58,12 @@ SyncToyNext.Client.exe [--config <configfile.json>] [--service]
 #### Command Line Arguments
 - `--config <file>`: Path to a custom JSON configuration file. If omitted, the default config in the application directory is used.
 - `--service`: Run as a Windows service (Windows only). If omitted, runs as a console app.
+- `--strict`: Enable strict file integrity checking (SHA-256 hash comparison).
+- `--recover`: Force a full sync on startup, as if the previous shutdown was unclean (useful for recovery or manual override).
+
+### Service Coordination (Windows)
+
+When running the tool manually from the command line on Windows, SyncToyNext will automatically check if the SyncToyNext Windows service is running. If it is, the service will be gracefully stopped before the manual sync begins. If the service cannot be stopped, the application will exit to prevent conflicting sync actions. After the manual sync completes, the service will be restarted if it was running before.
 
 #### Console Controls
 - When running as a console app, press `q` to quit and gracefully shut down all watchers and sync operations.

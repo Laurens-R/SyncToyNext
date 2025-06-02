@@ -3,11 +3,15 @@ using System.Threading;
 #if WINDOWS
 using System.Runtime.InteropServices;
 using SyncToyNext.Client;
+using System.ServiceProcess;
 #endif
+using SyncToyNext.Client;
 
 var cmdArgs = new SyncToyNext.Client.CommandLineArguments(args);
 
 bool isService = cmdArgs.Has("service");
+bool strictMode = cmdArgs.Has("strict");
+bool forceFullSync = cmdArgs.Has("recover");
 
 #if WINDOWS
 string? configPath = cmdArgs.Get("config");
@@ -18,11 +22,47 @@ if (isService && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     System.ServiceProcess.ServiceBase.Run(service);
     return;
 }
+
+// Service shutdown logic should happen here, before any sync logic
+ServiceController? synctoyService = null;
+bool wasServiceRunning = false;
+if (!isService)
+{
+    try
+    {
+        synctoyService = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName.Equals("SyncToyNext", StringComparison.OrdinalIgnoreCase));
+        if (synctoyService != null && synctoyService.Status == ServiceControllerStatus.Running)
+        {
+            wasServiceRunning = true;
+            Console.WriteLine("Stopping SyncToyNext service...");
+            synctoyService.Stop();
+            synctoyService.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+            Console.WriteLine("SyncToyNext service stopped.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error: Could not check/stop SyncToyNext service: {ex.Message}");
+        Console.WriteLine("Exiting to prevent conflicting sync actions.");
+        Environment.Exit(1);
+    }
+    // If the service is still running after the attempt, exit
+    if (synctoyService != null && synctoyService.Status == ServiceControllerStatus.Running)
+    {
+        Console.WriteLine("Error: SyncToyNext service is still running and could not be stopped. Exiting to prevent conflicts.");
+        Environment.Exit(1);
+    }
+}
 #endif
 
 string? configPath = cmdArgs.Get("config");
 
-var syncContext = configPath != null ? new SyncContext(configPath) : new SyncContext();
+if (forceFullSync)
+{
+    SyncToyNext.Core.SyncConfiguration.RemoveCleanShutdownMarker();
+}
+
+var syncContext = configPath != null ? new SyncContext(configPath, strictMode) : new SyncContext(null, strictMode);
 syncContext.Start();
 
 Console.WriteLine("SyncToyNext is running. Press 'q' to quit.");
@@ -56,3 +96,20 @@ quitEvent.Wait();
 
 Console.WriteLine("Shutting down...");
 syncContext.Shutdown();
+
+#if WINDOWS
+if (!isService && wasServiceRunning && synctoyService != null)
+{
+    try
+    {
+        Console.WriteLine("Restarting SyncToyNext service...");
+        synctoyService.Start();
+        synctoyService.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+        Console.WriteLine("SyncToyNext service restarted.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Warning: Could not restart SyncToyNext service: {ex.Message}");
+    }
+}
+#endif

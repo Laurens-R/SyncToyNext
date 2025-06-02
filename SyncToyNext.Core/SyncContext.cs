@@ -11,15 +11,41 @@ namespace SyncToyNext.Core
     {
         private readonly List<FileSyncWatcher> _watchers = new();
         private bool _isRunning = false;
+        private readonly bool _strictMode;
         public SyncConfiguration Configuration { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SyncContext"/> class and loads configuration.
         /// </summary>
         /// <param name="configPath">Optional path to the configuration file.</param>
-        public SyncContext(string? configPath = null)
+        /// <param name="strictMode">Optional flag to enable strict mode.</param>
+        public SyncContext(string? configPath = null, bool strictMode = false)
         {
             Configuration = SyncConfiguration.Load(configPath);
+            _strictMode = strictMode;
+            // Check for clean shutdown marker
+            if (!SyncConfiguration.WasCleanShutdown())
+            {
+                // Remove marker if present (corrupt/old)
+                SyncConfiguration.RemoveCleanShutdownMarker();
+                // Perform a full sync for all profiles
+                foreach (var profile in Configuration.Profiles)
+                {
+                    var logger = new Logger(profile.SourcePath);
+                    if (profile.DestinationIsZip)
+                    {
+                        var zipSync = new ZipFileSynchronizer(profile.DestinationPath, OverwriteOption.OnlyOverwriteIfNewer, logger, strictMode);
+                        zipSync.FullSynchronization(profile.SourcePath);
+                    }
+                    else
+                    {
+                        var fileSync = new FileSynchronizer(profile.DestinationPath, OverwriteOption.OnlyOverwriteIfNewer, logger, strictMode);
+                        fileSync.FullSynchronization(profile.SourcePath);
+                    }
+                }
+            }
+            // Remove marker so next run will require a clean shutdown again
+            SyncConfiguration.RemoveCleanShutdownMarker();
         }
 
         /// <summary>
@@ -34,7 +60,9 @@ namespace SyncToyNext.Core
                     profile.SourcePath,
                     profile.DestinationPath,
                     OverwriteOption.OnlyOverwriteIfNewer,
-                    profile.DestinationIsZip
+                    profile.DestinationIsZip,
+                    profile.SyncInterval,
+                    _strictMode
                 );
                 _watchers.Add(watcher);
             }
@@ -50,6 +78,7 @@ namespace SyncToyNext.Core
                 watcher.Dispose();
             _watchers.Clear();
             _isRunning = false;
+            SyncConfiguration.WriteCleanShutdownMarker();
         }
 
         /// <summary>
@@ -65,19 +94,17 @@ namespace SyncToyNext.Core
                 throw new ArgumentException($"No profile found with ID/Name '{profileIdOrName}'", nameof(profileIdOrName));
             // Use the profile's DestinationIsZip unless overridden
             bool useZip = toZip ?? profile.DestinationIsZip;
-            FileSynchronizer.FullSynchronization(profile.SourcePath, profile.DestinationPath, overwriteOption, useZip);
-        }
-
-        /// <summary>
-        /// Manually triggers a full sync for arbitrary source and destination locations.
-        /// </summary>
-        /// <param name="sourcePath">Source directory.</param>
-        /// <param name="destination">Destination directory or zip file.</param>
-        /// <param name="overwriteOption">Overwrite option.</param>
-        /// <param name="toZip">If true, sync to a zip file; otherwise, to a directory.</param>
-        public void ManualSync(string sourcePath, string destination, OverwriteOption overwriteOption = OverwriteOption.OnlyOverwriteIfNewer, bool toZip = false)
-        {
-            FileSynchronizer.FullSynchronization(sourcePath, destination, overwriteOption, toZip);
+            var logger = new Logger(profile.SourcePath);
+            if (useZip)
+            {
+                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, logger);
+                zipSync.FullSynchronization(profile.SourcePath);
+            }
+            else
+            {
+                var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, logger);
+                fileSync.FullSynchronization(profile.SourcePath);
+            }
         }
 
         /// <summary>

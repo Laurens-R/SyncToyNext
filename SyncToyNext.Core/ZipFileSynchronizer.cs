@@ -7,17 +7,19 @@ namespace SyncToyNext.Core
     /// <summary>
     /// Provides file synchronization logic for writing files into a Zip archive.
     /// </summary>
-    public class ZipFileSynchronizer
+    public class ZipFileSynchronizer : ISynchronizer
     {
         private readonly string _zipFilePath;
         private readonly OverwriteOption _overwriteOption;
         private readonly Logger _logger;
+        private readonly bool _strictMode;
 
-        public ZipFileSynchronizer(string zipFilePath, OverwriteOption overwriteOption, Logger logger)
+        public ZipFileSynchronizer(string zipFilePath, OverwriteOption overwriteOption, Logger logger, bool strictMode = false)
         {
             _zipFilePath = zipFilePath;
             _overwriteOption = overwriteOption;
             _logger = logger;
+            _strictMode = strictMode;
         }
 
         /// <summary>
@@ -31,41 +33,61 @@ namespace SyncToyNext.Core
             {
                 using var zip = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
                 using var archive = new ZipArchive(zip, ZipArchiveMode.Update, leaveOpen: false);
-                var entry = archive.GetEntry(relativePath.Replace('\\', '/'));
-                bool fileExists = entry != null;
+                var entryPath = relativePath.Replace("\\", "/");
+                var entry = archive.GetEntry(entryPath);
+                bool entryExists = entry != null;
                 bool shouldCopy = false;
                 string action = "None";
 
-                switch (_overwriteOption)
+                if (_overwriteOption == OverwriteOption.AlwaysOverwrite)
                 {
-                    case OverwriteOption.NeverOverwrite:
-                        shouldCopy = !fileExists;
-                        action = shouldCopy ? "Create" : "DoNothing";
-                        break;
-                    case OverwriteOption.OnlyOverwriteIfNewer:
-                        if (!fileExists)
+                    shouldCopy = true;
+                    action = entryExists ? "Overwrite" : "Create";
+                }
+                else if (!entryExists)
+                {
+                    shouldCopy = true;
+                    action = "Create";
+                }
+                else if (entry != null)
+                {
+                    var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
+                    var entryLastWrite = entry.LastWriteTime.UtcDateTime;
+                    if (srcLastWrite > entryLastWrite)
+                    {
+                        shouldCopy = true;
+                        action = "Update";
+                    }
+                    else
+                    {
+                        long srcSize = new FileInfo(srcFilePath).Length;
+                        long entrySize = entry.Length;
+                        if (srcSize != entrySize)
                         {
                             shouldCopy = true;
-                            action = "Create";
+                            action = "RepairSizeMismatch";
                         }
-                        else if (entry != null)
+                        else if (_strictMode)
                         {
-                            var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
-                            var entryLastWrite = entry.LastWriteTime.UtcDateTime;
-                            shouldCopy = srcLastWrite > entryLastWrite;
-                            action = shouldCopy ? "Update" : "DoNothing";
+                            var srcHash = ComputeSHA256(srcFilePath);
+                            string destHash;
+                            using (var entryStream = entry.Open())
+                            {
+                                destHash = ComputeSHA256(entryStream);
+                            }
+                            if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
+                            {
+                                shouldCopy = true;
+                                action = "RepairChecksumMismatch";
+                            }
                         }
-                        break;
-                    case OverwriteOption.AlwaysOverwrite:
-                        shouldCopy = true;
-                        action = fileExists ? "Update" : "Create";
-                        break;
+                    }
                 }
 
                 if (shouldCopy)
                 {
                     entry?.Delete();
-                    var newEntry = archive.CreateEntry(relativePath.Replace('\\', '/'), CompressionLevel.Optimal);
+                    var newEntry = archive.CreateEntry(entryPath, CompressionLevel.Optimal);
                     using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
                     fileStream.CopyTo(entryStream);
@@ -89,6 +111,35 @@ namespace SyncToyNext.Core
             {
                 _logger.LogError($"Unexpected error syncing '{srcFilePath}' to zip '{_zipFilePath}'", ex);
             }
+        }
+
+        /// <summary>
+        /// Synchronizes all files and subdirectories from the source path into the zip archive.
+        /// </summary>
+        /// <param name="sourcePath">The root directory to copy files from.</param>
+        public void FullSynchronization(string sourcePath)
+        {
+            if (!Directory.Exists(sourcePath))
+                throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
+
+            foreach (var srcFilePath in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
+            {
+                var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
+                SynchronizeFile(srcFilePath, relativePath);
+            }
+        }
+        private static string ComputeSHA256(string filePath)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            using var stream = File.OpenRead(filePath);
+            var hash = sha256.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", string.Empty);
+        }
+        private static string ComputeSHA256(Stream stream)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hash = sha256.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", string.Empty);
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SyncToyNext.Core;
 
 namespace SyncToyNext.Core
 {
@@ -27,5 +28,10 @@ namespace SyncToyNext.Core
         /// Indicates whether the destination is a zip file.
         /// </summary>
         public bool DestinationIsZip { get; set; } = false;
+
+        /// <summary>
+        /// Specifies when this profile should be synchronized (realtime, hourly, daily, at shutdown).
+        /// </summary>
+        public SyncInterval SyncInterval { get; set; } = SyncToyNext.Core.SyncInterval.Realtime;
     }
 }
