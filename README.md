@@ -12,12 +12,13 @@ SyncToyNext is a flexible, cross-platform file and folder synchronization tool f
 - JSON-based configuration with support for multiple sync profiles
 - Centralized logging to both file and console
 - Runs as a console app or Windows service
+- Produces a standalone, self-contained executable (no .NET runtime required)
 
 ## Getting Started
 
 ### Prerequisites
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
-- Windows (for service mode); Linux/Mac supported for console mode
+- Windows (for service mode or standalone executable)
+- [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) (only required for building from source)
 
 ### Building the Project
 
@@ -27,10 +28,27 @@ Open a terminal in the project root and run:
 dotnet build SyncToyNext.slnx
 ```
 
+### Publishing a Standalone Executable
+
+To create a single-file, self-contained executable (no .NET runtime required):
+
+```
+dotnet publish SyncToyNext.Client -c Release
+```
+
+The executable will be in:
+```
+SyncToyNext.Client/bin/Release/net9.0/win-x64/publish/
+```
+
 ### Running the Console Application
 
 ```
 dotnet run --project SyncToyNext.Client [--config <configfile.json>] [--service]
+```
+Or, if using the published standalone executable:
+```
+SyncToyNext.Client.exe [--config <configfile.json>] [--service]
 ```
 
 #### Command Line Arguments
@@ -41,8 +59,9 @@ dotnet run --project SyncToyNext.Client [--config <configfile.json>] [--service]
 - When running as a console app, press `q` to quit and gracefully shut down all watchers and sync operations.
 
 ### Running as a Windows Service
-1. Build the project and install the service using standard Windows service management tools (e.g., `sc.exe` or PowerShell).
-2. Pass the `--config` argument if you want to use a custom configuration file.
+1. Build and publish the project as above.
+2. Install the service using standard Windows service management tools (e.g., `sc.exe create SyncToyNext binPath= "C:\Path\To\SyncToyNext.Client.exe --service [--config <configfile.json>]"` or PowerShell).
+3. Start the service from the Services control panel or with `sc start SyncToyNext`.
 
 ### Configuration
 The configuration is stored in a JSON file (default: `SyncToyNext.config.json` in the app directory). It contains an array of sync profiles. Example:
