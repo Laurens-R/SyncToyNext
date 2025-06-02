@@ -1,0 +1,12 @@
+C:\Code\SyncToyNext\SyncToyNext.Core\bin\Debug\net9.0\SyncToyNext.Core.deps.json
+C:\Code\SyncToyNext\SyncToyNext.Core\bin\Debug\net9.0\SyncToyNext.Core.dll
+C:\Code\SyncToyNext\SyncToyNext.Core\bin\Debug\net9.0\SyncToyNext.Core.pdb
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\SyncToyNext.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\SyncToyNext.Core.AssemblyInfoInputs.cache
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\SyncToyNext.Core.AssemblyInfo.cs
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\SyncToyNext.Core.csproj.CoreCompileInputs.cache
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\SyncToyNext.Core.sourcelink.json
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\SyncToyNext.Core.dll
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\refint\SyncToyNext.Core.dll
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\SyncToyNext.Core.pdb
+C:\Code\SyncToyNext\SyncToyNext.Core\obj\Debug\net9.0\ref\SyncToyNext.Core.dll

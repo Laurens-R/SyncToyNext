@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SyncToyNext.Client/SyncToyNext.Client.csproj" />
+  <Project Path="SyncToyNext.Core/SyncToyNext.Core.csproj" />
+</Solution>
