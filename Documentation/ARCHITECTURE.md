@@ -102,6 +102,36 @@ The **Logger** provides unified logging for all components. It records sync acti
 - Logging and error handling are centralized for maintainability.
 - The use of the `ISynchronizer` interface enables polymorphic handling of different sync strategies.
 
+## Configuration Keys
+
+- `Id`: Unique identifier for the profile.
+- `SourcePath`: Path to the source directory to be synchronized.
+- `DestinationPath`: Path to the destination (folder or zip file).
+- `DestinationIsZip`: Boolean indicating if the destination is a zip file.
+- `SyncInterval`: How often to sync (e.g., real-time, scheduled).
+- `OverwriteOption` (optional, default: `OnlyOverwriteIfNewer`): Controls when files in the destination are overwritten. Options:
+  - `OnlyOverwriteIfNewer`: Only overwrite if the source file is newer, or if file size/hash differs (see strict mode).
+  - `AlwaysOverwrite`: Always overwrite the destination file, regardless of timestamps, size, or hash.
+
+#### Example Profile JSON
+
+```json
+{
+  "Id": "ExampleProfile",
+  "SourcePath": "C:/Data/Source",
+  "DestinationPath": "D:/Data/Backup",
+  "DestinationIsZip": false,
+  "SyncInterval": "Realtime",
+  "OverwriteOption": "AlwaysOverwrite"
+}
+```
+
+#### OverwriteOption Behavior
+
+- If omitted, `OverwriteOption` defaults to `OnlyOverwriteIfNewer` for backward compatibility.
+- `AlwaysOverwrite` guarantees the destination always matches the source, even if timestamps or sizes are identical (useful for forced mirroring or when external tools may alter files without updating timestamps).
+- `OnlyOverwriteIfNewer` is recommended for most backup/mirror scenarios to avoid unnecessary writes and preserve destination file history.
+
 ## Diagram (Mermaid)
 
 ```mermaid

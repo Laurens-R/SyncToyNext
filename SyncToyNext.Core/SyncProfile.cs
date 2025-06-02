@@ -33,5 +33,10 @@ namespace SyncToyNext.Core
         /// Specifies when this profile should be synchronized (realtime, hourly, daily, at shutdown).
         /// </summary>
         public SyncInterval SyncInterval { get; set; } = SyncToyNext.Core.SyncInterval.Realtime;
+
+        /// <summary>
+        /// Specifies how file overwrites are handled for this profile. Defaults to OnlyOverwriteIfNewer.
+        /// </summary>
+        public OverwriteOption OverwriteOption { get; set; } = OverwriteOption.OnlyOverwriteIfNewer;
     }
 }

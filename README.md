@@ -203,25 +203,33 @@ The configuration is stored in a JSON file (default: `SyncToyNext.config.json` i
       "Id": "DocumentsBackup",
       "SourcePath": "C:/Users/John/Documents",
       "DestinationPath": "D:/Backups/Documents.zip",
-      "DestinationIsZip": true
+      "DestinationIsZip": true,
+      "SyncInterval": "Realtime",
+      "OverwriteOption": "OnlyOverwriteIfNewer"
     },
     {
       "Id": "PhotosSync",
       "SourcePath": "C:/Users/John/Pictures",
       "DestinationPath": "//NAS/PhotosBackup",
-      "DestinationIsZip": false
+      "DestinationIsZip": false,
+      "SyncInterval": "Hourly",
+      "OverwriteOption": "AlwaysOverwrite"
     },
     {
       "Id": "LinuxToZip",
       "SourcePath": "/data/source",
       "DestinationPath": "/data/backups/source-backup.zip",
-      "DestinationIsZip": true
+      "DestinationIsZip": true,
+      "SyncInterval": "Daily"
+      // OverwriteOption omitted, will default to OnlyOverwriteIfNewer
     },
     {
       "Id": "NetworkShareToFolder",
       "SourcePath": "/mnt/nas/share",
       "DestinationPath": "/data/localcopy",
-      "DestinationIsZip": false
+      "DestinationIsZip": false,
+      "SyncInterval": "AtShutdown",
+      "OverwriteOption": "OnlyOverwriteIfNewer"
     }
   ]
 }
@@ -231,6 +239,37 @@ The configuration is stored in a JSON file (default: `SyncToyNext.config.json` i
 - `SourcePath`: Path to the source directory
 - `DestinationPath`: Path to the destination directory or zip file
 - `DestinationIsZip`: Set to `true` to sync into a zip file, `false` for a regular folder
+- `SyncInterval`: When to synchronize this profile. See below for options.
+- `OverwriteOption`: Controls when files in the destination are overwritten. Options:
+  - `OnlyOverwriteIfNewer` (default): Only overwrite if the source file is newer, or if file size/hash differs (see strict mode).
+  - `AlwaysOverwrite`: Always overwrite the destination file, regardless of timestamps, size, or hash.
+
+#### OverwriteOption Details
+
+- If omitted, `OverwriteOption` defaults to `OnlyOverwriteIfNewer` for backward compatibility.
+- Use `AlwaysOverwrite` for scenarios where you want to guarantee the destination always matches the source, even if timestamps or sizes are identical.
+- Use `OnlyOverwriteIfNewer` for typical backup/mirror scenarios to avoid unnecessary writes.
+
+#### Profile Validation
+
+- Each profile must have a non-empty `Id`, `SourcePath`, and `DestinationPath`.
+- All `Id` values must be unique.
+- `SourcePath` must exist as a directory.
+- `DestinationPath` must exist as a directory (or, for zip destinations, its parent directory must exist).
+- If any of these checks fail, the application will exit with a clear error message explaining what needs to be corrected.
+
+#### Missing Config File
+
+- If no config file is provided and none is found at the default location, the application will print a helpful error and exit.
+
+### SyncInterval Options
+
+- `Realtime`: Synchronize immediately when a file change is detected (default).
+- `Hourly`: Synchronize all detected changes once per hour.
+- `Daily`: Synchronize all detected changes once per day.
+- `AtShutdown`: Only synchronize pending changes when the application is shutting down.
+
+Choose the interval that best fits your use case. For example, use `Realtime` for fast mirroring, or `AtShutdown` for batch-style syncs at the end of a session.
 
 ## Troubleshooting
 

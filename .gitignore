@@ -38,3 +38,7 @@ Thumbs.db
 SyncToyNext.Client/bin/Release/net9.0/win-x64/publish/
 SyncToyNext.Client/bin/Release/net9.0/linux-x64/publish/
 SyncToyNext.Client/bin/Release/net9.0/osx-x64/publish/
+
+#debugging stuff specific to local machine
+*.pdb
+Debugging/

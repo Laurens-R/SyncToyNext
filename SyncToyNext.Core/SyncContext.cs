@@ -21,8 +21,67 @@ namespace SyncToyNext.Core
         /// <param name="strictMode">Optional flag to enable strict mode.</param>
         public SyncContext(string? configPath = null, bool strictMode = false)
         {
+            // If no config file is provided and none is found, show a helpful error and exit
+            string resolvedConfigPath = configPath ?? SyncConfiguration.GetDefaultConfigPath();
+            if (!System.IO.File.Exists(resolvedConfigPath))
+            {
+                Console.WriteLine("Error: No configuration file was provided and none was found at the default location.");
+                Console.WriteLine($"Expected config file at: {resolvedConfigPath}");
+                Console.WriteLine("Please provide a config file using the --config <file> argument, or create a config file at the default location.");
+                Environment.Exit(1);
+            }
             Configuration = SyncConfiguration.Load(configPath);
             _strictMode = strictMode;
+
+            // Validate all profiles before proceeding
+            var idSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var profile in Configuration.Profiles)
+            {
+                if (string.IsNullOrWhiteSpace(profile.Id))
+                {
+                    Console.WriteLine("Error: Each profile must have a non-empty 'Id'. Please correct your configuration.");
+                    Environment.Exit(1);
+                }
+                if (!idSet.Add(profile.Id))
+                {
+                    Console.WriteLine($"Error: Duplicate profile Id detected: '{profile.Id}'. Each profile Id must be unique.");
+                    Environment.Exit(1);
+                }
+                if (string.IsNullOrWhiteSpace(profile.SourcePath))
+                {
+                    Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'SourcePath'. Please correct your configuration.");
+                    Environment.Exit(1);
+                }
+                if (string.IsNullOrWhiteSpace(profile.DestinationPath))
+                {
+                    Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'DestinationPath'. Please correct your configuration.");
+                    Environment.Exit(1);
+                }
+                if (!System.IO.Directory.Exists(profile.SourcePath))
+                {
+                    Console.WriteLine($"Error: SourcePath '{profile.SourcePath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                    Environment.Exit(1);
+                }
+                // For DestinationPath, check directory or parent directory if destination is zip
+                if (profile.DestinationIsZip)
+                {
+                    var destDir = System.IO.Path.GetDirectoryName(profile.DestinationPath);
+                    if (string.IsNullOrWhiteSpace(destDir) || !System.IO.Directory.Exists(destDir))
+                    {
+                        Console.WriteLine($"Error: The parent directory for DestinationPath '{profile.DestinationPath}' (profile '{profile.Id}') does not exist.");
+                        Environment.Exit(1);
+                    }
+                }
+                else
+                {
+                    if (!System.IO.Directory.Exists(profile.DestinationPath))
+                    {
+                        Console.WriteLine($"Error: DestinationPath '{profile.DestinationPath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                        Environment.Exit(1);
+                    }
+                }
+            }
+
             // Check for clean shutdown marker
             if (!SyncConfiguration.WasCleanShutdown())
             {
@@ -32,14 +91,15 @@ namespace SyncToyNext.Core
                 foreach (var profile in Configuration.Profiles)
                 {
                     var logger = new Logger(profile.SourcePath);
+                    var overwriteOption = profile.OverwriteOption;
                     if (profile.DestinationIsZip)
                     {
-                        var zipSync = new ZipFileSynchronizer(profile.DestinationPath, OverwriteOption.OnlyOverwriteIfNewer, logger, strictMode);
+                        var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
                         zipSync.FullSynchronization(profile.SourcePath);
                     }
                     else
                     {
-                        var fileSync = new FileSynchronizer(profile.DestinationPath, OverwriteOption.OnlyOverwriteIfNewer, logger, strictMode);
+                        var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
                         fileSync.FullSynchronization(profile.SourcePath);
                     }
                 }
@@ -59,7 +119,7 @@ namespace SyncToyNext.Core
                 var watcher = new FileSyncWatcher(
                     profile.SourcePath,
                     profile.DestinationPath,
-                    OverwriteOption.OnlyOverwriteIfNewer,
+                    profile.OverwriteOption,
                     profile.DestinationIsZip,
                     profile.SyncInterval,
                     _strictMode
