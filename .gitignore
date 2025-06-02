@@ -1,0 +1,40 @@
+# .gitignore for SyncToyNext
+
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+
+# Rider
+.idea/
+*.sln.iml
+
+# Dotnet publish output
+publish/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Docker
+*.tar
+
+# Other
+*.vspscc
+*.vssscc
+
+# Ignore self-contained publish output
+SyncToyNext.Client/bin/Release/net9.0/win-x64/publish/
+SyncToyNext.Client/bin/Release/net9.0/linux-x64/publish/
+SyncToyNext.Client/bin/Release/net9.0/osx-x64/publish/
