@@ -152,6 +152,36 @@ sudo launchctl start com.synctoynext.service
 - The service will now run in the background and start automatically on boot.
 - Logs can be viewed in the specified log files.
 
+### Running with Docker
+
+You can run SyncToyNext as a Docker container on Linux. This is useful for server or NAS environments.
+
+#### Build the Docker image
+
+```
+docker build -t synctoynext .
+```
+
+#### Run the container
+
+Mount a host directory for configuration and data:
+
+```
+docker run --rm -v /path/to/config:/data \
+  -v /path/to/source:/source \
+  -v /path/to/destination:/destination \
+  synctoynext --config /data/SyncToyNext.config.json
+```
+
+- Replace `/path/to/config`, `/path/to/source`, and `/path/to/destination` with your actual host paths.
+- The `--config` argument should point to the config file inside the container (e.g., `/data/SyncToyNext.config.json`).
+- You can mount as many volumes as needed for your sync profiles.
+
+#### Notes
+- The container runs as a foreground process and can be managed with Docker tools.
+- Logs are written to the console and to log files in the source directory (if mounted).
+- You can pass any supported command line arguments to the container.
+
 ## Troubleshooting
 
 - Ensure all file and folder paths in your config are accessible and have the correct permissions.
