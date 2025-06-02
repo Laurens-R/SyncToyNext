@@ -186,6 +186,46 @@ docker run --rm -v /path/to/config:/data \
 - Logs are written to the console and to log files in the source directory (if mounted).
 - You can pass any supported command line arguments to the container.
 
+## Configuration
+
+The configuration is stored in a JSON file (default: `SyncToyNext.config.json` in the app directory). It contains an array of sync profiles. Example:
+
+```json
+{
+  "Profiles": [
+    {
+      "Id": "DocumentsBackup",
+      "SourcePath": "C:/Users/John/Documents",
+      "DestinationPath": "D:/Backups/Documents.zip",
+      "DestinationIsZip": true
+    },
+    {
+      "Id": "PhotosSync",
+      "SourcePath": "C:/Users/John/Pictures",
+      "DestinationPath": "//NAS/PhotosBackup",
+      "DestinationIsZip": false
+    },
+    {
+      "Id": "LinuxToZip",
+      "SourcePath": "/data/source",
+      "DestinationPath": "/data/backups/source-backup.zip",
+      "DestinationIsZip": true
+    },
+    {
+      "Id": "NetworkShareToFolder",
+      "SourcePath": "/mnt/nas/share",
+      "DestinationPath": "/data/localcopy",
+      "DestinationIsZip": false
+    }
+  ]
+}
+```
+
+- `Id`: Unique name for the sync profile
+- `SourcePath`: Path to the source directory
+- `DestinationPath`: Path to the destination directory or zip file
+- `DestinationIsZip`: Set to `true` to sync into a zip file, `false` for a regular folder
+
 ## Troubleshooting
 
 - Ensure all file and folder paths in your config are accessible and have the correct permissions.
