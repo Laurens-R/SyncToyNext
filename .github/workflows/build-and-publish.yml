@@ -8,7 +8,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rid: [linux-x64, win-x64, osx-x64]
+      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,17 +29,11 @@ jobs:
       - name: Build
         run: dotnet build SyncToyNext.slnx --configuration Release --no-restore
 
-      - name: Publish self-contained Linux x64
-        run: dotnet publish SyncToyNext.Client/SyncToyNext.Client.csproj -c Release -r linux-x64 --self-contained true -o ./publish/linux-x64
-
-      - name: Publish self-contained Windows x64
-        run: dotnet publish SyncToyNext.Client/SyncToyNext.Client.csproj -c Release -r win-x64 --self-contained true -o ./publish/win-x64
-
-      - name: Publish self-contained macOS x64
-        run: dotnet publish SyncToyNext.Client/SyncToyNext.Client.csproj -c Release -r osx-x64 --self-contained true -o ./publish/osx-x64
+      - name: Publish self-contained
+        run: dotnet publish SyncToyNext.Client/SyncToyNext.Client.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o ./publish/${{ matrix.rid }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SyncToyNext-Publish
-          path: ./publish/
+          name: SyncToyNext-Publish-${{ matrix.rid }}
+          path: ./publish/${{ matrix.rid }}
