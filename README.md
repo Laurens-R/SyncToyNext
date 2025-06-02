@@ -162,7 +162,7 @@ sudo launchctl start com.synctoynext.service
 
 ## Contributing
 
-Contributions are welcome! Please submit issues or pull requests on the [GitHub repository](https://github.com/yourusername/synctoynext).
+Contributions are welcome! Please submit issues or pull requests on the [GitHub repository](https://github.com/Laurens-R/SyncToyNext).
 
 ## License
 
