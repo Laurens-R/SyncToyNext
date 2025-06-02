@@ -1,3 +1,7 @@
+# ⚠️ Disclaimer: Project Under Development
+
+**This project is still heavily under development. Use at your own risk! The author takes no responsibility for any damages, data loss, or other issues caused by using this project in any environment.**
+
 # SyncToyNext
 
 SyncToyNext is a flexible, cross-platform file and folder synchronization tool for .NET. It supports local and network (UNC/SAMBA) paths, and can synchronize to both regular directories and zip files. SyncToyNext can run as a console application or as a Windows service, making it suitable for both interactive and background/service scenarios.
