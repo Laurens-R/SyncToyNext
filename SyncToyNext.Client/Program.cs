@@ -1,11 +1,15 @@
 ﻿using SyncToyNext.Core;
-using System.Threading;
+using SyncToyNext.Client; // For VersionUtil
+using System.Reflection;
+
 #if WINDOWS
 using System.Runtime.InteropServices;
 using SyncToyNext.Client;
 using System.ServiceProcess;
 #endif
-using SyncToyNext.Client;
+
+// Print banner with version
+PrintBanner();
 
 var cmdArgs = new SyncToyNext.Client.CommandLineArguments(args);
 
@@ -113,3 +117,13 @@ if (!isService && wasServiceRunning && synctoyService != null)
     }
 }
 #endif
+
+void PrintBanner()
+{
+    var version = VersionUtil.GetVersion();
+    Console.WriteLine("========================================");
+    Console.WriteLine($"   SyncToyNext - Cross-Platform Sync Tool");
+    Console.WriteLine($"   Version: {version}");
+    Console.WriteLine($"   (c) {DateTime.Now.Year} Laurens Ruijtenberg");
+    Console.WriteLine("========================================\n");
+}

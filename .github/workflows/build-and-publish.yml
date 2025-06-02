@@ -37,6 +37,12 @@ jobs:
       - name: Publish self-contained
         run: dotnet publish SyncToyNext.Client/SyncToyNext.Client.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o ./publish/${{ matrix.rid }}
 
+      - name: Delete old artifacts
+        uses: c-hive/delete-artifact@v2
+        with:
+          name: SyncToyNext-Publish-${{ matrix.os }}-${{ matrix.rid }}
+          failOnError: false
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <!-- Set the version in a single place for all projects -->
+    <Version>1.0.0</Version>
+    <BuildNumber Condition=" '$(BuildNumber)' == '' ">0</BuildNumber>
+    <FileVersion>1.0.0.$(BuildNumber)</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <!-- Remove git hash/metadata from InformationalVersion for friendlier versioning -->
+    <InformationalVersion>1.0.0.$(BuildNumber)</InformationalVersion>
+  </PropertyGroup>
+</Project>

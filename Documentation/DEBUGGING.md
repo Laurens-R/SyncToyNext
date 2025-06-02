@@ -55,7 +55,7 @@ Add this to your `.vscode/launch.json` for easy debugging:
       "type": "coreclr",
       "request": "launch",
       "program": "${workspaceFolder}/SyncToyNext.Client/bin/Debug/net9.0/win-x64/SyncToyNext.Client.exe",
-      "args": ["--config", "<yourdebugconfighere>.json"],
+      "args": ["--config", "SyncToyNext.test.config.json"],
       "cwd": "${workspaceFolder}",
       "console": "internalConsole"
     }
