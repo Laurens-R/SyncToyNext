@@ -37,19 +37,9 @@ jobs:
       - name: Publish self-contained
         run: dotnet publish SyncToyNext.Client/SyncToyNext.Client.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o ./publish/${{ matrix.rid }}
 
-      - name: Delete old artifacts with same name (if any)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ARTIFACT_NAME="SyncToyNext-Publish-${{ matrix.os }}-${{ matrix.rid }}"
-          for id in $(gh api repos/${{ github.repository }}/actions/artifacts \
-            --paginate -q ".artifacts[] | select(.name==\"$ARTIFACT_NAME\") | .id"); do
-            echo "Deleting artifact $id ($ARTIFACT_NAME)"
-            gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$id
-          done
-
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: SyncToyNext-Publish-${{ matrix.os }}-${{ matrix.rid }}
           path: ./publish/${{ matrix.rid }}
+          retention-days: 3
