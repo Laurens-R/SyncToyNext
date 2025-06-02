@@ -13,6 +13,7 @@ namespace SyncToyNext.Core
         private readonly string _destinationPath;
         private readonly OverwriteOption _overwriteOption;
         private readonly bool _destinationIsZip;
+        private readonly Logger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSyncWatcher"/> class.
@@ -27,6 +28,7 @@ namespace SyncToyNext.Core
             _destinationPath = destinationPath;
             _overwriteOption = overwriteOption;
             _destinationIsZip = destinationIsZip;
+            _logger = new Logger(_sourcePath);
 
             _watcher = new FileSystemWatcher(_sourcePath)
             {
@@ -47,27 +49,26 @@ namespace SyncToyNext.Core
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
                     if (_destinationIsZip)
                     {
-                        var logger = new Logger(_sourcePath);
-                        var zipSync = new ZipFileSynchronizer(_destinationPath, _overwriteOption, logger);
+                        var zipSync = new ZipFileSynchronizer(_destinationPath, _overwriteOption, _logger);
                         zipSync.SynchronizeFile(e.FullPath, relativePath);
                     }
                     else
                     {
-                        FileSynchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath), _overwriteOption, new Logger(_sourcePath));
+                        FileSynchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath), _overwriteOption, _logger);
                     }
                 }
             }
             catch (IOException ioEx)
             {
-                Console.Error.WriteLine($"[FileSyncWatcher] IO error syncing '{e.FullPath}': {ioEx.Message}");
+                _logger.LogError($"IO error syncing '{e.FullPath}'", ioEx);
             }
             catch (UnauthorizedAccessException uaEx)
             {
-                Console.Error.WriteLine($"[FileSyncWatcher] Access denied syncing '{e.FullPath}': {uaEx.Message}");
+                _logger.LogError($"Access denied syncing '{e.FullPath}'", uaEx);
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"[FileSyncWatcher] Unexpected error syncing '{e.FullPath}': {ex.Message}");
+                _logger.LogError($"Unexpected error syncing '{e.FullPath}'", ex);
             }
         }
 
