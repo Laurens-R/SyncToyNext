@@ -30,28 +30,51 @@ namespace SyncToyNext.Core
             if (!Directory.Exists(_destination))
                 Directory.CreateDirectory(_destination);
 
-            foreach (var dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            // Exclude 'synclogs' subfolder from sync (source and destination)
+            var allDirs = Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories)
+                .Where(d => !d.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"synclogs", StringComparison.OrdinalIgnoreCase)
+                    && !d.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase));
+            foreach (var dirPath in allDirs)
             {
                 var destDir = dirPath.Replace(sourcePath, _destination);
-                if (!Directory.Exists(destDir))
-                    Directory.CreateDirectory(destDir);
+                if (!destDir.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"synclogs", StringComparison.OrdinalIgnoreCase)
+                    && !destDir.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!Directory.Exists(destDir))
+                        Directory.CreateDirectory(destDir);
+                }
             }
 
-            foreach (var srcFilePath in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
+            var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
+                .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                    && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase));
+            foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
+                if (relativePath.StartsWith("synclogs" + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    continue;
                 var destFilePath = Path.Combine(_destination, relativePath);
+                if (destFilePath.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                    || destFilePath.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase))
+                    continue;
                 SynchronizeFile(srcFilePath, destFilePath);
             }
         }
 
         /// <summary>
         /// Synchronizes a single file from the source to the destination, using the specified overwrite option.
+        /// If oldDestFilePath is provided, deletes the old file (for renames).
         /// </summary>
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="destFilePath">The full path to the destination file.</param>
-        public void SynchronizeFile(string srcFilePath, string destFilePath)
+        /// <param name="oldDestFilePath">The old destination file path to delete (optional, for renames).</param>
+        public void SynchronizeFile(string srcFilePath, string destFilePath, string? oldDestFilePath = null)
         {
+            if (!string.IsNullOrEmpty(oldDestFilePath) && File.Exists(oldDestFilePath))
+            {
+                try { File.Delete(oldDestFilePath); } catch { /* ignore */ }
+            }
+
             bool fileExists = File.Exists(destFilePath);
             bool shouldCopy = false;
             string action = "None";
@@ -104,9 +127,27 @@ namespace SyncToyNext.Core
                     var destDir = Path.GetDirectoryName(destFilePath);
                     if (!Directory.Exists(destDir))
                         Directory.CreateDirectory(destDir!);
-                    File.Copy(srcFilePath, destFilePath, true);
+
+                    const int maxRetries = 10;
+                    const int delayMs = 1000;
+                    int attempt = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            File.Copy(srcFilePath, destFilePath, true);
+                            _logger.LogSyncAction(destFilePath, action);
+                            break;
+                        }
+                        catch (IOException)
+                        {
+                            _logger.LogError($"File locked when trying to sync from '{srcFilePath}' to '{destFilePath}'. Retrying...");
+                            attempt++;
+                            if (attempt >= maxRetries) throw;
+                            Thread.Sleep(delayMs);
+                        }
+                    }
                 }
-                _logger.LogSyncAction(destFilePath, action);
             }
             catch (Exception ex)
             {

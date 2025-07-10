@@ -16,6 +16,6 @@ namespace SyncToyNext.Core
         /// </summary>
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="relativeOrDestPath">The relative path (for zip) or destination file path (for folder).</param>
-        void SynchronizeFile(string srcFilePath, string relativeOrDestPath);
+        void SynchronizeFile(string srcFilePath, string relativeOrDestPath, string? oldDestFilePath = null);
     }
 }

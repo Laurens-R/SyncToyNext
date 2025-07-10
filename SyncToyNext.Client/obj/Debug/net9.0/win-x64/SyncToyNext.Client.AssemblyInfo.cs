@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SyncToyNext.Client")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.0+e31af48d7384a050d47604554db5afe9a9b832bf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.0+de94b13ebf6f3406462fe26ed83c63765539db4d")]
 [assembly: System.Reflection.AssemblyProductAttribute("SyncToyNext.Client")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SyncToyNext.Client")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

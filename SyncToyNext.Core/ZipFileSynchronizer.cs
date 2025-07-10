@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 namespace SyncToyNext.Core
 {
@@ -27,8 +28,9 @@ namespace SyncToyNext.Core
         /// </summary>
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="relativePath">The relative path inside the zip archive.</param>
-        public void SynchronizeFile(string srcFilePath, string relativePath)
+        public void SynchronizeFile(string srcFilePath, string relativePath, string? oldDestFilePath = null)
         {
+        
             try
             {
                 using var zip = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
@@ -38,6 +40,13 @@ namespace SyncToyNext.Core
                 bool entryExists = entry != null;
                 bool shouldCopy = false;
                 string action = "None";
+
+                if (oldDestFilePath != null )
+                {
+                    // If an old destination file was provided, delete it first
+                    var oldEntry = archive.GetEntry(oldDestFilePath.Replace("\\", "/"));
+                    oldEntry?.Delete();
+                }
 
                 if (_overwriteOption == OverwriteOption.AlwaysOverwrite)
                 {
@@ -122,9 +131,19 @@ namespace SyncToyNext.Core
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
-            foreach (var srcFilePath in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
+            // Exclude 'synclogs' subfolder from sync
+            var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
+                .Where(f => {
+                    var rel = Path.GetRelativePath(sourcePath, f);
+                    return !rel.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                        && !rel.StartsWith("synclogs/", StringComparison.OrdinalIgnoreCase);
+                });
+            foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
+                if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                    || relativePath.StartsWith("synclogs/", StringComparison.OrdinalIgnoreCase))
+                    continue;
                 SynchronizeFile(srcFilePath, relativePath);
             }
         }

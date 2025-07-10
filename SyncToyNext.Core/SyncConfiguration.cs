@@ -33,7 +33,12 @@ namespace SyncToyNext.Core
             if (!File.Exists(path))
                 return new SyncConfiguration();
             var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<SyncConfiguration>(json) ?? new SyncConfiguration();
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase, allowIntegerValues: false) }
+            };
+            return JsonSerializer.Deserialize<SyncConfiguration>(json, options) ?? new SyncConfiguration();
         }
 
         /// <summary>

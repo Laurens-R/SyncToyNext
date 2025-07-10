@@ -61,6 +61,7 @@ namespace SyncToyNext.Core
             };
             _watcher.Created += OnChangedOrCreated;
             _watcher.Changed += OnChangedOrCreated;
+            _watcher.Renamed += OnRenamed;
             _watcher.EnableRaisingEvents = true;
         }
 
@@ -95,6 +96,9 @@ namespace SyncToyNext.Core
                 if (File.Exists(e.FullPath))
                 {
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
+                    // Ignore any changes in the synclogs subfolder
+                    if (relativePath.StartsWith("synclogs" + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                        return;
                     if (_syncInterval == SyncInterval.Realtime)
                     {
                         if (_destinationIsZip)
@@ -127,6 +131,35 @@ namespace SyncToyNext.Core
             catch (Exception ex)
             {
                 _logger.LogError($"Unexpected error syncing '{e.FullPath}'", ex);
+            }
+        }
+
+        private void OnRenamed(object sender, RenamedEventArgs e)
+        {
+            try
+            {
+                // Ignore changes in synclogs
+                var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
+
+                if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+
+                //get the old full destination path
+                var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
+                var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+
+                if (File.Exists(e.FullPath))
+                {
+                    if (_destinationIsZip)
+                        _synchronizer.SynchronizeFile(e.FullPath, relativePath, oldDestPath);
+                    else
+                        _synchronizer.SynchronizeFile(e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath), oldDestPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error handling rename event for '{e.OldFullPath}' to '{e.FullPath}'", ex);
             }
         }
 

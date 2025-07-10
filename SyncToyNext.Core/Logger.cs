@@ -13,8 +13,9 @@ namespace SyncToyNext.Core
 
         public Logger(string sourcePath)
         {
-            Directory.CreateDirectory(sourcePath);
-            _logFilePath = Path.Combine(sourcePath, $"SyncToyNext_{DateTime.UtcNow:yyyyMMdd}.log");
+            var logDir = Path.Combine(sourcePath, "synclogs");
+            Directory.CreateDirectory(logDir);
+            _logFilePath = Path.Combine(logDir, $"SyncToyNext_{DateTime.UtcNow:yyyyMMdd}.log");
         }
 
         public void Log(string message)

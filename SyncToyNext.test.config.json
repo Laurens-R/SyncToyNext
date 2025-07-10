@@ -1,0 +1,12 @@
+{
+    "Profiles": [
+        {
+            "Id": "DocumentsBackup",
+            "SourcePath": "C:/Temp/a",
+            "DestinationPath": "C:/temp/b",
+            "DestinationIsZip": false,
+            "SyncInterval": "Realtime",
+            "OverwriteOption": "OnlyOverwriteIfNewer"
+        }
+    ]
+} 
