@@ -3,6 +3,22 @@ using System.IO;
 
 namespace SyncToyNext.Core
 {
+    enum SyncTypes
+    {
+        Create,
+        Update,
+        Rename,
+        Delete
+    }
+
+    class FileSyncAction
+    {
+        public string SourcePath { get; set; } = String.Empty;
+        public string DestinationPath { get; set; } = String.Empty;
+        public SyncTypes ActionType { get; set; } = SyncTypes.Create;
+    }
+
+
     /// <summary>
     /// Monitors a directory for file creation and update events, and synchronizes affected files to a destination using FileSynchronizer.
     /// </summary>
@@ -16,7 +32,7 @@ namespace SyncToyNext.Core
         private readonly Logger _logger;
         private readonly ISynchronizer _synchronizer;
         private readonly SyncInterval _syncInterval;
-        private readonly Queue<(string srcPath, string destOrRelPath)>? _pendingChanges;
+        private readonly Queue<FileSyncAction>? _pendingChanges;
         private readonly object _queueLock = new object();
         private DateTime? _lastQueueProcessTime;
         private volatile bool _isProcessingQueue = false;
@@ -50,7 +66,7 @@ namespace SyncToyNext.Core
 
             if (_syncInterval != SyncInterval.Realtime)
             {
-                _pendingChanges = new Queue<(string, string)>();
+                _pendingChanges = new Queue<FileSyncAction>();
                 _intervalThread = new Thread(IntervalThreadLoop) { IsBackground = true };
                 _intervalThread.Start();
             }
@@ -115,9 +131,19 @@ namespace SyncToyNext.Core
                         {
                             if (_isProcessingQueue) return;
                             if (_destinationIsZip)
-                                _pendingChanges?.Enqueue((e.FullPath, relativePath));
+                                _pendingChanges?.Enqueue(new FileSyncAction
+                                {
+                                    SourcePath = e.FullPath,
+                                    DestinationPath = relativePath,
+                                    ActionType = e.ChangeType == WatcherChangeTypes.Created ? SyncTypes.Create : SyncTypes.Update
+                                });
                             else
-                                _pendingChanges?.Enqueue((e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath)));
+                                _pendingChanges?.Enqueue(new FileSyncAction
+                                {
+                                    SourcePath = e.FullPath,
+                                    DestinationPath = System.IO.Path.Combine(_destinationPath, relativePath),
+                                    ActionType = e.ChangeType == WatcherChangeTypes.Created ? SyncTypes.Create : SyncTypes.Update
+                                });
                         }
                     }
                 }
@@ -153,6 +179,8 @@ namespace SyncToyNext.Core
 
                 if (File.Exists(e.FullPath))
                 {
+
+                    //TODO: add support fo renames in destination files (no mattr if destination is zip or folder)
                     if (_destinationIsZip)
                         _synchronizer.SynchronizeFile(e.FullPath, relativePath, oldDestPath);
                     else
@@ -178,8 +206,12 @@ namespace SyncToyNext.Core
                 {
                     while (_pendingChanges.Count > 0)
                     {
-                        var (srcPath, destOrRelPath) = _pendingChanges.Dequeue();
-                        _synchronizer.SynchronizeFile(srcPath, destOrRelPath);
+                        var queueItem = _pendingChanges.Dequeue();
+
+                        if (File.Exists(queueItem.SourcePath))
+                        {
+                            _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath);
+                        }
                     }
                     _lastQueueProcessTime = DateTime.UtcNow;
                 }
