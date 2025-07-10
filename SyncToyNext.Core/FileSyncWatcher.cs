@@ -23,6 +23,7 @@ namespace SyncToyNext.Core
         private readonly Thread? _intervalThread;
         private volatile bool _shutdownRequested = false;
         private readonly bool _strictMode;
+        private readonly ManualResetEventSlim _shutdownEvent = new ManualResetEventSlim(false);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSyncWatcher"/> class.
@@ -85,7 +86,8 @@ namespace SyncToyNext.Core
                 {
                     ProcessQueuedChanges();
                 }
-                Thread.Sleep(TimeSpan.FromMinutes(1));
+                // Wait for either the shutdown event or a minute to pass
+                _shutdownEvent.Wait(TimeSpan.FromMinutes(1));
             }
         }
 
@@ -194,9 +196,11 @@ namespace SyncToyNext.Core
         public void Dispose()
         {
             _shutdownRequested = true;
+            _shutdownEvent.Set();
             _intervalThread?.Join();
             ProcessQueuedChanges();
             _watcher.Dispose();
+            _shutdownEvent.Dispose();
         }
     }
 }

@@ -77,9 +77,8 @@ using var quitEvent = new ManualResetEventSlim(false);
 // Start a background thread to monitor for 'q' key
 var keyThread = new Thread(() =>
 {
-    while (true)
+    while (!quitEvent.IsSet)
     {
-        // Console.In.Peek returns -1 if no input is available
         if (Console.In.Peek() != -1)
         {
             var keyChar = (char)Console.In.Read();
@@ -97,6 +96,9 @@ keyThread.Start();
 
 // Wait for quit signal
 quitEvent.Wait();
+
+// Ensure the keyThread exits if not already
+if (keyThread.IsAlive) keyThread.Join(500);
 
 Console.WriteLine("Shutting down...");
 syncContext.Shutdown();

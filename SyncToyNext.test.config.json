@@ -5,7 +5,7 @@
             "SourcePath": "C:/Temp/a",
             "DestinationPath": "C:/temp/b",
             "DestinationIsZip": false,
-            "SyncInterval": "Realtime",
+            "SyncInterval": "Hourly",
             "OverwriteOption": "OnlyOverwriteIfNewer"
         }
     ]
