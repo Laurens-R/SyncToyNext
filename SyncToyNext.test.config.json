@@ -7,6 +7,15 @@
             "DestinationIsZip": false,
             "SyncInterval": "AtShutdown",
             "OverwriteOption": "OnlyOverwriteIfNewer"
+        },
+        {
+            "Id": "DocumentsBackup2",
+            "SourcePath": "C:/Temp/a",
+            "DestinationPath": "C:/temp/b.zip",
+            "DestinationIsZip": true,
+            "SyncInterval": "AtShutdown",
+            "OverwriteOption": "OnlyOverwriteIfNewer",
+            "Mode": "FullSync"
         }
     ]
 } 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using SyncToyNext.Core;
 
 namespace SyncToyNext.Core
@@ -30,13 +31,21 @@ namespace SyncToyNext.Core
         public bool DestinationIsZip { get; set; } = false;
 
         /// <summary>
+        /// Specifies the synchronization mode (incremental, full sync, etc.).
+        /// /// </summary>
+        [JsonConverter(typeof(JsonStringEnumConverter<SyncMode>))]
+        public SyncMode Mode { get; set; } = SyncMode.Incremental;
+
+        /// <summary>
         /// Specifies when this profile should be synchronized (realtime, hourly, daily, at shutdown).
         /// </summary>
+        [JsonConverter(typeof(JsonStringEnumConverter<SyncInterval>))]
         public SyncInterval SyncInterval { get; set; } = SyncToyNext.Core.SyncInterval.Realtime;
 
         /// <summary>
         /// Specifies how file overwrites are handled for this profile. Defaults to OnlyOverwriteIfNewer.
         /// </summary>
+        [JsonConverter(typeof(JsonStringEnumConverter<OverwriteOption>))]
         public OverwriteOption OverwriteOption { get; set; } = OverwriteOption.OnlyOverwriteIfNewer;
     }
 }

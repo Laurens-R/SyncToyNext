@@ -85,11 +85,11 @@ if (!isService && wasServiceRunning && synctoyService != null)
 void PrintBanner()
 {
     var version = VersionUtil.GetVersion();
-    Console.WriteLine("========================================");
+    Console.WriteLine("===============================================================================");
     Console.WriteLine($"   SyncToyNext - Cross-Platform Sync Tool");
     Console.WriteLine($"   Version: {version}");
     Console.WriteLine($"   (c) {DateTime.Now.Year} Laurens Ruijtenberg");
-    Console.WriteLine("========================================\n");
+    Console.WriteLine("===============================================================================\n");
 }
 
 static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
