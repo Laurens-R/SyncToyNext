@@ -27,7 +27,9 @@ if (isService && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     return;
 }
 
-// Service shutdown logic should happen here, before any sync logic
+// Service shutdown logic should happen here, before any sync logic to ensure
+// that the service is not running while we perform sync operations.
+// This prevents conflicts with the service's own sync operations.
 ServiceController? synctoyService = null;
 bool wasServiceRunning = false;
 if (!isService)
@@ -59,50 +61,10 @@ if (!isService)
 }
 #endif
 
-string? configPath = cmdArgs.Get("config");
+MainProgramEntry(cmdArgs, strictMode, forceFullSync);
 
-if (forceFullSync)
-{
-    SyncToyNext.Core.SyncConfiguration.RemoveCleanShutdownMarker();
-}
-
-var syncContext = configPath != null ? new SyncContext(configPath, strictMode) : new SyncContext(null, strictMode);
-syncContext.Start();
-
-Console.WriteLine("SyncToyNext is running. Press 'q' to quit.");
-
-// Use a ManualResetEventSlim to block until quit
-using var quitEvent = new ManualResetEventSlim(false);
-
-// Start a background thread to monitor for 'q' key
-var keyThread = new Thread(() =>
-{
-    while (!quitEvent.IsSet)
-    {
-        if (Console.In.Peek() != -1)
-        {
-            var keyChar = (char)Console.In.Read();
-            if (char.ToLowerInvariant(keyChar) == 'q')
-            {
-                quitEvent.Set();
-                break;
-            }
-        }
-        Thread.Sleep(100); // Reduce CPU usage
-    }
-});
-keyThread.IsBackground = true;
-keyThread.Start();
-
-// Wait for quit signal
-quitEvent.Wait();
-
-// Ensure the keyThread exits if not already
-if (keyThread.IsAlive) keyThread.Join(500);
-
-Console.WriteLine("Shutting down...");
-syncContext.Shutdown();
-
+// If running as a service, restart the service if it was running before
+// This to ensure that the service doesn't conflict with the console app
 #if WINDOWS
 if (!isService && wasServiceRunning && synctoyService != null)
 {
@@ -128,4 +90,49 @@ void PrintBanner()
     Console.WriteLine($"   Version: {version}");
     Console.WriteLine($"   (c) {DateTime.Now.Year} Laurens Ruijtenberg");
     Console.WriteLine("========================================\n");
+}
+
+static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
+{
+    string? configPath = cmdArgs.Get("config");
+
+    if (forceFullSync)
+    {
+        SyncToyNext.Core.SyncConfiguration.RemoveCleanShutdownMarker();
+    }
+
+    var syncContext = configPath != null ? new SyncContext(configPath, strictMode) : new SyncContext(null, strictMode);
+    syncContext.Start();
+
+    Console.WriteLine("SyncToyNext is running. Press 'q' to quit.");
+    var quitEvent = new ManualResetEventSlim(false);
+
+    // Start a background thread to monitor for 'q' key
+    var keyThread = new Thread(() =>
+    {
+        while (!quitEvent.IsSet)
+        {
+            if (Console.In.Peek() != -1)
+            {
+                var keyChar = (char)Console.In.Read();
+                if (char.ToLowerInvariant(keyChar) == 'q')
+                {
+                    quitEvent.Set();
+                    break;
+                }
+            }
+            Thread.Sleep(100); // Reduce CPU usage
+        }
+    });
+    keyThread.IsBackground = true;
+    keyThread.Start();
+
+    // Wait for quit signal
+    quitEvent.Wait();
+
+    // Ensure the keyThread exits if not already
+    if (keyThread.IsAlive) keyThread.Join(500);
+
+    Console.WriteLine("Shutting down...");
+    syncContext.Shutdown();
 }
