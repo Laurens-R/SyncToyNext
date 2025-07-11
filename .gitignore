@@ -19,6 +19,8 @@ obj/
 
 # Dotnet publish output
 publish/
+Release/
+Debug/
 
 # Logs
 *.log

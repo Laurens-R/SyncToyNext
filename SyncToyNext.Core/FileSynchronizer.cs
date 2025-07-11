@@ -48,6 +48,7 @@ namespace SyncToyNext.Core
             var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
                 .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                     && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase));
+                    
             foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
@@ -131,6 +132,7 @@ namespace SyncToyNext.Core
                     const int maxRetries = 10;
                     const int delayMs = 1000;
                     int attempt = 0;
+
                     while (true)
                     {
                         try
@@ -141,9 +143,9 @@ namespace SyncToyNext.Core
                         }
                         catch (IOException)
                         {
-                            _logger.LogError($"File locked when trying to sync from '{srcFilePath}' to '{destFilePath}'. Retrying...");
+                            _logger.LogError($"File locked when trying to sync from '{srcFilePath}' to '{destFilePath}'. Retrying {attempt + 1}/{maxRetries}...");
                             attempt++;
-                            if (attempt >= maxRetries) throw;
+                            if (attempt >= maxRetries) throw new IOException($"Failed to copy file after {maxRetries} attempts.");
                             Thread.Sleep(delayMs);
                         }
                     }

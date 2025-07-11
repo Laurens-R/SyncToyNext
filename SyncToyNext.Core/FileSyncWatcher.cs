@@ -1,8 +1,27 @@
 using System;
+using System.Dynamic;
 using System.IO;
 
 namespace SyncToyNext.Core
 {
+    enum SyncTypes
+    {
+        Create,
+        Update,
+        Rename,
+        Delete
+    }
+
+    class FileSyncAction
+    {
+        public string SourcePath { get; set; } = String.Empty;
+        public string DestinationPath { get; set; } = String.Empty;
+        public string OldDestinationPath { get; set; } = string.Empty;
+        public string OldFullSourcePath { get; set; } = string.Empty;
+        public SyncTypes ActionType { get; set; } = SyncTypes.Create;
+    }
+
+
     /// <summary>
     /// Monitors a directory for file creation and update events, and synchronizes affected files to a destination using FileSynchronizer.
     /// </summary>
@@ -16,13 +35,14 @@ namespace SyncToyNext.Core
         private readonly Logger _logger;
         private readonly ISynchronizer _synchronizer;
         private readonly SyncInterval _syncInterval;
-        private readonly Queue<(string srcPath, string destOrRelPath)>? _pendingChanges;
+        private readonly Stack<FileSyncAction>? _pendingChanges;
         private readonly object _queueLock = new object();
         private DateTime? _lastQueueProcessTime;
         private volatile bool _isProcessingQueue = false;
         private readonly Thread? _intervalThread;
         private volatile bool _shutdownRequested = false;
         private readonly bool _strictMode;
+        private readonly ManualResetEventSlim _shutdownEvent = new ManualResetEventSlim(false);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSyncWatcher"/> class.
@@ -49,7 +69,7 @@ namespace SyncToyNext.Core
 
             if (_syncInterval != SyncInterval.Realtime)
             {
-                _pendingChanges = new Queue<(string, string)>();
+                _pendingChanges = new Stack<FileSyncAction>();
                 _intervalThread = new Thread(IntervalThreadLoop) { IsBackground = true };
                 _intervalThread.Start();
             }
@@ -85,7 +105,8 @@ namespace SyncToyNext.Core
                 {
                     ProcessQueuedChanges();
                 }
-                Thread.Sleep(TimeSpan.FromMinutes(1));
+                // Wait for either the shutdown event or a minute to pass
+                _shutdownEvent.Wait(TimeSpan.FromMinutes(1));
             }
         }
 
@@ -113,9 +134,19 @@ namespace SyncToyNext.Core
                         {
                             if (_isProcessingQueue) return;
                             if (_destinationIsZip)
-                                _pendingChanges?.Enqueue((e.FullPath, relativePath));
+                                _pendingChanges?.Push(new FileSyncAction
+                                {
+                                    SourcePath = e.FullPath,
+                                    DestinationPath = relativePath,
+                                    ActionType = e.ChangeType == WatcherChangeTypes.Created ? SyncTypes.Create : SyncTypes.Update
+                                });
                             else
-                                _pendingChanges?.Enqueue((e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath)));
+                                _pendingChanges?.Push(new FileSyncAction
+                                {
+                                    SourcePath = e.FullPath,
+                                    DestinationPath = System.IO.Path.Combine(_destinationPath, relativePath),
+                                    ActionType = e.ChangeType == WatcherChangeTypes.Created ? SyncTypes.Create : SyncTypes.Update
+                                });
                         }
                     }
                 }
@@ -138,23 +169,54 @@ namespace SyncToyNext.Core
         {
             try
             {
-                // Ignore changes in synclogs
-                var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
-
-                if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-
-                //get the old full destination path
-                var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
-                var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
-
-                if (File.Exists(e.FullPath))
+                if (_syncInterval == SyncInterval.Realtime)
                 {
-                    if (_destinationIsZip)
-                        _synchronizer.SynchronizeFile(e.FullPath, relativePath, oldDestPath);
-                    else
-                        _synchronizer.SynchronizeFile(e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath), oldDestPath);
+                    // Ignore changes in synclogs
+                    var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
+
+                    if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                        return;
+
+
+                    //get the old full destination path
+                    var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
+                    var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+
+                    if (File.Exists(e.FullPath))
+                    {
+
+                        //TODO: add support fo renames in destination files (no mattr if destination is zip or folder)
+                        if (_destinationIsZip)
+                            _synchronizer.SynchronizeFile(e.FullPath, relativePath, oldDestPath);
+                        else
+                            _synchronizer.SynchronizeFile(e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath), oldDestPath);
+                    }
+                }
+                else
+                {
+                    // Queue the rename for interval-based processing
+                    lock (_queueLock)
+                    {
+                        if (_isProcessingQueue) return;
+
+                        var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
+
+                        if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                            return;
+
+                        //get the old full destination path
+                        var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
+                        var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+
+                        _pendingChanges?.Push(new FileSyncAction
+                        {
+                            SourcePath = e.FullPath,
+                            DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath),
+                            OldDestinationPath = oldDestPath,
+                            ActionType = SyncTypes.Rename,
+                            OldFullSourcePath = e.OldFullPath
+                        });
+                    }
                 }
             }
             catch (Exception ex)
@@ -171,13 +233,40 @@ namespace SyncToyNext.Core
             if (_pendingChanges == null) return;
             lock (_queueLock)
             {
+                HashSet<string> processedFiles = new HashSet<string>();
+
                 _isProcessingQueue = true;
                 try
                 {
                     while (_pendingChanges.Count > 0)
                     {
-                        var (srcPath, destOrRelPath) = _pendingChanges.Dequeue();
-                        _synchronizer.SynchronizeFile(srcPath, destOrRelPath);
+                        var queueItem = _pendingChanges.Pop();
+
+                        //as we are processing a stack the newest operations are on top
+                        //so if the file was already processed, skip it. We already copied
+                        //the latest version of the file in the previous iteration
+                        //and we don't want to copy it again.
+                        if (processedFiles.Contains(queueItem.SourcePath))
+                            continue; 
+
+                        if (File.Exists(queueItem.SourcePath))
+                        {
+
+                            if (queueItem.ActionType == SyncTypes.Rename)
+                            {
+                                var oldRelativePath = Path.GetRelativePath(_sourcePath, queueItem.OldDestinationPath);
+                                var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+                                _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath, queueItem.OldDestinationPath);
+
+                                processedFiles.Add(queueItem.SourcePath);
+                                processedFiles.Add(queueItem.OldFullSourcePath);
+                            }
+                            else
+                            {
+                                _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath);
+                                processedFiles.Add(queueItem.SourcePath);
+                            }
+                        }
                     }
                     _lastQueueProcessTime = DateTime.UtcNow;
                 }
@@ -185,6 +274,8 @@ namespace SyncToyNext.Core
                 {
                     _isProcessingQueue = false;
                 }
+
+                processedFiles.Clear();
             }
         }
 
@@ -194,9 +285,11 @@ namespace SyncToyNext.Core
         public void Dispose()
         {
             _shutdownRequested = true;
+            _shutdownEvent.Set();
             _intervalThread?.Join();
             ProcessQueuedChanges();
             _watcher.Dispose();
+            _shutdownEvent.Dispose();
         }
     }
 }
