@@ -31,55 +31,13 @@ namespace SyncToyNext.Core
                 Environment.Exit(1);
             }
             Configuration = SyncConfiguration.Load(configPath);
-            _strictMode = strictMode;
+            _strictMode = strictMode; 
 
             // Validate all profiles before proceeding
             var idSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var profile in Configuration.Profiles)
             {
-                if (string.IsNullOrWhiteSpace(profile.Id))
-                {
-                    Console.WriteLine("Error: Each profile must have a non-empty 'Id'. Please correct your configuration.");
-                    Environment.Exit(1);
-                }
-                if (!idSet.Add(profile.Id))
-                {
-                    Console.WriteLine($"Error: Duplicate profile Id detected: '{profile.Id}'. Each profile Id must be unique.");
-                    Environment.Exit(1);
-                }
-                if (string.IsNullOrWhiteSpace(profile.SourcePath))
-                {
-                    Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'SourcePath'. Please correct your configuration.");
-                    Environment.Exit(1);
-                }
-                if (string.IsNullOrWhiteSpace(profile.DestinationPath))
-                {
-                    Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'DestinationPath'. Please correct your configuration.");
-                    Environment.Exit(1);
-                }
-                if (!System.IO.Directory.Exists(profile.SourcePath))
-                {
-                    Console.WriteLine($"Error: SourcePath '{profile.SourcePath}' for profile '{profile.Id}' does not exist on the filesystem.");
-                    Environment.Exit(1);
-                }
-                // For DestinationPath, check directory or parent directory if destination is zip
-                if (profile.DestinationIsZip)
-                {
-                    var destDir = System.IO.Path.GetDirectoryName(profile.DestinationPath);
-                    if (string.IsNullOrWhiteSpace(destDir) || !System.IO.Directory.Exists(destDir))
-                    {
-                        Console.WriteLine($"Error: The parent directory for DestinationPath '{profile.DestinationPath}' (profile '{profile.Id}') does not exist.");
-                        Environment.Exit(1);
-                    }
-                }
-                else
-                {
-                    if (!System.IO.Directory.Exists(profile.DestinationPath))
-                    {
-                        Console.WriteLine($"Error: DestinationPath '{profile.DestinationPath}' for profile '{profile.Id}' does not exist on the filesystem.");
-                        Environment.Exit(1);
-                    }
-                }
+                ValidateProfile(idSet, profile);
             }
 
             // Check for clean shutdown marker
@@ -90,22 +48,74 @@ namespace SyncToyNext.Core
                 // Perform a full sync for all profiles
                 foreach (var profile in Configuration.Profiles)
                 {
-                    var logger = new Logger(profile.SourcePath);
-                    var overwriteOption = profile.OverwriteOption;
-                    if (profile.DestinationIsZip)
-                    {
-                        var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
-                        zipSync.FullSynchronization(profile.SourcePath);
-                    }
-                    else
-                    {
-                        var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
-                        fileSync.FullSynchronization(profile.SourcePath);
-                    }
+                    InitializeProfile(strictMode, profile);
                 }
             }
             // Remove marker so next run will require a clean shutdown again
             SyncConfiguration.RemoveCleanShutdownMarker();
+        }
+
+        private static void InitializeProfile(bool strictMode, SyncProfile profile)
+        {
+            var logger = new Logger(profile.SourcePath);
+            var overwriteOption = profile.OverwriteOption;
+            if (profile.DestinationIsZip)
+            {
+                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
+                zipSync.FullSynchronization(profile.SourcePath);
+            }
+            else
+            {
+                var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
+                fileSync.FullSynchronization(profile.SourcePath);
+            }
+        }
+
+        private static void ValidateProfile(HashSet<string> idSet, SyncProfile profile)
+        {
+            if (string.IsNullOrWhiteSpace(profile.Id))
+            {
+                Console.WriteLine("Error: Each profile must have a non-empty 'Id'. Please correct your configuration.");
+                Environment.Exit(1);
+            }
+            if (!idSet.Add(profile.Id))
+            {
+                Console.WriteLine($"Error: Duplicate profile Id detected: '{profile.Id}'. Each profile Id must be unique.");
+                Environment.Exit(1);
+            }
+            if (string.IsNullOrWhiteSpace(profile.SourcePath))
+            {
+                Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'SourcePath'. Please correct your configuration.");
+                Environment.Exit(1);
+            }
+            if (string.IsNullOrWhiteSpace(profile.DestinationPath))
+            {
+                Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'DestinationPath'. Please correct your configuration.");
+                Environment.Exit(1);
+            }
+            if (!System.IO.Directory.Exists(profile.SourcePath))
+            {
+                Console.WriteLine($"Error: SourcePath '{profile.SourcePath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                Environment.Exit(1);
+            }
+            // For DestinationPath, check directory or parent directory if destination is zip
+            if (profile.DestinationIsZip)
+            {
+                var destDir = System.IO.Path.GetDirectoryName(profile.DestinationPath);
+                if (string.IsNullOrWhiteSpace(destDir) || !System.IO.Directory.Exists(destDir))
+                {
+                    Console.WriteLine($"Error: The parent directory for DestinationPath '{profile.DestinationPath}' (profile '{profile.Id}') does not exist.");
+                    Environment.Exit(1);
+                }
+            }
+            else
+            {
+                if (!System.IO.Directory.Exists(profile.DestinationPath))
+                {
+                    Console.WriteLine($"Error: DestinationPath '{profile.DestinationPath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                    Environment.Exit(1);
+                }
+            }
         }
 
         /// <summary>
