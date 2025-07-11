@@ -2,9 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SyncToyNext.Core
 {
+    /// <summary>
+    /// JSON source generator context for trim-safe serialization.
+    /// </summary>
+    [JsonSourceGenerationOptions(
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    )]
+    [JsonSerializable(typeof(SyncConfiguration))]
+    [JsonSerializable(typeof(SyncProfile))]
+    [JsonSerializable(typeof(SyncInterval))]
+    [JsonSerializable(typeof(OverwriteOption))]
+    [JsonSerializable(typeof(SyncMode))]
+    internal partial class SyncConfigurationJsonContext : JsonSerializerContext
+    {
+    }
+
     /// <summary>
     /// Manages loading and saving of synchronization configuration, which is a collection of SyncProfiles.
     /// </summary>
@@ -33,12 +50,7 @@ namespace SyncToyNext.Core
             if (!File.Exists(path))
                 return new SyncConfiguration();
             var json = File.ReadAllText(path);
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase, allowIntegerValues: false) }
-            };
-            return JsonSerializer.Deserialize<SyncConfiguration>(json, options) ?? new SyncConfiguration();
+            return JsonSerializer.Deserialize(json, SyncConfigurationJsonContext.Default.SyncConfiguration) ?? new SyncConfiguration();
         }
 
         /// <summary>
@@ -47,7 +59,7 @@ namespace SyncToyNext.Core
         public void Save(string? path = null)
         {
             path ??= GetDefaultConfigPath();
-            var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(this, SyncConfigurationJsonContext.Default.SyncConfiguration);
             File.WriteAllText(path, json);
         }
 
