@@ -1,6 +1,7 @@
 using System;
 using System.Dynamic;
 using System.IO;
+using System.Text.Json.Serialization;
 
 namespace SyncToyNext.Core
 {
@@ -35,6 +36,7 @@ namespace SyncToyNext.Core
         private readonly Logger _logger;
         private readonly ISynchronizer _synchronizer;
         private readonly SyncInterval _syncInterval;
+        private readonly SyncMode _syncMode;
         private readonly Stack<FileSyncAction>? _pendingChanges;
         private readonly object _queueLock = new object();
         private DateTime? _lastQueueProcessTime;
@@ -53,7 +55,7 @@ namespace SyncToyNext.Core
         /// <param name="destinationIsZip">Whether the destination is a zip file.</param>
         /// <param name="syncInterval">The synchronization interval.</param>
         /// <param name="strictMode">Whether to enable strict mode for synchronization.</param>
-        public FileSyncWatcher(string sourcePath, string destinationPath, OverwriteOption overwriteOption, bool destinationIsZip = false, SyncInterval syncInterval = SyncInterval.Realtime, bool strictMode = false)
+        public FileSyncWatcher(string sourcePath, string destinationPath, OverwriteOption overwriteOption, bool destinationIsZip = false, SyncInterval syncInterval = SyncInterval.Realtime, SyncMode mode = SyncMode.Incremental, bool strictMode = false)
         {
             _sourcePath = sourcePath;
             _destinationPath = destinationPath;
@@ -61,7 +63,9 @@ namespace SyncToyNext.Core
             _destinationIsZip = destinationIsZip;
             _logger = new Logger(_sourcePath);
             _syncInterval = syncInterval;
+            _syncMode = mode;
             _strictMode = strictMode;
+
             if (_destinationIsZip)
                 _synchronizer = new ZipFileSynchronizer(_destinationPath, _overwriteOption, _logger, strictMode);
             else
@@ -101,9 +105,17 @@ namespace SyncToyNext.Core
                     if (!_lastQueueProcessTime.HasValue || (now - _lastQueueProcessTime.Value).TotalHours >= 24)
                         shouldProcess = true;
                 }
+
                 if (shouldProcess)
                 {
-                    ProcessQueuedChanges();
+                    if (_syncMode == SyncMode.Incremental)
+                    {
+                        ProcessQueuedChanges();
+                    } else if (_syncMode == SyncMode.FullSync)
+                    {
+                        // Perform a full synchronization
+                        FullSynchronization();
+                    }   
                 }
                 // Wait for either the shutdown event or a minute to pass
                 _shutdownEvent.Wait(TimeSpan.FromMinutes(1));
@@ -127,7 +139,7 @@ namespace SyncToyNext.Core
                         else
                             _synchronizer.SynchronizeFile(e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath));
                     }
-                    else
+                    else if(_syncMode == SyncMode.Incremental)
                     {
                         // Queue the change for interval-based processing
                         lock (_queueLock)
@@ -192,7 +204,7 @@ namespace SyncToyNext.Core
                             _synchronizer.SynchronizeFile(e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath), oldDestPath);
                     }
                 }
-                else
+                else if (_syncMode == SyncMode.Incremental)
                 {
                     // Queue the rename for interval-based processing
                     lock (_queueLock)
@@ -225,6 +237,12 @@ namespace SyncToyNext.Core
             }
         }
 
+        public void FullSynchronization()
+        {
+            _synchronizer.FullSynchronization(_sourcePath);
+
+        }
+
         /// <summary>
         /// Processes all queued changes and executes the synchronization for each.
         /// </summary>
@@ -247,7 +265,7 @@ namespace SyncToyNext.Core
                         //the latest version of the file in the previous iteration
                         //and we don't want to copy it again.
                         if (processedFiles.Contains(queueItem.SourcePath))
-                            continue; 
+                            continue;
 
                         if (File.Exists(queueItem.SourcePath))
                         {
@@ -284,10 +302,20 @@ namespace SyncToyNext.Core
         /// </summary>
         public void Dispose()
         {
+            _logger.Log($"Shutting down watcher and synchronizer for " + _sourcePath);
             _shutdownRequested = true;
             _shutdownEvent.Set();
             _intervalThread?.Join();
-            ProcessQueuedChanges();
+
+            if (_syncMode == SyncMode.Incremental)
+            {
+                ProcessQueuedChanges();
+            }
+            else if (_syncMode == SyncMode.FullSync)
+            {
+                FullSynchronization();
+            }
+
             _watcher.Dispose();
             _shutdownEvent.Dispose();
         }

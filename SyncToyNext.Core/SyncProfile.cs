@@ -30,6 +30,11 @@ namespace SyncToyNext.Core
         public bool DestinationIsZip { get; set; } = false;
 
         /// <summary>
+        /// Specifies the synchronization mode (incremental, full sync, etc.).
+        /// /// </summary>
+        public SyncMode Mode { get; set; } = SyncMode.Incremental;
+
+        /// <summary>
         /// Specifies when this profile should be synchronized (realtime, hourly, daily, at shutdown).
         /// </summary>
         public SyncInterval SyncInterval { get; set; } = SyncToyNext.Core.SyncInterval.Realtime;

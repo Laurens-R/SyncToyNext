@@ -61,8 +61,14 @@ namespace SyncToyNext.Core
                 else if (entry != null)
                 {
                     var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
-                    var entryLastWrite = entry.LastWriteTime.UtcDateTime;
-                    if (srcLastWrite > entryLastWrite)
+                    // ZIP entries store time as UTC, but DateTime.Kind is Unspecified - force it to UTC
+                    var entryLastWrite = DateTime.SpecifyKind(entry.LastWriteTime.DateTime, DateTimeKind.Utc);
+                    
+                    // Truncate to whole seconds for both to handle ZIP format precision issues
+                    srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                    entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                    var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
+                    if (secondsDifference > 2) // ZIP format is only precise to 2 seconds
                     {
                         shouldCopy = true;
                         action = "Update";
@@ -96,11 +102,11 @@ namespace SyncToyNext.Core
                 if (shouldCopy)
                 {
                     entry?.Delete();
-                    var newEntry = archive.CreateEntry(entryPath, CompressionLevel.Optimal);
+                    var newEntry = archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
+                    newEntry.LastWriteTime = File.GetLastWriteTimeUtc(srcFilePath);
                     using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
                     fileStream.CopyTo(entryStream);
-                    newEntry.LastWriteTime = File.GetLastWriteTimeUtc(srcFilePath);
                 }
                 _logger.LogSyncAction(relativePath, action, "zip");
             }

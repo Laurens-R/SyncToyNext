@@ -132,6 +132,7 @@ namespace SyncToyNext.Core
                     profile.OverwriteOption,
                     profile.DestinationIsZip,
                     profile.SyncInterval,
+                    profile.Mode,
                     _strictMode
                 );
                 _watchers.Add(watcher);

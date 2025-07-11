@@ -271,6 +271,62 @@ The configuration is stored in a JSON file (default: `SyncToyNext.config.json` i
 
 Choose the interval that best fits your use case. For example, use `Realtime` for fast mirroring, or `AtShutdown` for batch-style syncs at the end of a session.
 
+```jsonc
+{
+  "Profiles": [
+    {
+      "Id": "DocumentsBackup",
+      "SourcePath": "C:/Users/John/Documents",
+      "DestinationPath": "D:/Backups/Documents.zip",
+      "DestinationIsZip": true,
+      "SyncInterval": "Realtime",
+      "OverwriteOption": "OnlyOverwriteIfNewer"
+    },
+    // ... more profiles ...
+  ]
+}
+```
+
+
+#### Profile Options
+
+- `Id` (string, required): Unique name for the sync profile.
+- `SourcePath` (string, required): Path to the source directory.
+- `DestinationPath` (string, required): Path to the destination directory or zip file.
+- `DestinationIsZip` (bool, required): Set to `true` to sync into a zip file, `false` for a regular folder.
+- `Mode` (enum, optional): Synchronization mode. Determines how files are compared and copied. Options (case-insensitive):
+  - `Incremental` (default): Only new or changed files are copied from source to destination.
+  - `Full`: All files from the source are copied to the destination, overwriting existing files according to the OverwriteOption.
+- `SyncInterval` (enum, required): When to synchronize this profile. Options (case-insensitive):
+  - `Realtime` (default): Sync immediately on file change.
+  - `Hourly`: Sync all detected changes once per hour.
+  - `Daily`: Sync all detected changes once per day.
+  - `AtShutdown`: Only sync pending changes when the app is shutting down.
+- `OverwriteOption` (enum, optional): Controls when files in the destination are overwritten. Options (case-insensitive):
+  - `OnlyOverwriteIfNewer` (default): Only overwrite if the source file is newer, or if file size/hash differs (see strict mode).
+  - `AlwaysOverwrite`: Always overwrite the destination file, regardless of timestamps, size, or hash.
+
+#### Additional Features & Notes
+
+- **Case-insensitive enums:** `SyncInterval` and `OverwriteOption` values are case-insensitive (e.g., `realtime`, `REALTIME`, `Realtime` are all valid).
+- **Strict file integrity:** Use the `--strict` command line flag to enable SHA-256 hash comparison for all files (not just timestamps/size).
+- **Log file exclusion:** All log files are written to a dedicated `synclogs` subfolder next to your config or source directory, and are automatically excluded from sync operations to prevent sync loops.
+- **Service/CLI coordination:** On Windows, running the CLI will pause the service to prevent conflicts, and resume it after manual sync completes.
+- **Graceful shutdown:** The app ensures all sync operations and file watchers are stopped cleanly on exit (including Ctrl+C or `q` in console mode).
+
+#### Profile Validation
+
+- Each profile must have a non-empty `Id`, `SourcePath`, and `DestinationPath`.
+- All `Id` values must be unique.
+- `SourcePath` must exist as a directory.
+- `DestinationPath` must exist as a directory (or, for zip destinations, its parent directory must exist).
+- If any of these checks fail, the application will exit with a clear error message explaining what needs to be corrected.
+
+#### Missing Config File
+
+- If no config file is provided and none is found at the default location, the application will print a helpful error and exit.
+
+
 ## Troubleshooting
 
 - Ensure all file and folder paths in your config are accessible and have the correct permissions.
@@ -278,11 +334,3 @@ Choose the interval that best fits your use case. For example, use `Realtime` fo
 - For Windows service issues, use the Event Viewer to check for application errors.
 - For Linux, check the status with `systemctl status synctoynext` and view logs with `journalctl -u synctoynext`.
 - For macOS, check the specified log files or use `log show --predicate 'process == "SyncToyNext.Client"' --info` to view logs.
-
-## Contributing
-
-Contributions are welcome! Please submit issues or pull requests on the [GitHub repository](https://github.com/Laurens-R/SyncToyNext).
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
