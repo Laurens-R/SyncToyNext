@@ -107,8 +107,9 @@ namespace SyncToyNext.Core
                     using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
                     fileStream.CopyTo(entryStream);
+                    _logger.LogSyncAction(relativePath, action, "zip");
                 }
-                _logger.LogSyncAction(relativePath, action, "zip");
+                
             }
             catch (IOException ioEx)
             {

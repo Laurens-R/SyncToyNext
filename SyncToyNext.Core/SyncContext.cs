@@ -19,7 +19,7 @@ namespace SyncToyNext.Core
         /// </summary>
         /// <param name="configPath">Optional path to the configuration file.</param>
         /// <param name="strictMode">Optional flag to enable strict mode.</param>
-        public SyncContext(string? configPath = null, bool strictMode = false)
+        public SyncContext(string? configPath = null, bool strictMode = false, bool enterWatchMode = true)
         {
             // If no config file is provided and none is found, show a helpful error and exit
             string resolvedConfigPath = configPath ?? SyncConfiguration.GetDefaultConfigPath();
@@ -31,27 +31,30 @@ namespace SyncToyNext.Core
                 Environment.Exit(1);
             }
             Configuration = SyncConfiguration.Load(configPath);
-            _strictMode = strictMode; 
+            _strictMode = strictMode;
 
-            // Validate all profiles before proceeding
-            var idSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            // Check for clean shutdown marker. Everything below this is to ensure a stable state before starting watchers.
-            if (!SyncConfiguration.WasCleanShutdown())
+            if (enterWatchMode)
             {
-                // Remove marker if present (corrupt/old)
-                SyncConfiguration.RemoveCleanShutdownMarker();
-                // Perform a full sync for all profiles
-                foreach (var profile in Configuration.Profiles)
+                // Validate all profiles before proceeding
+                var idSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                // Check for clean shutdown marker. Everything below this is to ensure a stable state before starting watchers.
+                if (!SyncConfiguration.WasCleanShutdown())
                 {
-                    if (ValidateProfile(idSet, profile))
+                    // Remove marker if present (corrupt/old)
+                    SyncConfiguration.RemoveCleanShutdownMarker();
+                    // Perform a full sync for all profiles
+                    foreach (var profile in Configuration.Profiles)
                     {
-                        InitializeProfile(strictMode, profile);
+                        if (ValidateProfile(idSet, profile))
+                        {
+                            InitializeProfile(strictMode, profile);
+                        }
                     }
                 }
+                // Remove marker so next run will require a clean shutdown again
+                SyncConfiguration.RemoveCleanShutdownMarker();
             }
-            // Remove marker so next run will require a clean shutdown again
-            SyncConfiguration.RemoveCleanShutdownMarker();
         }
 
         private static void InitializeProfile(bool strictMode, SyncProfile profile)
@@ -164,22 +167,22 @@ namespace SyncToyNext.Core
         /// <param name="profileIdOrName">The ID or Name of the profile to sync.</param>
         /// <param name="overwriteOption">Optional overwrite option (default: OnlyOverwriteIfNewer).</param>
         /// <param name="toZip">If true, sync to a zip file; otherwise, to a directory.</param>
-        public void ManualSyncProfile(string profileIdOrName, OverwriteOption overwriteOption = OverwriteOption.OnlyOverwriteIfNewer, bool? toZip = null)
+        public void ManualSyncProfile(string profileIdOrName)
         {
             var profile = Configuration.Profiles.FirstOrDefault(p => string.Equals(p.Id, profileIdOrName, StringComparison.OrdinalIgnoreCase));
             if (profile == null)
                 throw new ArgumentException($"No profile found with ID/Name '{profileIdOrName}'", nameof(profileIdOrName));
             // Use the profile's DestinationIsZip unless overridden
-            bool useZip = toZip ?? profile.DestinationIsZip;
+            bool useZip = profile.DestinationIsZip;
             var logger = new Logger(profile.SourcePath);
             if (useZip)
             {
-                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, logger);
+                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, profile.OverwriteOption, logger);
                 zipSync.FullSynchronization(profile.SourcePath);
             }
             else
             {
-                var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, logger);
+                var fileSync = new FileSynchronizer(profile.DestinationPath, profile.OverwriteOption, logger);
                 fileSync.FullSynchronization(profile.SourcePath);
             }
         }

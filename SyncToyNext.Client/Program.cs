@@ -16,6 +16,18 @@ var cmdArgs = new SyncToyNext.Client.CommandLineArguments(args);
 bool isService = cmdArgs.Has("service");
 bool strictMode = cmdArgs.Has("strict");
 bool forceFullSync = cmdArgs.Has("recover");
+bool runProfile = cmdArgs.Has("profile");
+
+string profileName = string.Empty;
+if(runProfile)
+{
+    profileName = cmdArgs.Get("profile") ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(profileName))
+    {
+        Console.WriteLine("Error: --profile flag requires a profile name.");
+        Environment.Exit(1);
+    }
+}
 
 #if WINDOWS
 string? configPath = cmdArgs.Get("config");
@@ -61,7 +73,7 @@ if (!isService)
 }
 #endif
 
-MainProgramEntry(cmdArgs, strictMode, forceFullSync);
+MainProgramEntry(cmdArgs, strictMode, forceFullSync, runProfile, profileName);
 
 // If running as a service, restart the service if it was running before
 // This to ensure that the service doesn't conflict with the console app
@@ -92,7 +104,28 @@ void PrintBanner()
     Console.WriteLine("===============================================================================\n");
 }
 
-static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
+static void RunSpecificProfileMode(CommandLineArguments cmdArgs, string profileName, bool strictMode)
+{
+    string? configPath = cmdArgs.Get("config");
+    var syncContext = configPath != null ? new SyncContext(configPath, strictMode, false) : new SyncContext(null, strictMode, false);
+    syncContext.Start();
+    syncContext.ManualSyncProfile(profileName);
+    syncContext.Shutdown();
+}
+
+static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync, bool runProfile, string profile)
+{
+    if (runProfile)
+    {
+        RunSpecificProfileMode(cmdArgs, profile, strictMode);
+    }
+    else
+    {
+        RunInTaskMode(cmdArgs, strictMode, forceFullSync);
+    }
+}
+
+static void RunInTaskMode(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
 {
     string? configPath = cmdArgs.Get("config");
 
@@ -124,7 +157,7 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
             Thread.Sleep(100); // Reduce CPU usage
         }
     });
-    
+
     keyThread.IsBackground = true;
     keyThread.Start();
 
