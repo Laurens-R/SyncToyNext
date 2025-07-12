@@ -178,20 +178,28 @@ static void RunRestoreSyncPoint(CommandLineArguments cmdArgs)
 
 static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
 {
-    if (cmdArgs.Has("profile"))
+    try
     {
-        RunSpecificProfileMode(cmdArgs, strictMode);
+        if (cmdArgs.Has("profile"))
+        {
+            RunSpecificProfileMode(cmdArgs, strictMode);
+        }
+        else if (cmdArgs.Has("from"))
+        {
+            RunManual(cmdArgs);
+        }
+        else if (cmdArgs.Has("restore-syncpoint"))
+        {
+            RunRestoreSyncPoint(cmdArgs);
+        }
+        else
+        {
+            RunInTaskMode(cmdArgs, strictMode, forceFullSync);
+        }
     }
-    else if (cmdArgs.Has("from"))
+    catch (Exception ex)
     {
-        RunManual(cmdArgs);
-    } 
-    else if(cmdArgs.Has("restore-syncpoint"))
-    {
-
-    }
-    else
-    {
-        RunInTaskMode(cmdArgs, strictMode, forceFullSync);
+        Console.Error.WriteLine($"Error: {ex.Message}");
+        Environment.Exit(1);
     }
 }
