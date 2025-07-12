@@ -12,6 +12,8 @@
     <PublishAot>True</PublishAot>
     <SignAssembly>False</SignAssembly>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+    <RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
+    <AssemblyName>stn</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

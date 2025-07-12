@@ -16,18 +16,7 @@ var cmdArgs = new SyncToyNext.Client.CommandLineArguments(args);
 bool isService = cmdArgs.Has("service");
 bool strictMode = cmdArgs.Has("strict");
 bool forceFullSync = cmdArgs.Has("recover");
-bool runProfile = cmdArgs.Has("profile");
 
-string profileName = string.Empty;
-if(runProfile)
-{
-    profileName = cmdArgs.Get("profile") ?? string.Empty;
-    if (string.IsNullOrWhiteSpace(profileName))
-    {
-        Console.WriteLine("Error: --profile flag requires a profile name.");
-        Environment.Exit(1);
-    }
-}
 
 #if WINDOWS
 string? configPath = cmdArgs.Get("config");
@@ -73,7 +62,7 @@ if (!isService)
 }
 #endif
 
-MainProgramEntry(cmdArgs, strictMode, forceFullSync, runProfile, profileName);
+MainProgramEntry(cmdArgs, strictMode, forceFullSync);
 
 // If running as a service, restart the service if it was running before
 // This to ensure that the service doesn't conflict with the console app
@@ -104,8 +93,18 @@ void PrintBanner()
     Console.WriteLine("===============================================================================\n");
 }
 
-static void RunSpecificProfileMode(CommandLineArguments cmdArgs, string profileName, bool strictMode)
+/// <summary>
+/// Runs the application in profile mode, synchronizing a specific profile.
+/// </summary>
+static void RunSpecificProfileMode(CommandLineArguments cmdArgs, bool strictMode)
 {
+    var profileName = cmdArgs.Get("profile") ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(profileName))
+    {
+        Console.Error.WriteLine("Error: --profile flag requires a profile name.");
+        Environment.Exit(1);
+    }
+
     string? configPath = cmdArgs.Get("config");
     var syncContext = configPath != null ? new SyncContext(configPath, strictMode, false) : new SyncContext(null, strictMode, false);
     syncContext.Start();
@@ -113,18 +112,9 @@ static void RunSpecificProfileMode(CommandLineArguments cmdArgs, string profileN
     syncContext.Shutdown();
 }
 
-static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync, bool runProfile, string profile)
-{
-    if (runProfile)
-    {
-        RunSpecificProfileMode(cmdArgs, profile, strictMode);
-    }
-    else
-    {
-        RunInTaskMode(cmdArgs, strictMode, forceFullSync);
-    }
-}
-
+/// <summary>
+/// Runs the application in task mode, continuously synchronizing profiles.
+/// </summary>
 static void RunInTaskMode(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
 {
     string? configPath = cmdArgs.Get("config");
@@ -169,4 +159,44 @@ static void RunInTaskMode(CommandLineArguments cmdArgs, bool strictMode, bool fo
 
     Console.WriteLine("Shutting down...");
     syncContext.Shutdown();
+}
+
+/// <summary>
+/// Runs a manual synchronization between two specified paths.
+/// </summary>
+static void RunManual(CommandLineArguments cmdArgs)
+{
+    string? fromPath = null;
+    string? toPath = null;
+
+    if (cmdArgs.Has("from"))
+    {
+        fromPath = cmdArgs.Get("from");
+    }
+
+    if(cmdArgs.Has("to")) {
+        toPath = cmdArgs.Get("to");
+    } else
+    {
+        Console.Error.WriteLine("Error: --to flag is required for manual sync.");
+        Environment.Exit(1);
+    }
+
+    ManualRun.Run(fromPath, toPath);
+}
+
+static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
+{
+    if (cmdArgs.Has("profile"))
+    {
+        RunSpecificProfileMode(cmdArgs, strictMode);
+    }
+    else if (cmdArgs.Has("from"))
+    {
+        RunManual(cmdArgs);
+    }
+    else
+    {
+        RunInTaskMode(cmdArgs, strictMode, forceFullSync);
+    }
 }

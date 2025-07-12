@@ -126,6 +126,18 @@ namespace SyncToyNext.Core
         {
             try
             {
+                // Ignore changes if the file is already being processed in the queue and we are not in realtime mode.
+                if (_syncInterval != SyncInterval.Realtime && e.ChangeType == WatcherChangeTypes.Changed) 
+                {
+                    lock(_queueLock)
+                    {
+                        if(_pendingChanges != null && _pendingChanges.Any(x => x.SourcePath == e.FullPath))
+                        {
+                            return; // Ignore changes if the file is already queued because it would create a double operation.
+                        }
+                    }
+                }
+
                 if (File.Exists(e.FullPath))
                 {
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
@@ -216,18 +228,30 @@ namespace SyncToyNext.Core
                         if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                             return;
 
-                        //get the old full destination path
-                        var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
-                        var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+                        var existingEntryForFile = _pendingChanges.FirstOrDefault(x => x.SourcePath == e.OldFullPath);
 
-                        _pendingChanges?.Push(new FileSyncAction
+                        if (existingEntryForFile != null)
                         {
-                            SourcePath = e.FullPath,
-                            DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath),
-                            OldDestinationPath = oldDestPath,
-                            ActionType = SyncTypes.Rename,
-                            OldFullSourcePath = e.OldFullPath
-                        });
+                            // If the file is already in the queue, update its destination path
+                            existingEntryForFile.SourcePath = e.FullPath;
+                            existingEntryForFile.DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath);
+                            existingEntryForFile.ActionType = SyncTypes.Rename;
+                        }
+                        else
+                        {
+                            //get the old full destination path
+                            var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
+                            var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+
+                            _pendingChanges?.Push(new FileSyncAction
+                            {
+                                SourcePath = e.FullPath,
+                                DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath),
+                                OldDestinationPath = oldDestPath,
+                                ActionType = SyncTypes.Rename,
+                                OldFullSourcePath = e.OldFullPath
+                            });
+                        }
                     }
                 }
             }
@@ -267,6 +291,7 @@ namespace SyncToyNext.Core
                         if (processedFiles.Contains(queueItem.SourcePath))
                             continue;
 
+                        // the file might have been deleted in the meantime, so we check if it exists
                         if (File.Exists(queueItem.SourcePath))
                         {
 
