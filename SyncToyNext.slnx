@@ -8,10 +8,6 @@
     <File Path="README.md" />
     <File Path="SyncToyNext.test.config.json" />
   </Folder>
-  <Folder Name="/Solution Items/.github/" />
-  <Folder Name="/Solution Items/.github/workflows/">
-    <File Path=".github/workflows/build-and-publish.yml" />
-  </Folder>
   <Folder Name="/Solution Items/.vscode/">
     <File Path=".vscode/launch.json" />
     <File Path=".vscode/settings.json" />

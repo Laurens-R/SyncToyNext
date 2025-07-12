@@ -18,20 +18,23 @@ namespace SyncToyNext.Core
             _logFilePath = Path.Combine(logDir, $"SyncToyNext_{DateTime.UtcNow:yyyyMMdd}.log");
         }
 
-        public void Log(string message)
+        public void Log(string message, bool outputToConsole = true)
         {
             var logLine = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {message}";
             lock (_lock)
             {
                 File.AppendAllText(_logFilePath, logLine + Environment.NewLine);
             }
-            Console.WriteLine(logLine);
+            if(outputToConsole)
+                Console.WriteLine(logLine);
         }
 
         public void LogError(string message, Exception? ex = null)
         {
             var errorLine = $"[ERROR] {message}" + (ex != null ? $" Exception: {ex.Message}" : "");
-            Log(errorLine);
+            Log(errorLine, false);
+            var outputLogLine = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {errorLine}";
+            Console.Error.WriteLine(errorLine);
         }
 
         public void LogSyncAction(string filePath, string action, string? details = null)

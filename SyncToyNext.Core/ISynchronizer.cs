@@ -9,7 +9,7 @@ namespace SyncToyNext.Core
         /// Synchronizes all files and subdirectories from the source path to the destination.
         /// </summary>
         /// <param name="sourcePath">The root directory to copy files from.</param>
-        void FullSynchronization(string sourcePath);
+        void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null);
 
         /// <summary>
         /// Synchronizes a single file from the source to the destination.

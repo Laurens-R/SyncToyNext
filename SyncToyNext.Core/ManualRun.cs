@@ -9,8 +9,28 @@ namespace SyncToyNext.Core
 {
     public class ManualRun
     {
-        public static void Run(string? fromPath, string? toPath)
+        public static void Run(CommandLineArguments cmdArgs)
         {
+            string? fromPath = null;
+            string? toPath = null;
+
+            if (cmdArgs.Has("from"))
+            {
+                fromPath = cmdArgs.Get("from");
+            }
+
+            if (cmdArgs.Has("to"))
+            {
+                toPath = cmdArgs.Get("to");
+            }
+            else
+            {
+                Console.Error.WriteLine("Error: --to flag is required for manual sync.");
+                Environment.Exit(1);
+            }
+
+            bool useSyncPoint = cmdArgs.Has("syncpoint");
+
             if (String.IsNullOrWhiteSpace(fromPath)
             || string.IsNullOrWhiteSpace(toPath))
                 {
@@ -31,20 +51,35 @@ namespace SyncToyNext.Core
             }
 
             bool toZip = false;
+            string targetName = Path.GetFileName(toPath);
+            string? parentPath = Path.GetDirectoryName(toPath);
 
-            if(Path.HasExtension(toPath) && Path.GetExtension(toPath).ToLowerInvariant() == ".zip")
+            if (Path.HasExtension(toPath) && Path.GetExtension(toPath).ToLowerInvariant() == ".zip")
             {
                 toZip = true;
+            }
+
+            SyncPointManager? syncPointManager = null;
+            SyncPoint? syncPoint = null;
+
+            if (useSyncPoint)
+            {
+                syncPointManager = new SyncPointManager(toPath, fromPath);
+
+                var syncPointID = cmdArgs.Get("syncid") ?? string.Empty;
+                var description = cmdArgs.Get("syncdesc") ?? string.Empty;
+
+                syncPoint = syncPointManager.AddSyncPoint(fromPath, syncPointID, description);
             }
 
             if(toZip)
             {
                 var zipFileSynchronizer = new ZipFileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, new Logger(fromPath), false);
-                zipFileSynchronizer.FullSynchronization(fromPath);
+                zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
             } else
             {
                 var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, new Logger(fromPath), false);
-                fileSynchronizer.FullSynchronization(fromPath);
+                fileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
             }
         }
     }

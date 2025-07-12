@@ -1,6 +1,8 @@
 ﻿using SyncToyNext.Core;
 using SyncToyNext.Client; // For VersionUtil
 using System.Reflection;
+using System;
+using System.Threading;
 
 #if WINDOWS
 using System.Runtime.InteropServices;
@@ -11,7 +13,7 @@ using System.ServiceProcess;
 // Print banner with version
 PrintBanner();
 
-var cmdArgs = new SyncToyNext.Client.CommandLineArguments(args);
+var cmdArgs = new CommandLineArguments(args);
 
 bool isService = cmdArgs.Has("service");
 bool strictMode = cmdArgs.Has("strict");
@@ -166,23 +168,12 @@ static void RunInTaskMode(CommandLineArguments cmdArgs, bool strictMode, bool fo
 /// </summary>
 static void RunManual(CommandLineArguments cmdArgs)
 {
-    string? fromPath = null;
-    string? toPath = null;
+    ManualRun.Run(cmdArgs);
+}
 
-    if (cmdArgs.Has("from"))
-    {
-        fromPath = cmdArgs.Get("from");
-    }
-
-    if(cmdArgs.Has("to")) {
-        toPath = cmdArgs.Get("to");
-    } else
-    {
-        Console.Error.WriteLine("Error: --to flag is required for manual sync.");
-        Environment.Exit(1);
-    }
-
-    ManualRun.Run(fromPath, toPath);
+static void RunRestoreSyncPoint(CommandLineArguments cmdArgs)
+{
+    SyncPointRestorer.Run(cmdArgs);
 }
 
 static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
@@ -194,6 +185,10 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
     else if (cmdArgs.Has("from"))
     {
         RunManual(cmdArgs);
+    } 
+    else if(cmdArgs.Has("restore-syncpoint"))
+    {
+
     }
     else
     {

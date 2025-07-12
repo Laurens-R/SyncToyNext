@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -10,10 +11,10 @@ namespace SyncToyNext.Core
     /// </summary>
     public class ZipFileSynchronizer : ISynchronizer
     {
-        private readonly string _zipFilePath;
-        private readonly OverwriteOption _overwriteOption;
-        private readonly Logger _logger;
-        private readonly bool _strictMode;
+        private string _zipFilePath;
+        private OverwriteOption _overwriteOption;
+        private Logger _logger;
+        private bool _strictMode;
 
         public ZipFileSynchronizer(string zipFilePath, OverwriteOption overwriteOption, Logger logger, bool strictMode = false)
         {
@@ -133,18 +134,100 @@ namespace SyncToyNext.Core
         /// Synchronizes all files and subdirectories from the source path into the zip archive.
         /// </summary>
         /// <param name="sourcePath">The root directory to copy files from.</param>
-        public void FullSynchronization(string sourcePath)
+        public void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
         {
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
             // Exclude 'synclogs' subfolder from sync
             var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
-                .Where(f => {
+                .Where(f =>
+                {
                     var rel = Path.GetRelativePath(sourcePath, f);
                     return !rel.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
                         && !rel.StartsWith("synclogs/", StringComparison.OrdinalIgnoreCase);
                 });
+
+            if (syncPoint != null && syncPointManager != null)
+            {
+                ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFiles);
+            }
+            else
+            {
+                ProcessStraightSync(sourcePath, allFiles);
+            }
+        }
+
+        private void ProcessSyncPoint(string sourcePath, SyncPoint syncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
+        {
+            var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(syncPoint.SyncPointId);
+
+            //update zip path according to sync point
+            var zipParentFolder = Path.GetDirectoryName(_zipFilePath);
+
+            if(zipParentFolder == null)
+            {
+                throw new InvalidOperationException("Couldn't resolve parent folder of zip file.");
+            }
+
+            var syncPointPath = Path.Combine(zipParentFolder, syncPoint.SyncPointId, Path.GetFileName(_zipFilePath));
+            _zipFilePath = syncPointPath; //we are updating the zip file path to the sync point specific one
+
+            foreach (var srcFilePath in allFiles)
+            {
+                var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
+
+                if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                    || relativePath.StartsWith("synclogs/", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
+
+                var relativeDestinationPath = $"{relativePath}@{syncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
+
+                if (existingEntry != null)
+                {
+                    //determine the path of the file in the zip archive.
+                    var spRelativeZipFile = existingEntry.RelativeRemotePath.Split("@")[1];
+                    var relativePathInZip = existingEntry.RelativeRemotePath.Split("@")[0];
+                    var spZipFile = Path.Combine(zipParentFolder, spRelativeZipFile);
+
+                    using var zip = new FileStream(spZipFile, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                    using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
+                    var entryPath = relativePathInZip.Replace("\\", "/");
+                    var zipEntry = archive.GetEntry(entryPath);
+
+                    if(zipEntry != null)
+                    {
+                        var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
+                        var entryLastWrite = DateTime.SpecifyKind(zipEntry.LastWriteTime.DateTime, DateTimeKind.Utc);
+                        srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                        entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                        var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
+
+                        if (secondsDifference > 2) // ZIP format is only precise to 2 seconds
+                        {
+                            syncPoint.AddEntry(srcFilePath, relativeDestinationPath);
+                            SynchronizeFile(srcFilePath, relativePath);
+                            continue;
+                        }
+                    } else
+                    {
+                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spZipFile}' for sync point '{syncPoint.SyncPointId}'.");
+                    }
+                }
+                else
+                {
+                    syncPoint.AddEntry(srcFilePath, relativeDestinationPath);
+                    SynchronizeFile(srcFilePath, relativePath);
+                }
+            }
+
+            syncPoint.Save(Path.Combine(zipParentFolder, syncPoint.SyncPointId, $"{syncPoint.SyncPointId}.syncpoint.json"));
+        }
+
+        private void ProcessStraightSync(string sourcePath, System.Collections.Generic.IEnumerable<string> allFiles)
+        {
             foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
@@ -154,6 +237,7 @@ namespace SyncToyNext.Core
                 SynchronizeFile(srcFilePath, relativePath);
             }
         }
+
         private static string ComputeSHA256(string filePath)
         {
             using var sha256 = System.Security.Cryptography.SHA256.Create();

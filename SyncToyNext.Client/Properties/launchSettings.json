@@ -1,7 +1,8 @@
 {
   "profiles": {
     "SyncToyNext.Client": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "--from C:/Temp/a --to C:/Temp/b/b.zip --syncpoint"
     }
   }
 }

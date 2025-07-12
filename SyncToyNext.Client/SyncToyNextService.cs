@@ -22,7 +22,7 @@ namespace SyncToyNext.Client
             // Try to get config from args if not set
             if (_configPath == null && args != null && args.Length > 0)
             {
-                var cmdArgs = new SyncToyNext.Client.CommandLineArguments(args);
+                var cmdArgs = new CommandLineArguments(args);
                 _configPath = cmdArgs.Get("config");
             }
             _syncContext = _configPath != null ? new SyncContext(_configPath) : new SyncContext();
