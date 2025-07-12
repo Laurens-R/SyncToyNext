@@ -124,6 +124,7 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
             Thread.Sleep(100); // Reduce CPU usage
         }
     });
+    
     keyThread.IsBackground = true;
     keyThread.Start();
 

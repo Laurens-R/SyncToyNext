@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug SyncToyNext.Client",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/SyncToyNext.Client/bin/Debug/net9.0/win-x64/SyncToyNext.Client.exe",
+      "args": ["--config", "${workspaceFolder}/SyncToyNext.test.config.json"],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false,
+      "preLaunchTask": "build-client"
+    }
+  ]
+}

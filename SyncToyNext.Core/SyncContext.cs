@@ -35,12 +35,8 @@ namespace SyncToyNext.Core
 
             // Validate all profiles before proceeding
             var idSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var profile in Configuration.Profiles)
-            {
-                ValidateProfile(idSet, profile);
-            }
 
-            // Check for clean shutdown marker
+            // Check for clean shutdown marker. Everything below this is to ensure a stable state before starting watchers.
             if (!SyncConfiguration.WasCleanShutdown())
             {
                 // Remove marker if present (corrupt/old)
@@ -48,7 +44,10 @@ namespace SyncToyNext.Core
                 // Perform a full sync for all profiles
                 foreach (var profile in Configuration.Profiles)
                 {
-                    InitializeProfile(strictMode, profile);
+                    if (ValidateProfile(idSet, profile))
+                    {
+                        InitializeProfile(strictMode, profile);
+                    }
                 }
             }
             // Remove marker so next run will require a clean shutdown again
@@ -71,32 +70,32 @@ namespace SyncToyNext.Core
             }
         }
 
-        private static void ValidateProfile(HashSet<string> idSet, SyncProfile profile)
+        private static bool ValidateProfile(HashSet<string> idSet, SyncProfile profile)
         {
             if (string.IsNullOrWhiteSpace(profile.Id))
             {
-                Console.WriteLine("Error: Each profile must have a non-empty 'Id'. Please correct your configuration.");
-                Environment.Exit(1);
+                Console.Error.WriteLine("Error: Each profile must have a non-empty 'Id'. Please correct your configuration.");
+                return false;
             }
             if (!idSet.Add(profile.Id))
             {
-                Console.WriteLine($"Error: Duplicate profile Id detected: '{profile.Id}'. Each profile Id must be unique.");
-                Environment.Exit(1);
+                Console.Error.WriteLine($"Error: Duplicate profile Id detected: '{profile.Id}'. Each profile Id must be unique.");
+                return false;
             }
             if (string.IsNullOrWhiteSpace(profile.SourcePath))
             {
-                Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'SourcePath'. Please correct your configuration.");
-                Environment.Exit(1);
+                Console.Error.WriteLine($"Error: Profile '{profile.Id}' is missing a 'SourcePath'. Please correct your configuration.");
+                return false;
             }
             if (string.IsNullOrWhiteSpace(profile.DestinationPath))
             {
-                Console.WriteLine($"Error: Profile '{profile.Id}' is missing a 'DestinationPath'. Please correct your configuration.");
-                Environment.Exit(1);
+                Console.Error.WriteLine($"Error: Profile '{profile.Id}' is missing a 'DestinationPath'. Please correct your configuration.");
+                return false;
             }
             if (!System.IO.Directory.Exists(profile.SourcePath))
             {
-                Console.WriteLine($"Error: SourcePath '{profile.SourcePath}' for profile '{profile.Id}' does not exist on the filesystem.");
-                Environment.Exit(1);
+                Console.Error.WriteLine($"Error: SourcePath '{profile.SourcePath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                return false;
             }
             // For DestinationPath, check directory or parent directory if destination is zip
             if (profile.DestinationIsZip)
@@ -104,18 +103,20 @@ namespace SyncToyNext.Core
                 var destDir = System.IO.Path.GetDirectoryName(profile.DestinationPath);
                 if (string.IsNullOrWhiteSpace(destDir) || !System.IO.Directory.Exists(destDir))
                 {
-                    Console.WriteLine($"Error: The parent directory for DestinationPath '{profile.DestinationPath}' (profile '{profile.Id}') does not exist.");
-                    Environment.Exit(1);
+                    Console.Error.WriteLine($"Error: The parent directory for DestinationPath '{profile.DestinationPath}' (profile '{profile.Id}') does not exist.");
+                    return false;
                 }
             }
             else
             {
                 if (!System.IO.Directory.Exists(profile.DestinationPath))
                 {
-                    Console.WriteLine($"Error: DestinationPath '{profile.DestinationPath}' for profile '{profile.Id}' does not exist on the filesystem.");
-                    Environment.Exit(1);
+                    Console.Error.WriteLine($"Error: DestinationPath '{profile.DestinationPath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                    return false;
                 }
             }
+
+            return true;
         }
 
         /// <summary>
@@ -126,16 +127,21 @@ namespace SyncToyNext.Core
             if (_isRunning) return;
             foreach (var profile in Configuration.Profiles)
             {
-                var watcher = new FileSyncWatcher(
-                    profile.SourcePath,
-                    profile.DestinationPath,
-                    profile.OverwriteOption,
-                    profile.DestinationIsZip,
-                    profile.SyncInterval,
-                    profile.Mode,
-                    _strictMode
-                );
-                _watchers.Add(watcher);
+                var idSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                if (ValidateProfile(idSet, profile))
+                {
+                    var watcher = new FileSyncWatcher(
+                        profile.SourcePath,
+                        profile.DestinationPath,
+                        profile.OverwriteOption,
+                        profile.DestinationIsZip,
+                        profile.SyncInterval,
+                        profile.Mode,
+                        _strictMode
+                    );
+                    _watchers.Add(watcher);
+                }
             }
             _isRunning = true;
         }
