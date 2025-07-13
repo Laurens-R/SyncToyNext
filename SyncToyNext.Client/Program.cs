@@ -176,6 +176,66 @@ static void RunRestoreSyncPoint(CommandLineArguments cmdArgs)
     SyncPointRestorer.Run(cmdArgs);
 }
 
+static void ConfigureRemote(CommandLineArguments cmdArgs)
+{
+    //get the current working directory
+    var workingDirectory = Environment.CurrentDirectory;
+
+    var remotePath = cmdArgs.Get("remote") ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(remotePath))
+    {
+        Console.Error.WriteLine("Error: --remote flag requires a remote path.");
+        Environment.Exit(1);
+    }
+
+    var remoteConfig = new RemoteConfig(remotePath, workingDirectory);
+    remoteConfig.Save(workingDirectory);
+}
+
+static void RunPushCommand(CommandLineArguments cmdArgs)
+{
+    try
+    {
+        var currentDirectory = Environment.CurrentDirectory;
+        var remoteConfig = RemoteConfig.Load(currentDirectory);
+        cmdArgs.Set("from", currentDirectory);
+        cmdArgs.Set("to", remoteConfig.RemotePath);
+        cmdArgs.Set("syncpoint", string.Empty);
+        RunManual(cmdArgs);
+
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error loading remote config. Make sure the remote has been configured before pushing.");
+    }
+}
+
+static void RunListSyncPoints()
+{
+    try
+    {
+        var currentDirectory = Environment.CurrentDirectory;
+        var remoteConfig = RemoteConfig.Load(currentDirectory);
+        var remotePath = remoteConfig.RemotePath;
+        var syncPointManager = new SyncPointManager(remotePath, currentDirectory);
+
+        var syncPoints = syncPointManager.SyncPoints;
+
+        Console.WriteLine("ID\t\t\t\tDescription");
+        Console.WriteLine("==\t\t\t\t===========");
+
+        foreach (var syncpoint in syncPoints)
+        {
+            Console.WriteLine($"{syncpoint.SyncPointId}\t\t\t\t\t{syncpoint.Description}");
+        }
+
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error loading remote config. Make sure the remote has been configured before listing syncpoints.");
+    }
+}
+
 static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
 {
     try
@@ -188,9 +248,21 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
         {
             RunManual(cmdArgs);
         }
-        else if (cmdArgs.Has("restore-syncpoint"))
+        else if (cmdArgs.Has("restore"))
         {
             RunRestoreSyncPoint(cmdArgs);
+        }
+        else if (cmdArgs.Has("remote"))
+        {
+            ConfigureRemote(cmdArgs);
+        }
+        else if (cmdArgs.Has("push"))
+        {
+            RunPushCommand(cmdArgs);
+        }
+        else if (cmdArgs.Has("list"))
+        {
+            RunListSyncPoints();
         }
         else
         {
@@ -203,3 +275,4 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
         Environment.Exit(1);
     }
 }
+

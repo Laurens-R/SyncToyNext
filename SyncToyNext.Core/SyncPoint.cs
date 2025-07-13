@@ -91,6 +91,8 @@ namespace SyncToyNext.Core
 
         public bool IsZipped => _isZipped;
 
+        public SyncPointRoot SyncPointRoot => _syncPointRoot ?? throw new InvalidOperationException("SyncPointRoot is not initialized.");
+
         public SyncPointManager(string path, string sourcePath = "")
         {
             if(Path.HasExtension(path) && Path.GetExtension(path).Equals(".zip", StringComparison.OrdinalIgnoreCase))

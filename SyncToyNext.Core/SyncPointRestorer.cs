@@ -12,7 +12,7 @@ namespace SyncToyNext.Core
     {
         public static void Run(CommandLineArguments cmdArgs)
         {
-            var syncPointID = cmdArgs.Get("restore-syncpoint");
+            var syncPointID = cmdArgs.Get("restore");
             var fromPath = cmdArgs.Get("from");
 
             if (string.IsNullOrWhiteSpace(syncPointID) || string.IsNullOrWhiteSpace(fromPath))
@@ -31,7 +31,21 @@ namespace SyncToyNext.Core
 
             SyncPointManager syncPointManager = new SyncPointManager(fromPath);
 
-            var syncPoint = syncPointManager.GetSyncPoint(syncPointID);
+            SyncPoint? syncPoint = null;
+
+            if (syncPointID == "latest")
+            {
+                if(syncPointManager.SyncPoints.Count == 0)
+                {
+                    throw new InvalidOperationException("There are no syncpoints in the remote location");
+                }
+
+                syncPoint = syncPointManager.SyncPoints.First();
+            }
+            else
+            {
+                syncPoint = syncPointManager.GetSyncPoint(syncPointID);
+            }
 
             if(syncPoint == null)
             {
@@ -40,9 +54,12 @@ namespace SyncToyNext.Core
 
             bool isZipped = syncPointManager.IsZipped;
 
-            var allFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncPointID);
-            
-            foreach(var file in allFiles)
+            var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncPointID);
+            var allFilesInRestoreLocation = Directory.GetFiles(syncPointManager.SyncPointRoot.SourceLocation, "*", SearchOption.AllDirectories)
+                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase));
+
+            foreach (var file in allSyncPointFiles)
             {
                 var restorePath = file.SourcePath;
 
@@ -68,6 +85,24 @@ namespace SyncToyNext.Core
                         throw new InvalidOperationException($"The zip entry '{entryPath}' does not exist in the zip file '{zipFile}'.");
                     }
 
+                    var existingFileInfo = new FileInfo(restorePath);
+
+                    var srcLastWrite = File.GetLastWriteTimeUtc(restorePath);
+                    var entryLastWrite = DateTime.SpecifyKind(zipEntry.LastWriteTime.DateTime, DateTimeKind.Utc);
+                    srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                    entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                    var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
+
+                    if(File.Exists(restorePath))
+                    {
+                        bool sameSize = existingFileInfo.Length == zipEntry.Length;
+                        if(secondsDifference > 2 && sameSize)
+                        {
+                            continue;
+                        }
+                    }
+
+                    Console.WriteLine($"Restoring file from zip: {restorePath}");
                     zipEntry.ExtractToFile(restorePath, true);
                 }
                 else
@@ -87,10 +122,42 @@ namespace SyncToyNext.Core
                         Directory.CreateDirectory(restoreDirectory);
                     }
 
+                    if(File.Exists(restorePath))
+                    {
+                        //compare dates between the existing file and the sync point file
+                        var existingFileInfo = new FileInfo(restorePath);
+                        var syncPointFileInfo = new FileInfo(syncPointPath);
+                        bool sameSize = existingFileInfo.Length == syncPointFileInfo.Length;
+
+                        if (existingFileInfo.LastAccessTimeUtc == syncPointFileInfo.LastWriteTimeUtc && sameSize)
+                        {
+                            continue;
+                        }
+                    }
+
+                    Console.WriteLine($"Restoring file: {restorePath}");
                     File.Copy(syncPointPath, restorePath, true);
                 }
             }
 
+            // after restoring files to the proper version, we also need to remove any files that were not part of the sync point
+            foreach (var file in allFilesInRestoreLocation)
+            {
+                var foundFile = allSyncPointFiles.FirstOrDefault(f => f.SourcePath == file);
+                if (foundFile == null)
+                {
+                    // this file was not part of the sync point, so we can remove it
+                    try
+                    {
+                        Console.WriteLine($"Removing file not part of sync point: {file}");
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error removing file '{file}': {ex.Message}");
+                    }
+                }
+            }
         }
     }
 }

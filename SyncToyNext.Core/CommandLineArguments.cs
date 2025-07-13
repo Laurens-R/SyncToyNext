@@ -46,6 +46,15 @@ namespace SyncToyNext.Core
         /// Checks if a flag/parameter is present.
         /// </summary>
         public bool Has(string key) => _args.ContainsKey(key);
+
+        public void Set(string key, string value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new ArgumentException("Key cannot be null or whitespace.", nameof(key));
+            }
+            _args[key] = value;
+        }
     }
 
 }
