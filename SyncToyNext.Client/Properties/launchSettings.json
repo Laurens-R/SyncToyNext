@@ -2,7 +2,8 @@
   "profiles": {
     "SyncToyNext.Client": {
       "commandName": "Project",
-      "commandLineArgs": "--from C:/Temp/a --to C:/Temp/b/b.zip --syncpoint"
+      "commandLineArgs": "--restore",
+      "workingDirectory": "C:\\Temp\\a"
     }
   }
 }

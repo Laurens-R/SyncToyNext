@@ -26,9 +26,12 @@ namespace SyncToyNext.Core
     {
         public string RemotePath { get; set; } = string.Empty;
 
+        public RemoteConfig() { }
+
         public RemoteConfig(string remotePath, string sourcePath)
         {
             var syncPointManager = new SyncPointManager(remotePath, sourcePath);
+            RemotePath = remotePath;
         }
 
         public void Save(string filePath)
@@ -55,8 +58,8 @@ namespace SyncToyNext.Core
                 throw new FileNotFoundException($"The configuration file '{configFile}' does not exist.");
             }
 
-            var json = File.ReadAllText(filePath, Encoding.UTF8);
-            return JsonSerializer.Deserialize<RemoteConfig>(json, RemoteConfigJsonContext.Default.RemoteConfig)!;
+            var json = File.ReadAllText(configFile, Encoding.UTF8);
+            return JsonSerializer.Deserialize(json, RemoteConfigJsonContext.Default.RemoteConfig) ?? new RemoteConfig(string.Empty, string.Empty);
         }
     }
 }

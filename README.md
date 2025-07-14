@@ -9,10 +9,12 @@ SyncToyNext is a flexible, cross-platform file and folder synchronization tool f
 ## Features
 - Synchronize files and folders between any two locations (including network shares)
 - Supports recursive sync, folder structure preservation, and all file types
-- Configurable overwrite behavior: Never, Only if newer, or Always
+- Configurable overwrite behavior: Only if newer, or Always
 - Sync to regular folders or directly into zip archives
 - Watch for changes and auto-sync using FileSystemWatcher
 - Manual sync trigger for any profile or arbitrary source/destination
+- Remote configuration and push/pull workflows for backup/restore
+- Sync points for versioned backups and restoration
 - JSON-based configuration with support for multiple sync profiles
 - Centralized logging to both file and console
 - Runs as a console app or Windows service
@@ -26,41 +28,44 @@ SyncToyNext is a flexible, cross-platform file and folder synchronization tool f
 
 ### Building the Project
 
-Open a terminal in the project root and run:
-
-```
-dotnet build SyncToyNext.slnx
-```
-
+Open a terminal in the project root and run:dotnet build SyncToyNext.slnx
 ### Publishing a Standalone Executable
 
-To create a single-file, self-contained executable (no .NET runtime required):
+To create a single-file, self-contained executable (no .NET runtime required):dotnet publish SyncToyNext.Client -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publishThe executable will be in the `./publish/` directory, named `stn.exe`.
 
-```
-dotnet publish SyncToyNext.Client -c Release
-```
+## Usage Overview
 
-The executable will be in:
-```
-SyncToyNext.Client/bin/Release/net9.0/win-x64/publish/
-```
+SyncToyNext is designed to be run as a standalone executable (`stn.exe`). All examples below assume you are running the published executable from your terminal or command prompt.
 
-### Running the Console Application
+SyncToyNext can be run in several modes:
+- **Profile Mode:** Syncs all profiles from a config file (default)
+- **Manual Mode:** Syncs between any two locations on demand
+- **Remote/Push Mode:** Set a remote for a folder and push to it
+- **Sync Point Restore:** Restore a folder to a previous sync point
 
-```
-dotnet run --project SyncToyNext.Client [--config <configfile.json>] [--service]
-```
-Or, if using the published standalone executable:
-```
-SyncToyNext.Client.exe [--config <configfile.json>] [--service]
-```
+### Command Line Arguments
 
-#### Command Line Arguments
 - `--config <file>`: Path to a custom JSON configuration file. If omitted, the default config in the application directory is used.
 - `--service`: Run as a Windows service (Windows only). If omitted, runs as a console app.
 - `--strict`: Enable strict file integrity checking (SHA-256 hash comparison).
-- `--recover`: Force a full sync on startup, as if the previous shutdown was unclean (useful for recovery or manual override).
+- `--recover`: Force a full sync on startup, as if the previous shutdown was unclean.
+- `--profile <name>`: Run a manual sync for a specific profile by name.
+- `--from <source>` --to <dest> [--syncpoint]: Manually sync from source to destination. Optionally create a sync point.
+- `--remote <remotepath>`: Set the remote location for the current directory (creates `stn.remote.json`).
+- `--push`: Push the current directory to its configured remote (uses `stn.remote.json`).
+- `--list`: List all sync points available in the configured remote.
+- `--restore <syncpointid>` --from <remote>: Restore the current directory to a previous sync point from the remote.
 
+#### Examples
+
+**Run all profiles from config:**stn.exe --config myconfig.json
+**Manual sync between two folders:**stn.exe --from C:/Data --to D:/Backup
+**Manual sync to a zip file:**stn.exe --from C:/Data --to D:/Backup.zip
+**Create a sync point during manual sync:**stn.exe --from C:/Data --to D:/Backup --syncpoint --syncid mypoint --syncdesc "Before major update"
+**Set a remote for the current directory:**stn.exe --remote "/mnt/backupdrive/myproject"
+**Push the current directory to its remote:**stn.exe --push
+**List sync points in the remote:**stn.exe --list
+**Restore a folder to a previous sync point:**stn.exe --restore <syncpointid> --from /mnt/backupdrive/myproject
 ### Service Coordination (Windows)
 
 When running the tool manually from the command line on Windows, SyncToyNext will automatically check if the SyncToyNext Windows service is running. If it is, the service will be gracefully stopped before the manual sync begins. If the service cannot be stopped, the application will exit to prevent conflicting sync actions. After the manual sync completes, the service will be restarted if it was running before.
@@ -70,63 +75,37 @@ When running the tool manually from the command line on Windows, SyncToyNext wil
 
 ### Running as a Windows Service
 1. Build and publish the project as above.
-2. Install the service using standard Windows service management tools (e.g., `sc.exe create SyncToyNext binPath= "C:\Path\To\SyncToyNext.Client.exe --service [--config <configfile.json>]"` or PowerShell).
+2. Install the service using standard Windows service management tools (e.g., `sc.exe create SyncToyNext binPath= "C:\Path\To\stn.exe --service [--config <configfile.json>]"` or PowerShell).
 3. Start the service from the Services control panel or with `sc start SyncToyNext`.
 
 ### Running as a Linux Systemd Service
 
-1. Publish the app as a self-contained executable for Linux:
+1. Publish the app as a self-contained executable for Linux:dotnet publish SyncToyNext.Client -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish2. Copy the published files to your target Linux machine, e.g. `/opt/synctoynext/`.
 
-```
-dotnet publish SyncToyNext.Client -c Release -r linux-x64 --self-contained true
-```
-
-2. Copy the published files to your target Linux machine, e.g. `/opt/synctoynext/`.
-
-3. Create a systemd service file, e.g. `/etc/systemd/system/synctoynext.service`:
-
-```
-[Unit]
+3. Create a systemd service file, e.g. `/etc/systemd/system/synctoynext.service`:[Unit]
 Description=SyncToyNext File Synchronization Service
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/synctoynext/SyncToyNext.Client --config /opt/synctoynext/SyncToyNext.config.json
+ExecStart=/opt/synctoynext/stn --config /opt/synctoynext/SyncToyNext.config.json
 WorkingDirectory=/opt/synctoynext/
 Restart=on-failure
 User=synctoynext
 
 [Install]
-WantedBy=multi-user.target
-```
-
-4. Reload systemd and enable/start the service:
-
-```
-sudo systemctl daemon-reload
+WantedBy=multi-user.target4. Reload systemd and enable/start the service:sudo systemctl daemon-reload
 sudo systemctl enable synctoynext
-sudo systemctl start synctoynext
-```
-
-- The service will now run in the background and start automatically on boot.
+sudo systemctl start synctoynext- The service will now run in the background and start automatically on boot.
 - Logs can be viewed with `journalctl -u synctoynext`.
 
 ### Running as a macOS Launchd Service
 
-1. Publish the app as a self-contained executable for macOS:
-
-```
-dotnet publish SyncToyNext.Client -c Release -r osx-x64 --self-contained true
-```
-(or use `osx-arm64` for Apple Silicon)
+1. Publish the app as a self-contained executable for macOS:dotnet publish SyncToyNext.Client -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish(or use `osx-arm64` for Apple Silicon)
 
 2. Copy the published files to your target Mac, e.g. `/usr/local/synctoynext/`.
 
-3. Create a launchd plist file, e.g. `/Library/LaunchDaemons/com.synctoynext.service.plist`:
-
-```
-<?xml version="1.0" encoding="UTF-8"?>
+3. Create a launchd plist file, e.g. `/Library/LaunchDaemons/com.synctoynext.service.plist`:<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -134,7 +113,7 @@ dotnet publish SyncToyNext.Client -c Release -r osx-x64 --self-contained true
     <string>com.synctoynext.service</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/synctoynext/SyncToyNext.Client</string>
+        <string>/usr/local/synctoynext/stn</string>
         <string>--config</string>
         <string>/usr/local/synctoynext/SyncToyNext.config.json</string>
     </array>
@@ -149,41 +128,20 @@ dotnet publish SyncToyNext.Client -c Release -r osx-x64 --self-contained true
     <key>StandardErrorPath</key>
     <string>/usr/local/synctoynext/synctoynext.err.log</string>
 </dict>
-</plist>
-```
-
-4. Load and start the service:
-
-```
-sudo launchctl load /Library/LaunchDaemons/com.synctoynext.service.plist
-sudo launchctl start com.synctoynext.service
-```
-
-- The service will now run in the background and start automatically on boot.
+</plist>4. Load and start the service:sudo launchctl load /Library/LaunchDaemons/com.synctoynext.service.plist
+sudo launchctl start com.synctoynext.service- The service will now run in the background and start automatically on boot.
 - Logs can be viewed in the specified log files.
 
 ### Running with Docker
 
 You can run SyncToyNext as a Docker container on Linux. This is useful for server or NAS environments.
 
-#### Build the Docker image
+#### Build the Docker imagedocker build -t synctoynext .#### Run the container
 
-```
-docker build -t synctoynext .
-```
-
-#### Run the container
-
-Mount a host directory for configuration and data:
-
-```
-docker run --rm -v /path/to/config:/data \
+Mount a host directory for configuration and data:docker run --rm -v /path/to/config:/data \
   -v /path/to/source:/source \
   -v /path/to/destination:/destination \
-  synctoynext --config /data/SyncToyNext.config.json
-```
-
-- Replace `/path/to/config`, `/path/to/source`, and `/path/to/destination` with your actual host paths.
+  synctoynext --config /data/SyncToyNext.config.json- Replace `/path/to/config`, `/path/to/source`, and `/path/to/destination` with your actual host paths.
 - The `--config` argument should point to the config file inside the container (e.g., `/data/SyncToyNext.config.json`).
 - You can mount as many volumes as needed for your sync profiles.
 
@@ -196,7 +154,6 @@ docker run --rm -v /path/to/config:/data \
 
 The configuration is stored in a JSON file (default: `SyncToyNext.config.json` in the app directory). It contains an array of sync profiles. Example:
 
-```json
 {
   "Profiles": [
     {
@@ -233,16 +190,6 @@ The configuration is stored in a JSON file (default: `SyncToyNext.config.json` i
     }
   ]
 }
-```
-
-- `Id`: Unique name for the sync profile
-- `SourcePath`: Path to the source directory
-- `DestinationPath`: Path to the destination directory or zip file
-- `DestinationIsZip`: Set to `true` to sync into a zip file, `false` for a regular folder
-- `SyncInterval`: When to synchronize this profile. See below for options.
-- `OverwriteOption`: Controls when files in the destination are overwritten. Options:
-  - `OnlyOverwriteIfNewer` (default): Only overwrite if the source file is newer, or if file size/hash differs (see strict mode).
-  - `AlwaysOverwrite`: Always overwrite the destination file, regardless of timestamps, size, or hash.
 
 #### OverwriteOption Details
 
@@ -271,23 +218,6 @@ The configuration is stored in a JSON file (default: `SyncToyNext.config.json` i
 
 Choose the interval that best fits your use case. For example, use `Realtime` for fast mirroring, or `AtShutdown` for batch-style syncs at the end of a session.
 
-```jsonc
-{
-  "Profiles": [
-    {
-      "Id": "DocumentsBackup",
-      "SourcePath": "C:/Users/John/Documents",
-      "DestinationPath": "D:/Backups/Documents.zip",
-      "DestinationIsZip": true,
-      "SyncInterval": "Realtime",
-      "OverwriteOption": "OnlyOverwriteIfNewer"
-    },
-    // ... more profiles ...
-  ]
-}
-```
-
-
 #### Profile Options
 
 - `Id` (string, required): Unique name for the sync profile.
@@ -313,19 +243,6 @@ Choose the interval that best fits your use case. For example, use `Realtime` fo
 - **Log file exclusion:** All log files are written to a dedicated `synclogs` subfolder next to your config or source directory, and are automatically excluded from sync operations to prevent sync loops.
 - **Service/CLI coordination:** On Windows, running the CLI will pause the service to prevent conflicts, and resume it after manual sync completes.
 - **Graceful shutdown:** The app ensures all sync operations and file watchers are stopped cleanly on exit (including Ctrl+C or `q` in console mode).
-
-#### Profile Validation
-
-- Each profile must have a non-empty `Id`, `SourcePath`, and `DestinationPath`.
-- All `Id` values must be unique.
-- `SourcePath` must exist as a directory.
-- `DestinationPath` must exist as a directory (or, for zip destinations, its parent directory must exist).
-- If any of these checks fail, the application will exit with a clear error message explaining what needs to be corrected.
-
-#### Missing Config File
-
-- If no config file is provided and none is found at the default location, the application will print a helpful error and exit.
-
 
 ## Troubleshooting
 

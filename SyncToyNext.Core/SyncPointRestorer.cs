@@ -13,34 +13,62 @@ namespace SyncToyNext.Core
         public static void Run(CommandLineArguments cmdArgs)
         {
             var syncPointID = cmdArgs.Get("restore");
-            var fromPath = cmdArgs.Get("from");
+            var fromPath = string.Empty;
 
-            if (string.IsNullOrWhiteSpace(syncPointID) || string.IsNullOrWhiteSpace(fromPath))
+            bool hasManualFrom = cmdArgs.Has("from");
+            if (hasManualFrom)
             {
-                throw new InvalidOperationException("No values provided for sync point and from- location");
+                fromPath = cmdArgs.Get("from");
+            } else
+            {
+                //we need to get the from path from the remote config file
+                var currentDirectory = Environment.CurrentDirectory;
+                var config = RemoteConfig.Load(currentDirectory);
+                fromPath = config.RemotePath;
             }
 
-            if (!Path.Exists(fromPath))
+            bool pathIsZipped = Path.HasExtension(fromPath) && Path.GetExtension(fromPath).Equals(".zip", StringComparison.OrdinalIgnoreCase);
+            string? fromDirectory = string.Empty;
+            if(pathIsZipped)
             {
-                throw new InvalidOperationException($"The provided path '{fromPath}' does not exist.");
+                fromDirectory = Path.GetDirectoryName(fromPath);
+                if(string.IsNullOrWhiteSpace(fromDirectory))
+                {
+                    throw new InvalidOperationException("The provided path is a zip file, but no directory could be determined from it.");
+                }
+            } else
+            {
+                fromDirectory = fromPath;
             }
 
-            if (!Path.Exists(Path.Combine(fromPath, "syncpointroot.json" ))) {
-                throw new InvalidOperationException($"The provided path '{fromPath}' does not contain a valid sync point root file.");
+            if(string.IsNullOrWhiteSpace(fromDirectory) || string.IsNullOrWhiteSpace(fromPath))
+            {
+                throw new InvalidOperationException("The provided path is invalid or empty.");
+            }
+
+            if (!Path.Exists(fromDirectory) && !Path.Exists(fromPath))
+            {
+                throw new InvalidOperationException($"The provided path '{fromDirectory}' does not exist.");
+            }
+
+            if (!Path.Exists(Path.Combine(fromDirectory, "syncpointroot.json" ))) {
+                throw new InvalidOperationException($"The provided path '{fromDirectory}' does not contain a valid sync point root file.");
             }
 
             SyncPointManager syncPointManager = new SyncPointManager(fromPath);
 
             SyncPoint? syncPoint = null;
 
-            if (syncPointID == "latest")
+            if (String.IsNullOrWhiteSpace(syncPointID) || syncPointID == "latest")
             {
-                if(syncPointManager.SyncPoints.Count == 0)
+                // if no sync point ID is provided, we will try to restore the latest sync point
+                if (syncPointManager.SyncPoints.Count == 0)
                 {
                     throw new InvalidOperationException("There are no syncpoints in the remote location");
                 }
 
                 syncPoint = syncPointManager.SyncPoints.First();
+                syncPointID = syncPoint.SyncPointId;
             }
             else
             {
@@ -66,9 +94,10 @@ namespace SyncToyNext.Core
                 if (isZipped)
                 {
                     var zipFile = file.RelativeRemotePath.Split("@")[1];
+                    var fullZipPath = Path.Combine(fromDirectory, zipFile);
                     var relativeEntry = file.RelativeRemotePath.Split("@")[0];
 
-                    using var zip = new FileStream(zipFile, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                    using var zip = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
                     using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
                     var entryPath = relativeEntry.Replace("\\", "/");
                     var zipEntry = archive.GetEntry(entryPath);
@@ -83,20 +112,20 @@ namespace SyncToyNext.Core
                     if (zipEntry == null)
                     {
                         throw new InvalidOperationException($"The zip entry '{entryPath}' does not exist in the zip file '{zipFile}'.");
-                    }
-
-                    var existingFileInfo = new FileInfo(restorePath);
-
-                    var srcLastWrite = File.GetLastWriteTimeUtc(restorePath);
-                    var entryLastWrite = DateTime.SpecifyKind(zipEntry.LastWriteTime.DateTime, DateTimeKind.Utc);
-                    srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
-                    entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
-                    var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
+                    }        
 
                     if(File.Exists(restorePath))
                     {
+                        var existingFileInfo = new FileInfo(restorePath);
+
+                        var srcLastWrite = File.GetLastWriteTimeUtc(restorePath);
+                        var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime;
+                        srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                        entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
+                        var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
+
                         bool sameSize = existingFileInfo.Length == zipEntry.Length;
-                        if(secondsDifference > 2 && sameSize)
+                        if(secondsDifference < 2 && sameSize)
                         {
                             continue;
                         }
@@ -144,7 +173,7 @@ namespace SyncToyNext.Core
             foreach (var file in allFilesInRestoreLocation)
             {
                 var foundFile = allSyncPointFiles.FirstOrDefault(f => f.SourcePath == file);
-                if (foundFile == null)
+                if (foundFile == null && !Path.GetFileName(file).Equals("stn.remote.json", StringComparison.OrdinalIgnoreCase))
                 {
                     // this file was not part of the sync point, so we can remove it
                     try
@@ -158,6 +187,8 @@ namespace SyncToyNext.Core
                     }
                 }
             }
+
+            Console.WriteLine($"Restoration of sync point '{syncPointID}' completed successfully.");
         }
     }
 }

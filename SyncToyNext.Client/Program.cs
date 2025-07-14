@@ -4,12 +4,6 @@ using System.Reflection;
 using System;
 using System.Threading;
 
-#if WINDOWS
-using System.Runtime.InteropServices;
-using SyncToyNext.Client;
-using System.ServiceProcess;
-#endif
-
 // Print banner with version
 PrintBanner();
 
@@ -19,71 +13,7 @@ bool isService = cmdArgs.Has("service");
 bool strictMode = cmdArgs.Has("strict");
 bool forceFullSync = cmdArgs.Has("recover");
 
-
-#if WINDOWS
-string? configPath = cmdArgs.Get("config");
-if (isService && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-{
-    // Windows service mode
-    var service = new SyncToyNextService(configPath);
-    System.ServiceProcess.ServiceBase.Run(service);
-    return;
-}
-
-// Service shutdown logic should happen here, before any sync logic to ensure
-// that the service is not running while we perform sync operations.
-// This prevents conflicts with the service's own sync operations.
-ServiceController? synctoyService = null;
-bool wasServiceRunning = false;
-if (!isService)
-{
-    try
-    {
-        synctoyService = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName.Equals("SyncToyNext", StringComparison.OrdinalIgnoreCase));
-        if (synctoyService != null && synctoyService.Status == ServiceControllerStatus.Running)
-        {
-            wasServiceRunning = true;
-            Console.WriteLine("Stopping SyncToyNext service...");
-            synctoyService.Stop();
-            synctoyService.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
-            Console.WriteLine("SyncToyNext service stopped.");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error: Could not check/stop SyncToyNext service: {ex.Message}");
-        Console.WriteLine("Exiting to prevent conflicting sync actions.");
-        Environment.Exit(1);
-    }
-    // If the service is still running after the attempt, exit
-    if (synctoyService != null && synctoyService.Status == ServiceControllerStatus.Running)
-    {
-        Console.WriteLine("Error: SyncToyNext service is still running and could not be stopped. Exiting to prevent conflicts.");
-        Environment.Exit(1);
-    }
-}
-#endif
-
 MainProgramEntry(cmdArgs, strictMode, forceFullSync);
-
-// If running as a service, restart the service if it was running before
-// This to ensure that the service doesn't conflict with the console app
-#if WINDOWS
-if (!isService && wasServiceRunning && synctoyService != null)
-{
-    try
-    {
-        Console.WriteLine("Restarting SyncToyNext service...");
-        synctoyService.Start();
-        synctoyService.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-        Console.WriteLine("SyncToyNext service restarted.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Warning: Could not restart SyncToyNext service: {ex.Message}");
-    }
-}
-#endif
 
 void PrintBanner()
 {
@@ -210,6 +140,19 @@ static void RunPushCommand(CommandLineArguments cmdArgs)
     }
 }
 
+static void Print(string message, int columnWidth = 50)
+{
+    if (message.Length > columnWidth)
+    {
+        message = message.Substring(0, columnWidth - 3) + "...";
+    }
+    Console.Write($"{message}");
+    for(int i = message.Length; i < columnWidth; i++)
+    {
+        Console.Write(" ");
+    }
+}
+
 static void RunListSyncPoints()
 {
     try
@@ -221,12 +164,25 @@ static void RunListSyncPoints()
 
         var syncPoints = syncPointManager.SyncPoints;
 
-        Console.WriteLine("ID\t\t\t\tDescription");
-        Console.WriteLine("==\t\t\t\t===========");
+        const int IDColumnWidth = 20;
+        const int DescriptionColumnWidth = 50;
+
+        Print("ID", IDColumnWidth);
+        Print("Description", DescriptionColumnWidth);
+        Console.WriteLine();
+        Print("--", IDColumnWidth);
+        Print("-----------", DescriptionColumnWidth);
+        Console.WriteLine();
+
+        const string NodeDescription = "(none provided)";
 
         foreach (var syncpoint in syncPoints)
         {
-            Console.WriteLine($"{syncpoint.SyncPointId}\t\t\t\t\t{syncpoint.Description}");
+            var description = !String.IsNullOrWhiteSpace(syncpoint.Description) ? syncpoint.Description : NodeDescription;
+
+            Print(syncpoint.SyncPointId, IDColumnWidth);
+            Print(description, DescriptionColumnWidth);
+            Console.WriteLine();
         }
 
     }
