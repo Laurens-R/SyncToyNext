@@ -204,7 +204,7 @@ static void RunPushCommand(CommandLineArguments cmdArgs)
         RunManual(cmdArgs);
 
     }
-    catch (Exception ex)
+    catch (Exception)
     {
         Console.Error.WriteLine($"Error loading remote config. Make sure the remote has been configured before pushing.");
     }
@@ -230,7 +230,7 @@ static void RunListSyncPoints()
         }
 
     }
-    catch (Exception ex)
+    catch (Exception)
     {
         Console.Error.WriteLine($"Error loading remote config. Make sure the remote has been configured before listing syncpoints.");
     }
