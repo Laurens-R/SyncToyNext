@@ -141,12 +141,9 @@ namespace SyncToyNext.Core
 
             // Exclude 'synclogs' subfolder from sync
             var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
-                .Where(f =>
-                {
-                    var rel = Path.GetRelativePath(sourcePath, f);
-                    return !rel.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-                        && !rel.StartsWith("synclogs/", StringComparison.OrdinalIgnoreCase);
-                });
+                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase)
+                        && !Path.GetFileName(f).Equals("stn.remote.json", StringComparison.OrdinalIgnoreCase));
 
             if (syncPoint != null && syncPointManager != null)
             {
@@ -176,10 +173,6 @@ namespace SyncToyNext.Core
             foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
-
-                if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-                    || relativePath.StartsWith("synclogs/", StringComparison.OrdinalIgnoreCase))
-                    continue;
 
                 var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
 
