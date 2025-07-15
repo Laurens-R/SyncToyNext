@@ -3,6 +3,7 @@ using SyncToyNext.Client; // For VersionUtil
 using System.Reflection;
 using System;
 using System.Threading;
+using System.IO;
 
 // Print banner with version
 PrintBanner();
@@ -126,8 +127,22 @@ static void RunPushCommand(CommandLineArguments cmdArgs)
 {
     try
     {
-        var currentDirectory = Environment.CurrentDirectory;
+        string currentDirectory = Environment.CurrentDirectory;
         var remoteConfig = RemoteConfig.Load(currentDirectory);
+        var remotePath = string.Empty;
+
+        while(remoteConfig == null)
+        {
+            var parentDirectoryInfo = Directory.GetParent(currentDirectory);
+            if(parentDirectoryInfo ==  null)
+            {
+                currentDirectory = Environment.CurrentDirectory;
+                break;
+            }
+
+            currentDirectory = parentDirectoryInfo.FullName;
+            remoteConfig = RemoteConfig.Load(currentDirectory);
+        }
 
         if (remoteConfig == null)
         {

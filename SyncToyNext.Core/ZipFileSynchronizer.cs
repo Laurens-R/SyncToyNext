@@ -156,7 +156,7 @@ namespace SyncToyNext.Core
             }
         }
 
-        private void ProcessSyncPoint(string sourcePath, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
+        private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
         {
             var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
@@ -173,9 +173,9 @@ namespace SyncToyNext.Core
 
             foreach (var srcFilePath in allFiles)
             {
-                var relativeSourcePath = Path.GetRelativePath(sourcePath, srcFilePath);
+                var relativeSourcePath = Path.GetRelativePath(sourceDirectory, srcFilePath);
 
-                var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
+                var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(relativeSourcePath, StringComparison.OrdinalIgnoreCase));
 
                 var relativeDestinationPath = $"{relativeSourcePath}@{newSyncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
 
@@ -204,7 +204,11 @@ namespace SyncToyNext.Core
                         var sourceFileInfo = new FileInfo(srcFilePath);
 
                         var srcLastWrite = sourceFileInfo.LastWriteTimeUtc;
-                        var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime;
+
+                        //this thing is acting strangely... maybe we need to support both scenarios
+                        //with straight UtcTimeDate and the Kind thing.
+                        var entryLastWrite = zipEntry.LastWriteTime.DateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
+
                         srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
@@ -230,15 +234,15 @@ namespace SyncToyNext.Core
             // Now we need to check for files that were deleted since the last sync point
             foreach (var entry in allFilesPartOfSyncPoint)
             {
-                var srcFilePath = entry.SourcePath;
+                var relativeSourcePath = entry.SourcePath;
                 var relativePath = entry.RelativeRemotePath;
                 // If the file no longer exists in the source, mark it as deleted
 
-                var sourceFileEntry = allFiles.FirstOrDefault(f => f.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
+                var sourceFileEntry = allFiles.FirstOrDefault(f => f.Equals(Path.Combine(sourceDirectory, relativeSourcePath), StringComparison.OrdinalIgnoreCase));
 
                 if (string.IsNullOrEmpty(sourceFileEntry))
                 {
-                    newSyncPoint.AddEntry(srcFilePath, relativePath, SyncPointEntryType.Deleted);
+                    newSyncPoint.AddEntry(relativeSourcePath, relativePath, SyncPointEntryType.Deleted);
                 }
             }
 
