@@ -128,6 +128,7 @@ namespace SyncToyNext.Core
                 if(string.IsNullOrEmpty(sourceFileEntry))
                 {
                     newSyncPoint.AddEntry(relativeSourcePath, relativePath, SyncPointEntryType.Deleted);
+                    Console.WriteLine($"File '{relativeSourcePath}' marked as deleted in sync point '{newSyncPoint.SyncPointId}'.");
                 }
             }
 
