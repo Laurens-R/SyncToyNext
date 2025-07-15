@@ -224,15 +224,16 @@ namespace SyncToyNext.Core
 
         public List<SyncPointEntry> GetFileEntriesAtSyncpoint(string syncPointID)
         {
-            var syncPoint = GetSyncPoint(syncPointID);
+            var requestedSyncPoint = GetSyncPoint(syncPointID);
             
-            if (syncPoint == null)
+            if (requestedSyncPoint == null)
                 throw new InvalidOperationException($"SyncPoint with ID '{syncPointID}' not found.");
 
-            var previousSyncPoints = _syncPoints.Where(sp => sp.LastSyncTime < syncPoint.LastSyncTime)
-                                                .OrderBy(sp => sp.LastSyncTime)
-                                                .ToList();         
-
+            var allRelevantSyncPoints = _syncPoints.Where(sp => sp.LastSyncTime < requestedSyncPoint.LastSyncTime)
+                                                .OrderByDescending(sp => sp.LastSyncTime)
+                                                .ToList();
+            
+            allRelevantSyncPoints.Insert(0, requestedSyncPoint);
 
             var result = new List<SyncPointEntry>();
 
@@ -240,13 +241,14 @@ namespace SyncToyNext.Core
             //and combining their entries (this is needed because the various syncpoints are incremental and only contain the files that were changed since the last sync)
 
             //because we sorted the sync points by LastSyncTime, we can safely assume that all previous sync points are older than the current one
-            foreach (var previousSyncPoint in previousSyncPoints)
-            {
-                foreach (var entry in previousSyncPoint.Entries)
-                {
-                    SyncPointEntry? existingEntry = syncPoint.Entries.FirstOrDefault(e => e.SourcePath.Equals(entry.SourcePath, StringComparison.OrdinalIgnoreCase));
 
-                    if(existingEntry == null)
+            HashSet<string> includedRestoreTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var syncPoint in allRelevantSyncPoints)
+            {
+                foreach (var entry in syncPoint.Entries)
+                {
+                    if(!includedRestoreTargets.Contains(entry.SourcePath))
                     {
                         //if the entry does not exist in the current sync point, we add it
                         result.Add(new SyncPointEntry
@@ -255,6 +257,7 @@ namespace SyncToyNext.Core
                             RelativeRemotePath = Path.Combine(entry.RelativeRemotePath),
                             EntryType = entry.EntryType
                         });
+                        includedRestoreTargets.Add(entry.SourcePath);
                     }
                 }
             }

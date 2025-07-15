@@ -2,7 +2,7 @@
   "profiles": {
     "SyncToyNext.Client": {
       "commandName": "Project",
-      "commandLineArgs": "--push",
+      "commandLineArgs": "--restore 20250715134716UTC",
       "workingDirectory": "C:\\Temp\\a"
     }
   }
