@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Xml.Schema;
 
 namespace SyncToyNext.Core
 {
@@ -155,9 +156,9 @@ namespace SyncToyNext.Core
             }
         }
 
-        private void ProcessSyncPoint(string sourcePath, SyncPoint syncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
+        private void ProcessSyncPoint(string sourcePath, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
         {
-            var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(syncPoint.SyncPointId);
+            var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
             //update zip path according to sync point
             var zipParentFolder = Path.GetDirectoryName(_zipFilePath);
@@ -167,7 +168,7 @@ namespace SyncToyNext.Core
                 throw new InvalidOperationException("Couldn't resolve parent folder of zip file.");
             }
 
-            var syncPointPath = Path.Combine(zipParentFolder, syncPoint.SyncPointId, Path.GetFileName(_zipFilePath));
+            var syncPointPath = Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, Path.GetFileName(_zipFilePath));
             _zipFilePath = syncPointPath; //we are updating the zip file path to the sync point specific one
 
             foreach (var srcFilePath in allFiles)
@@ -176,7 +177,7 @@ namespace SyncToyNext.Core
 
                 var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
 
-                var relativeDestinationPath = $"{relativePath}@{syncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
+                var relativeDestinationPath = $"{relativePath}@{newSyncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
 
                 if (existingEntry != null)
                 {
@@ -190,33 +191,58 @@ namespace SyncToyNext.Core
                     var entryPath = relativePathInZip.Replace("\\", "/");
                     var zipEntry = archive.GetEntry(entryPath);
 
-                    if(zipEntry != null)
+                    if(existingEntry.EntryType == SyncPointEntryType.Deleted)
                     {
-                        var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
+                        // If the entry was marked as deleted, we need to re-add it
+                        newSyncPoint.AddEntry(srcFilePath, relativeDestinationPath);
+                        SynchronizeFile(srcFilePath, relativePath);
+                        continue;
+                    }
+
+                    if (zipEntry != null)
+                    {
+                        var sourceFileInfo = new FileInfo(srcFilePath);
+
+                        var srcLastWrite = sourceFileInfo.LastWriteTimeUtc;
                         var entryLastWrite = DateTime.SpecifyKind(zipEntry.LastWriteTime.DateTime, DateTimeKind.Utc);
                         srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
 
-                        if (secondsDifference > 2) // ZIP format is only precise to 2 seconds
+                        if (secondsDifference > 2 || zipEntry.Length != sourceFileInfo.Length) // ZIP format is only precise to 2 seconds
                         {
-                            syncPoint.AddEntry(srcFilePath, relativeDestinationPath);
+                            newSyncPoint.AddEntry(srcFilePath, relativeDestinationPath);
                             SynchronizeFile(srcFilePath, relativePath);
                             continue;
                         }
                     } else
                     {
-                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spZipFile}' for sync point '{syncPoint.SyncPointId}'.");
+                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spZipFile}' for sync point '{newSyncPoint.SyncPointId}'.");
                     }
                 }
                 else
                 {
-                    syncPoint.AddEntry(srcFilePath, relativeDestinationPath);
+                    newSyncPoint.AddEntry(srcFilePath, relativeDestinationPath);
                     SynchronizeFile(srcFilePath, relativePath);
                 }
             }
 
-            syncPoint.Save(Path.Combine(zipParentFolder, syncPoint.SyncPointId, $"{syncPoint.SyncPointId}.syncpoint.json"));
+            // Now we need to check for files that were deleted since the last sync point
+            foreach (var entry in allFilesPartOfSyncPoint)
+            {
+                var srcFilePath = entry.SourcePath;
+                var relativePath = entry.RelativeRemotePath;
+                // If the file no longer exists in the source, mark it as deleted
+
+                var sourceFileEntry = allFiles.FirstOrDefault(f => f.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
+
+                if (string.IsNullOrEmpty(sourceFileEntry))
+                {
+                    newSyncPoint.AddEntry(srcFilePath, relativePath, SyncPointEntryType.Deleted);
+                }
+            }
+
+            newSyncPoint.Save(Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, $"{newSyncPoint.SyncPointId}.syncpoint.json"));
         }
 
         private void ProcessStraightSync(string sourcePath, System.Collections.Generic.IEnumerable<string> allFiles)

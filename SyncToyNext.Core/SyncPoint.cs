@@ -35,10 +35,19 @@ namespace SyncToyNext.Core
     {
     }
 
+    public enum SyncPointEntryType
+    {
+        AddOrChanged,
+        Deleted
+    }
+
     public class SyncPointEntry
     {
         public string SourcePath { get; set; } = string.Empty;
         public string RelativeRemotePath { get; set; } = string.Empty;
+        
+        [JsonConverter(typeof(JsonStringEnumConverter<SyncPointEntryType>))]
+        public SyncPointEntryType EntryType { get; set; } = SyncPointEntryType.AddOrChanged;
     }
 
     public class SyncPoint
@@ -64,12 +73,13 @@ namespace SyncToyNext.Core
             File.WriteAllText(filePath, json);
         }
 
-        public void AddEntry(string sourcePath, string relativeDestinationPath)
+        public void AddEntry(string sourcePath, string relativeDestinationPath, SyncPointEntryType type = SyncPointEntryType.AddOrChanged)
         {
             var entry = new SyncPointEntry
             {
                 SourcePath = sourcePath,
-                RelativeRemotePath = relativeDestinationPath
+                RelativeRemotePath = relativeDestinationPath,
+                EntryType = type
             };
             Entries.Add(entry);
         }
@@ -242,7 +252,8 @@ namespace SyncToyNext.Core
                         result.Add(new SyncPointEntry
                         {
                             SourcePath = entry.SourcePath,
-                            RelativeRemotePath = Path.Combine(entry.RelativeRemotePath)
+                            RelativeRemotePath = Path.Combine(entry.RelativeRemotePath),
+                            EntryType = entry.EntryType
                         });
                     }
                 }

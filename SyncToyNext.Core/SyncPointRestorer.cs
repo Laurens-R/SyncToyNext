@@ -112,9 +112,19 @@ namespace SyncToyNext.Core
                     if (zipEntry == null)
                     {
                         throw new InvalidOperationException($"The zip entry '{entryPath}' does not exist in the zip file '{zipFile}'.");
-                    }        
+                    }
 
-                    if(File.Exists(restorePath))
+                    if (file.EntryType == SyncPointEntryType.Deleted)
+                    {
+                        if (File.Exists(restorePath))
+                        {
+                            Console.WriteLine($"File marked as deleted in sync point, removing: {restorePath}");
+                            File.Delete(restorePath);
+                            continue;
+                        }
+                    }
+
+                    if (File.Exists(restorePath))
                     {
                         var existingFileInfo = new FileInfo(restorePath);
 

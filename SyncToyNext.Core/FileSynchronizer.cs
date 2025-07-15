@@ -64,9 +64,9 @@ namespace SyncToyNext.Core
             }
         }
 
-        private void ProcessSyncPoint(string sourcePath, SyncPoint syncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
+        private void ProcessSyncPoint(string sourcePath, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
         {
-            var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(syncPoint.SyncPointId);
+            var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
             foreach (var srcFilePath in allFiles)
             {
@@ -78,32 +78,61 @@ namespace SyncToyNext.Core
                 {
                     var syncPointPath = Path.Combine(_destination, existingEntry.RelativeRemotePath);
 
-                    var sourceFileDateTime = File.GetLastWriteTimeUtc(srcFilePath);
-                    var targetFileDateTime = File.GetLastWriteTimeUtc(syncPointPath);
+                    var sourceFileInfo = new FileInfo(srcFilePath);
+                    var targetFileInfo = new FileInfo(syncPointPath);
+
+                    var sourceFileDateTime = sourceFileInfo.LastWriteTimeUtc;
+                    var targetFileDateTime = targetFileInfo.LastWriteTimeUtc;
+                    var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativePath);
+                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativePath);
+
+                    // If the sync point entry is deleted, we need to add it back
+                    if (existingEntry.EntryType == SyncPointEntryType.Deleted)
+                    {
+                        newSyncPoint.AddEntry(srcFilePath, destEntryPath, SyncPointEntryType.AddOrChanged);
+                        SynchronizeFile(srcFilePath, destFilePath);
+                        continue;
+                    }
 
                     //check if the sync point is old compared to the source file.
                     if (File.Exists(syncPointPath) && (sourceFileDateTime > targetFileDateTime))
-                    {
-                        // replicate file into the new sync point location
-                        var destFilePath = Path.Combine(Path.Combine(_destination, syncPoint.SyncPointId), relativePath);
-                        var destEntryPath = Path.Combine(syncPoint.SyncPointId, relativePath);
-                        syncPoint.AddEntry(srcFilePath, destEntryPath);
-                        SynchronizeFile(srcFilePath, destFilePath);
-                        continue;
+                    {                       
+                        if (sourceFileInfo.Length != targetFileInfo.Length)
+                        {
+                            // replicate file into the new sync point location
+                            newSyncPoint.AddEntry(srcFilePath, destEntryPath, SyncPointEntryType.AddOrChanged);
+                            SynchronizeFile(srcFilePath, destFilePath);
+                            continue;
+                        }
                     }
                 }
                 else
                 {
                     // replicate file into the new sync point location
-                    var destFilePath = Path.Combine(Path.Combine(_destination, syncPoint.SyncPointId), relativePath);
-                    var destEntryPath = Path.Combine(syncPoint.SyncPointId, relativePath);
-                    syncPoint.AddEntry(srcFilePath, destEntryPath);
+                    var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativePath);
+                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativePath);
+                    newSyncPoint.AddEntry(srcFilePath, destEntryPath);
                     SynchronizeFile(srcFilePath, destFilePath);
                 }
             }
 
+            // Now we need to check for files that were deleted since the last sync point
+            foreach (var entry in allFilesPartOfSyncPoint)
+            {
+                var srcFilePath = entry.SourcePath;
+                var relativePath = entry.RelativeRemotePath;
+                // If the file no longer exists in the source, mark it as deleted
+
+                var sourceFileEntry = allFiles.FirstOrDefault(f => f.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
+
+                if(string.IsNullOrEmpty(sourceFileEntry))
+                {
+                    newSyncPoint.AddEntry(srcFilePath, relativePath, SyncPointEntryType.Deleted);
+                }
+            }
+
             //now save the sync point
-            syncPoint.Save(Path.Combine(_destination, syncPoint.SyncPointId, syncPoint.SyncPointId + ".syncpoint.json"));
+            newSyncPoint.Save(Path.Combine(_destination, newSyncPoint.SyncPointId, newSyncPoint.SyncPointId + ".syncpoint.json"));
         }
 
         /// <summary>
