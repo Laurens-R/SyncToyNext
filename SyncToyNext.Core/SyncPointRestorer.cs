@@ -10,55 +10,96 @@ namespace SyncToyNext.Core
 {
     public class SyncPointRestorer
     {
+        public static string RestorePath = Environment.CurrentDirectory;
+        public static string RemotePath = string.Empty;
+        public static string RemoteDirectory = string.Empty;
+
+        public static void EstablishRestorePath()
+        {
+            var currentPath = Environment.CurrentDirectory;
+            RemoteConfig? config = RemoteConfig.Load(currentPath);
+
+            while (config == null)
+            {
+                //get parent directory and check if it contains a remote config file
+                var parentPath = Directory.GetParent(currentPath);
+                if (parentPath == null)
+                {
+                    Console.WriteLine($"Could not find remote configuration in path chain. Assuming {Environment.CurrentDirectory}");
+                    RestorePath = Environment.CurrentDirectory;
+                    return;
+                }
+
+                currentPath = parentPath.FullName;
+                config = RemoteConfig.Load(currentPath);
+            }
+
+            RestorePath = currentPath;
+        }
+
         public static void Run(CommandLineArguments cmdArgs)
         {
-            var syncPointID = cmdArgs.Get("restore");
-            var fromPath = string.Empty;
+            if(cmdArgs == null)
+            {
+                throw new ArgumentNullException(nameof(cmdArgs), "Command line arguments cannot be null.");
+            }
 
+            var syncPointID = cmdArgs.Get("restore");
             bool hasManualFrom = cmdArgs.Has("from");
+
+            EstablishRestorePath();
+
             if (hasManualFrom)
             {
-                fromPath = cmdArgs.Get("from");
+                RemotePath = cmdArgs.Get("from") ?? string.Empty;
+
+                if(String.IsNullOrEmpty(RemotePath))
+                {
+                    throw new ArgumentException("The 'from' argument must provide a path value.");
+                }
             }
             else
             {
                 //we need to get the from path from the remote config file
-                var currentDirectory = Environment.CurrentDirectory;
-                var config = RemoteConfig.Load(currentDirectory);
-                fromPath = config.RemotePath;
+                var config = RemoteConfig.Load(RestorePath);
+                if (config == null)
+                {
+                    throw new InvalidOperationException("No remote configuration found in the current directory or its parents.");
+                }
+                RemotePath = config.RemotePath;
             }
 
-            bool pathIsZipped = Path.HasExtension(fromPath) && Path.GetExtension(fromPath).Equals(".zip", StringComparison.OrdinalIgnoreCase);
-            string? fromDirectory = string.Empty;
+            bool pathIsZipped = Path.HasExtension(RemotePath) && Path.GetExtension(RemotePath).Equals(".zip", StringComparison.OrdinalIgnoreCase);
+
             if (pathIsZipped)
             {
-                fromDirectory = Path.GetDirectoryName(fromPath);
-                if (string.IsNullOrWhiteSpace(fromDirectory))
+                RemoteDirectory = Path.GetDirectoryName(RemotePath) ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(RemoteDirectory))
                 {
                     throw new InvalidOperationException("The provided path is a zip file, but no directory could be determined from it.");
                 }
             }
             else
             {
-                fromDirectory = fromPath;
+                RemoteDirectory = RemotePath;
             }
 
-            if (string.IsNullOrWhiteSpace(fromDirectory) || string.IsNullOrWhiteSpace(fromPath))
+            if (string.IsNullOrWhiteSpace(RemoteDirectory) || string.IsNullOrWhiteSpace(RemotePath))
             {
                 throw new InvalidOperationException("The provided path is invalid or empty.");
             }
 
-            if (!Path.Exists(fromDirectory) && !Path.Exists(fromPath))
+            if (!Path.Exists(RemoteDirectory) && !Path.Exists(RemotePath))
             {
-                throw new InvalidOperationException($"The provided path '{fromDirectory}' does not exist.");
+                throw new InvalidOperationException($"The provided path '{RemoteDirectory}' does not exist.");
             }
 
-            if (!Path.Exists(Path.Combine(fromDirectory, "syncpointroot.json")))
+            if (!Path.Exists(Path.Combine(RemoteDirectory, "syncpointroot.json")))
             {
-                throw new InvalidOperationException($"The provided path '{fromDirectory}' does not contain a valid sync point root file.");
+                throw new InvalidOperationException($"The provided path '{RemoteDirectory}' does not contain a valid sync point root file.");
             }
 
-            SyncPointManager syncPointManager = new SyncPointManager(fromPath);
+            SyncPointManager syncPointManager = new SyncPointManager(RemotePath);
 
             SyncPoint? syncPoint = null;
 
@@ -86,7 +127,7 @@ namespace SyncToyNext.Core
             bool isZipped = syncPointManager.IsZipped;
 
             var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncPointID);
-            var allFilesInRestoreLocation = Directory.GetFiles(syncPointManager.SyncPointRoot.SourceLocation, "*", SearchOption.AllDirectories)
+            var allFilesInRestoreLocation = Directory.GetFiles(RestorePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase)
                         && !f.EndsWith("stn.remote.json", StringComparison.OrdinalIgnoreCase));
@@ -94,15 +135,15 @@ namespace SyncToyNext.Core
 
             if (cmdArgs.Has("file"))
             {
-                SingleFileRestore(cmdArgs, syncPointID, fromDirectory, isZipped, allSyncPointFiles);
+                SingleFileRestore(cmdArgs, syncPointID, isZipped, allSyncPointFiles);
             }
             else
             {
-                FullSyncPointRestore(syncPointID, fromPath, fromDirectory, isZipped, allSyncPointFiles, allFilesInRestoreLocation);
+                FullSyncPointRestore(syncPointID, isZipped, allSyncPointFiles, allFilesInRestoreLocation);
             }
         }
 
-        private static bool SingleFileRestore(CommandLineArguments cmdArgs, string syncPointID, string fromDirectory, bool isZipped, List<SyncPointEntry> allSyncPointFiles)
+        private static bool SingleFileRestore(CommandLineArguments cmdArgs, string syncPointID,  bool isZipped, List<SyncPointEntry> allSyncPointFiles)
         {
             var requestedFile = cmdArgs.Get("file");
             if (string.IsNullOrWhiteSpace(requestedFile))
@@ -111,9 +152,9 @@ namespace SyncToyNext.Core
             }
 
             //assume the provided file is relative to the sync point root and so create a full path to it
-            var fullTargetPath = Path.Combine(Environment.CurrentDirectory, requestedFile);
+            var fullTargetPath = Path.Combine(RestorePath, requestedFile);
 
-            var fileToRestore = allSyncPointFiles.FirstOrDefault(f => f.SourcePath.Equals(fullTargetPath, StringComparison.OrdinalIgnoreCase));
+            var fileToRestore = allSyncPointFiles.FirstOrDefault(f => f.SourcePath.Equals(requestedFile, StringComparison.OrdinalIgnoreCase));
 
             if (fileToRestore == null)
             {
@@ -131,7 +172,7 @@ namespace SyncToyNext.Core
             if (isZipped)
             {
                 var zipFile = fileToRestore.RelativeRemotePath.Split("@")[1];
-                var fullZipPath = Path.Combine(fromDirectory, zipFile);
+                var fullZipPath = Path.Combine(RemoteDirectory, zipFile);
                 var relativeEntry = fileToRestore.RelativeRemotePath.Split("@")[0];
 
                 using var zip = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
@@ -156,7 +197,7 @@ namespace SyncToyNext.Core
             }
             else
             {
-                var fullSyncPointPath = Path.Combine(fromDirectory, fileToRestore.RelativeRemotePath);
+                var fullSyncPointPath = Path.Combine(RemoteDirectory, fileToRestore.RelativeRemotePath);
 
                 if (!File.Exists(fullSyncPointPath))
                 {
@@ -171,16 +212,16 @@ namespace SyncToyNext.Core
             return true;
         }
 
-        private static void FullSyncPointRestore(string syncPointID, string fromPath, string fromDirectory, bool isZipped, List<SyncPointEntry> allSyncPointFiles, IEnumerable<string> allFilesInRestoreLocation)
+        private static void FullSyncPointRestore(string syncPointID, bool isZipped, List<SyncPointEntry> allSyncPointFiles, IEnumerable<string> allFilesInRestoreLocation)
         {
             foreach (var file in allSyncPointFiles)
             {
-                var restorePath = file.SourcePath;
+                var restorePath = Path.Combine(RestorePath, file.SourcePath);
 
                 if (isZipped)
                 {
                     var zipFile = file.RelativeRemotePath.Split("@")[1];
-                    var fullZipPath = Path.Combine(fromDirectory, zipFile);
+                    var fullZipPath = Path.Combine(RemoteDirectory, zipFile);
                     var relativeEntry = file.RelativeRemotePath.Split("@")[0];
 
                     using var zip = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
@@ -232,8 +273,8 @@ namespace SyncToyNext.Core
                 }
                 else
                 {
-                    restorePath = Path.Combine(fromPath, file.RelativeRemotePath);
-                    var syncPointPath = Path.Combine(fromPath, syncPointID, file.RelativeRemotePath);
+                    restorePath = Path.Combine(RemotePath, file.RelativeRemotePath);
+                    var syncPointPath = Path.Combine(RemotePath, syncPointID, file.RelativeRemotePath);
 
                     if (!File.Exists(syncPointPath))
                     {
@@ -270,7 +311,8 @@ namespace SyncToyNext.Core
             // after restoring files to the proper version, we also need to remove any files that were not part of the sync point
             foreach (var file in allFilesInRestoreLocation)
             {
-                var foundFile = allSyncPointFiles.FirstOrDefault(f => f.SourcePath == file);
+                var relativeRestorePath = Path.GetRelativePath(RestorePath, file);
+                var foundFile = allSyncPointFiles.FirstOrDefault(f => f.SourcePath == relativeRestorePath);
                 if (foundFile == null && !Path.GetFileName(file).Equals("stn.remote.json", StringComparison.OrdinalIgnoreCase))
                 {
                     // this file was not part of the sync point, so we can remove it

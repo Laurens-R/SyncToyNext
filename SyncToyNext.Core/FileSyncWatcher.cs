@@ -231,6 +231,11 @@ namespace SyncToyNext.Core
                         if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                             return;
 
+                        if(_pendingChanges == null)
+                        {
+                            throw new InvalidProgramException("Pending changes stack is null. This should not happen.");
+                        }
+
                         var existingEntryForFile = _pendingChanges.FirstOrDefault(x => x.SourcePath == e.OldFullPath);
 
                         if (existingEntryForFile != null)

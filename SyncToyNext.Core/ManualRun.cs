@@ -66,8 +66,8 @@ namespace SyncToyNext.Core
             {
                 syncPointManager = new SyncPointManager(toPath, fromPath);
 
-                var syncPointID = cmdArgs.Get("syncid") ?? string.Empty;
-                var description = cmdArgs.Get("syncdesc") ?? string.Empty;
+                var syncPointID = cmdArgs.Get("id") ?? string.Empty;
+                var description = cmdArgs.Get("desc") ?? string.Empty;
 
                 syncPoint = syncPointManager.AddSyncPoint(fromPath, syncPointID, description);
             }

@@ -53,7 +53,6 @@ namespace SyncToyNext.Core
     public class SyncPoint
     {
         public string SyncPointId { get; set; } = string.Empty;
-        public string SourcePath { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public DateTime LastSyncTime { get; set; }
         public List<SyncPointEntry> Entries { get; set; } = new List<SyncPointEntry>();
@@ -198,7 +197,6 @@ namespace SyncToyNext.Core
             var newSyncPoint = new SyncPoint
             {
                 SyncPointId = syncPointID,
-                SourcePath = sourcePath, // Set this later
                 Description = description,
                 LastSyncTime = now,
                 Entries = new List<SyncPointEntry>()

@@ -44,18 +44,18 @@ namespace SyncToyNext.Core
             File.WriteAllText(Path.Combine(filePath, "stn.remote.json"), json, Encoding.UTF8);
         }
 
-        public static RemoteConfig Load(string filePath)
+        public static RemoteConfig? Load(string filePath)
         {
             if (!Directory.Exists(filePath))
             {
-                throw new FileNotFoundException($"The directory '{filePath}' does not exist.");
+                return null;
             }
 
             var configFile = Path.Combine(filePath, "stn.remote.json");
             
             if (!File.Exists(configFile))
             {
-                throw new FileNotFoundException($"The configuration file '{configFile}' does not exist.");
+                return null;
             }
 
             var json = File.ReadAllText(configFile, Encoding.UTF8);

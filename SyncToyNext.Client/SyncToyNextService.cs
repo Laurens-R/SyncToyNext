@@ -1,5 +1,6 @@
 using System;
 using System.ServiceProcess;
+using System.Threading;
 using SyncToyNext.Core;
 
 namespace SyncToyNext.Client
@@ -14,6 +15,9 @@ namespace SyncToyNext.Client
 
         public SyncToyNextService(string? configPath = null)
         {
+            //for now it doesn't matter if this is set to null or not, because
+            //the sync context will try to load the config from the default location
+            //if this is set to null.
             _configPath = configPath;
         }
 

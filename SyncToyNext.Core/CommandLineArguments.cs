@@ -13,6 +13,8 @@ namespace SyncToyNext.Core
 
         public CommandLineArguments(string[] args)
         {
+            OriginalArgs = args;
+
             for (int i = 0; i < args.Length; i++)
             {
                 var arg = args[i];
@@ -36,6 +38,8 @@ namespace SyncToyNext.Core
                 }
             }
         }
+
+        public string[] OriginalArgs { get; private set; }
 
         /// <summary>
         /// Gets the value for a given key, or null if not present.

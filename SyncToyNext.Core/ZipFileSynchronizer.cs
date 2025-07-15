@@ -173,11 +173,11 @@ namespace SyncToyNext.Core
 
             foreach (var srcFilePath in allFiles)
             {
-                var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
+                var relativeSourcePath = Path.GetRelativePath(sourcePath, srcFilePath);
 
                 var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
 
-                var relativeDestinationPath = $"{relativePath}@{newSyncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
+                var relativeDestinationPath = $"{relativeSourcePath}@{newSyncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
 
                 if (existingEntry != null)
                 {
@@ -194,8 +194,8 @@ namespace SyncToyNext.Core
                     if(existingEntry.EntryType == SyncPointEntryType.Deleted)
                     {
                         // If the entry was marked as deleted, we need to re-add it
-                        newSyncPoint.AddEntry(srcFilePath, relativeDestinationPath);
-                        SynchronizeFile(srcFilePath, relativePath);
+                        newSyncPoint.AddEntry(relativeSourcePath, relativeDestinationPath);
+                        SynchronizeFile(srcFilePath, relativeSourcePath);
                         continue;
                     }
 
@@ -211,8 +211,8 @@ namespace SyncToyNext.Core
 
                         if (secondsDifference > 2 || zipEntry.Length != sourceFileInfo.Length) // ZIP format is only precise to 2 seconds
                         {
-                            newSyncPoint.AddEntry(srcFilePath, relativeDestinationPath);
-                            SynchronizeFile(srcFilePath, relativePath);
+                            newSyncPoint.AddEntry(relativeSourcePath, relativeDestinationPath);
+                            SynchronizeFile(srcFilePath, relativeSourcePath);
                             continue;
                         }
                     } else
@@ -222,8 +222,8 @@ namespace SyncToyNext.Core
                 }
                 else
                 {
-                    newSyncPoint.AddEntry(srcFilePath, relativeDestinationPath);
-                    SynchronizeFile(srcFilePath, relativePath);
+                    newSyncPoint.AddEntry(relativeSourcePath, relativeDestinationPath);
+                    SynchronizeFile(srcFilePath, relativeSourcePath);
                 }
             }
 

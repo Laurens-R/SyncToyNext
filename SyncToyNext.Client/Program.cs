@@ -128,6 +128,13 @@ static void RunPushCommand(CommandLineArguments cmdArgs)
     {
         var currentDirectory = Environment.CurrentDirectory;
         var remoteConfig = RemoteConfig.Load(currentDirectory);
+
+        if (remoteConfig == null)
+        {
+            Console.Error.WriteLine("Error: Remote configuration not found. Please configure the remote first using --remote <path>.");
+            Environment.Exit(1);
+        }
+
         cmdArgs.Set("from", currentDirectory);
         cmdArgs.Set("to", remoteConfig.RemotePath);
         cmdArgs.Set("syncpoint", string.Empty);
@@ -159,6 +166,13 @@ static void RunListSyncPoints()
     {
         var currentDirectory = Environment.CurrentDirectory;
         var remoteConfig = RemoteConfig.Load(currentDirectory);
+
+        if (remoteConfig == null)
+        {
+            Console.Error.WriteLine("Error: Remote configuration not found. Please configure the remote first using --remote <path>.");
+            Environment.Exit(1);
+        }
+
         var remotePath = remoteConfig.RemotePath;
         var syncPointManager = new SyncPointManager(remotePath, currentDirectory);
 
@@ -192,6 +206,45 @@ static void RunListSyncPoints()
     }
 }
 
+static void RunHelp()
+{
+    Console.WriteLine("Usage: SyncToyNext [options]");
+    Console.WriteLine("Options:");
+    
+    //print overview of logical option combinations in groupings as per the options etc in the main program entry
+    Console.WriteLine("Running a specific profile manually:");
+    Console.WriteLine("  --profile <name>       Run a specific profile in manual mode.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Manual Sync:");
+    Console.WriteLine("  --from <path>          Specify the source path for manual sync.");
+    Console.WriteLine("  --to <path>            Specify the destination path for manual sync.");
+    Console.WriteLine("  --syncpoint>           Indicate that this sync should create a syncpoint.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Pushing changes in folder (requires configured remote location):");
+    Console.WriteLine("  --push                 Push changes to the remote path.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Restoring a sync point:");
+    Console.WriteLine("  --restore <id>         Restore a sync point by ID.");
+    Console.WriteLine("  --from <path>          (Optional if no remote configured) Specify the source path for restoring a sync point.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Configure remote for current director:");
+    Console.WriteLine("  --remote <path>        Configure a remote path for sync operations.");
+    Console.WriteLine();
+    Console.WriteLine("Listing all sync points for the current location (requires configured remote location):");
+    Console.WriteLine("  --list                 List all sync points.");
+
+    Console.WriteLine();
+    Console.WriteLine("General Options:");
+    Console.WriteLine("  --help                 Show this help message.");
+    Console.WriteLine("  --config <file>        Specify a custom configuration file path.");
+    Console.WriteLine("  --strict               Enable strict mode for synchronization (Checksum validation for differences)");
+    Console.WriteLine("  --recover              Force a full sync to recover from an interrupted state.");
+}
+
 static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
 {
     try
@@ -219,6 +272,25 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
         else if (cmdArgs.Has("list"))
         {
             RunListSyncPoints();
+        }
+        else if (cmdArgs.Has("help"))
+        {
+            RunHelp();
+        }
+        else if(cmdArgs.Has("service"))
+        { 
+            if(OperatingSystem.IsWindows())
+            {
+                var service = new SyncToyNextService(cmdArgs.Get("config"));
+                System.ServiceProcess.ServiceBase.Run(service);
+            }
+
+            // If not Windows, print a message and exit
+            else
+            {
+                Console.Error.WriteLine("Error: Service mode is only supported on Windows.");
+                Environment.Exit(1);
+            }
         }
         else
         {

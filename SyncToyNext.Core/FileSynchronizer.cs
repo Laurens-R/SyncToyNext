@@ -70,7 +70,7 @@ namespace SyncToyNext.Core
 
             foreach (var srcFilePath in allFiles)
             {
-                var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
+                var relativeSourcePath = Path.GetRelativePath(sourcePath, srcFilePath);
                 var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(srcFilePath, StringComparison.OrdinalIgnoreCase));
 
                 // If the sync point entry exists, check if the file is newer than the existing sync point
@@ -83,13 +83,13 @@ namespace SyncToyNext.Core
 
                     var sourceFileDateTime = sourceFileInfo.LastWriteTimeUtc;
                     var targetFileDateTime = targetFileInfo.LastWriteTimeUtc;
-                    var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativePath);
-                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativePath);
+                    var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativeSourcePath);
+                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativeSourcePath);
 
                     // If the sync point entry is deleted, we need to add it back
                     if (existingEntry.EntryType == SyncPointEntryType.Deleted)
                     {
-                        newSyncPoint.AddEntry(srcFilePath, destEntryPath, SyncPointEntryType.AddOrChanged);
+                        newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.AddOrChanged);
                         SynchronizeFile(srcFilePath, destFilePath);
                         continue;
                     }
@@ -100,7 +100,7 @@ namespace SyncToyNext.Core
                         if (sourceFileInfo.Length != targetFileInfo.Length)
                         {
                             // replicate file into the new sync point location
-                            newSyncPoint.AddEntry(srcFilePath, destEntryPath, SyncPointEntryType.AddOrChanged);
+                            newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.AddOrChanged);
                             SynchronizeFile(srcFilePath, destFilePath);
                             continue;
                         }
@@ -109,9 +109,9 @@ namespace SyncToyNext.Core
                 else
                 {
                     // replicate file into the new sync point location
-                    var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativePath);
-                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativePath);
-                    newSyncPoint.AddEntry(srcFilePath, destEntryPath);
+                    var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativeSourcePath);
+                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativeSourcePath);
+                    newSyncPoint.AddEntry(relativeSourcePath, destEntryPath);
                     SynchronizeFile(srcFilePath, destFilePath);
                 }
             }
