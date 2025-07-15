@@ -204,7 +204,7 @@ namespace SyncToyNext.Core
                         var sourceFileInfo = new FileInfo(srcFilePath);
 
                         var srcLastWrite = sourceFileInfo.LastWriteTimeUtc;
-                        var entryLastWrite = DateTime.SpecifyKind(zipEntry.LastWriteTime.DateTime, DateTimeKind.Utc);
+                        var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime;
                         srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
