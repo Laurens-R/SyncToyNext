@@ -163,16 +163,24 @@ namespace SyncToyNext.Core
                     if (srcSize != destSize)
                     {
                         shouldCopy = true;
-                        action = "RepairSizeMismatch";
+                        action = "Update";
                     }
-                    else if (_strictMode)
+                    else 
                     {
-                        var srcHash = ComputeSHA256(srcFilePath);
-                        var destHash = ComputeSHA256(destFilePath);
-                        if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
+                        bool areFirst4KDifferent = AreFirst4KDifferent(srcFilePath, destFilePath);
+                        if (areFirst4KDifferent)
                         {
                             shouldCopy = true;
-                            action = "RepairChecksumMismatch";
+                            action = "Update";
+                        } else
+                        {
+                            var srcHash = ComputeSHA256(srcFilePath);
+                            var destHash = ComputeSHA256(destFilePath);
+                            if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
+                            {
+                                shouldCopy = true;
+                                action = "Update";
+                            }
                         }
                     }
                 }

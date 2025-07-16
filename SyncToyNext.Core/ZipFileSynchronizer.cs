@@ -81,20 +81,31 @@ namespace SyncToyNext.Core
                         if (srcSize != entrySize)
                         {
                             shouldCopy = true;
-                            action = "RepairSizeMismatch";
+                            action = "Update";
                         }
-                        else if (_strictMode)
+                        else
                         {
-                            var srcHash = ComputeSHA256(srcFilePath);
-                            string destHash;
-                            using (var entryStream = entry.Open())
-                            {
-                                destHash = ComputeSHA256(entryStream);
-                            }
-                            if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
+                            using var sourceFileStream = File.OpenRead(srcFilePath);
+                            using var zipEntryStream = entry.Open();
+
+                            bool areDifferent = AreFirst4KDifferent(sourceFileStream, zipEntryStream);
+
+                            if (areDifferent)
                             {
                                 shouldCopy = true;
-                                action = "RepairChecksumMismatch";
+                                action = "Update";
+                            } 
+                            else
+                            {
+                                zipEntryStream.Seek(0, SeekOrigin.Begin);
+                                var srcHash = ComputeSHA256(srcFilePath);
+                                string destHash =  ComputeSHA256(zipEntryStream);
+                                
+                                if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    shouldCopy = true;
+                                    action = "Update";
+                                }
                             }
                         }
                     }
