@@ -10,7 +10,7 @@ namespace SyncToyNext.Core
     /// <summary>
     /// Provides file synchronization logic for writing files into a Zip archive.
     /// </summary>
-    public class ZipFileSynchronizer : ISynchronizer
+    public class ZipFileSynchronizer : Synchronizer
     {
         private string _zipFilePath;
         private OverwriteOption _overwriteOption;
@@ -30,9 +30,8 @@ namespace SyncToyNext.Core
         /// </summary>
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="relativePath">The relative path inside the zip archive.</param>
-        public void SynchronizeFile(string srcFilePath, string relativePath, string? oldDestFilePath = null)
+        public override void SynchronizeFile(string srcFilePath, string relativePath, string? oldDestFilePath = null)
         {
-        
             try
             {
                 using var zip = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
@@ -135,28 +134,25 @@ namespace SyncToyNext.Core
         /// Synchronizes all files and subdirectories from the source path into the zip archive.
         /// </summary>
         /// <param name="sourcePath">The root directory to copy files from.</param>
-        public void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
+        public override void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
         {
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
             // Exclude 'synclogs' subfolder from sync
-            var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase)
-                        && !Path.GetFileName(f).Equals("stn.remote.json", StringComparison.OrdinalIgnoreCase));
+            var allFilesInSourcePath = GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
             {
-                ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFiles);
+                ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFilesInSourcePath);
             }
             else
             {
-                ProcessStraightSync(sourcePath, allFiles);
+                ProcessStraightSync(sourcePath, allFilesInSourcePath);
             }
         }
 
-        private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
+        private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
         {
             var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
@@ -171,7 +167,7 @@ namespace SyncToyNext.Core
             var syncPointPath = Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, Path.GetFileName(_zipFilePath));
             _zipFilePath = syncPointPath; //we are updating the zip file path to the sync point specific one
 
-            foreach (var srcFilePath in allFiles)
+            foreach (var srcFilePath in allSourceLocationFiles)
             {
                 var relativeSourcePath = Path.GetRelativePath(sourceDirectory, srcFilePath);
 
@@ -232,48 +228,18 @@ namespace SyncToyNext.Core
             }
 
             // Now we need to check for files that were deleted since the last sync point
-            foreach (var entry in allFilesPartOfSyncPoint)
-            {
-                var relativeSourcePath = entry.SourcePath;
-                var relativePath = entry.RelativeRemotePath;
-                // If the file no longer exists in the source, mark it as deleted
-
-                var sourceFileEntry = allFiles.FirstOrDefault(f => f.Equals(Path.Combine(sourceDirectory, relativeSourcePath), StringComparison.OrdinalIgnoreCase));
-
-                if (string.IsNullOrEmpty(sourceFileEntry))
-                {
-                    newSyncPoint.AddEntry(relativeSourcePath, relativePath, SyncPointEntryType.Deleted);
-                    Console.WriteLine($"File '{relativeSourcePath}' marked as deleted in sync point '{newSyncPoint.SyncPointId}'.");
-                }
-            }
+            DetectRemovedFiles(sourceDirectory, allFilesPartOfSyncPoint, allSourceLocationFiles, newSyncPoint);
 
             newSyncPoint.Save(Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, $"{newSyncPoint.SyncPointId}.syncpoint.json"));
         }
 
-        private void ProcessStraightSync(string sourcePath, System.Collections.Generic.IEnumerable<string> allFiles)
+        private void ProcessStraightSync(string sourcePath, IEnumerable<string> allFiles)
         {
             foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
-                if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-                    || relativePath.StartsWith("synclogs/", StringComparison.OrdinalIgnoreCase))
-                    continue;
                 SynchronizeFile(srcFilePath, relativePath);
             }
-        }
-
-        private static string ComputeSHA256(string filePath)
-        {
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
-            using var stream = File.OpenRead(filePath);
-            var hash = sha256.ComputeHash(stream);
-            return BitConverter.ToString(hash).Replace("-", string.Empty);
-        }
-        private static string ComputeSHA256(Stream stream)
-        {
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
-            var hash = sha256.ComputeHash(stream);
-            return BitConverter.ToString(hash).Replace("-", string.Empty);
         }
     }
 }

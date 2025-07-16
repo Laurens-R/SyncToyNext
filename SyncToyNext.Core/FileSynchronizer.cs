@@ -10,7 +10,7 @@ namespace SyncToyNext.Core
     /// <summary>
     /// Provides file and directory synchronization between two paths with configurable overwrite behavior.
     /// </summary>
-    public class FileSynchronizer : ISynchronizer
+    public class FileSynchronizer : Synchronizer
     {
         private readonly string _destination;
         private readonly OverwriteOption _overwriteOption;
@@ -29,7 +29,7 @@ namespace SyncToyNext.Core
         /// Synchronizes all files and subdirectories from the source path to the destination directory.
         /// </summary>
         /// <param name="sourcePath">The root directory to copy files from.</param>
-        public void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
+        public override void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
         {
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
@@ -37,38 +37,34 @@ namespace SyncToyNext.Core
             if (!Directory.Exists(_destination))
                 Directory.CreateDirectory(_destination);
 
-            var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase)
-                        && !Path.GetFileName(f).Equals("stn.remote.json", StringComparison.OrdinalIgnoreCase));
+            var allFilesInSourcePath = GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
             {
-                ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFiles);
+                ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFilesInSourcePath);
             }
             else
             {
-                ProcessStraightSync(sourcePath, allFiles);
+                ProcessStraightSync(sourcePath, allFilesInSourcePath);
             }
         }
 
-        private void ProcessStraightSync(string sourcePath, IEnumerable<string> allFiles)
+        private void ProcessStraightSync(string sourcePath, IEnumerable<string> allFilesInSourcePath)
         {
-            foreach (var srcFilePath in allFiles)
+            foreach (var srcFilePath in allFilesInSourcePath)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
-
                 var destFilePath = Path.Combine(_destination, relativePath);
 
                 SynchronizeFile(srcFilePath, destFilePath);
             }
         }
 
-        private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allFiles)
+        private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
         {
             var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
-            foreach (var srcFilePath in allFiles)
+            foreach (var srcFilePath in allSourceLocationFiles)
             {
                 var relativeSourcePath = Path.GetRelativePath(sourceDirectory, srcFilePath);
                 var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(relativeSourcePath, StringComparison.OrdinalIgnoreCase));
@@ -117,21 +113,8 @@ namespace SyncToyNext.Core
             }
 
             // Now we need to check for files that were deleted since the last sync point
-            foreach (var entry in allFilesPartOfSyncPoint)
-            {
-                var relativeSourcePath = entry.SourcePath;
-                var relativePath = entry.RelativeRemotePath;
-                // If the file no longer exists in the source, mark it as deleted
-
-                var sourceFileEntry = allFiles.FirstOrDefault(f => f.Equals(Path.Combine(sourceDirectory, relativeSourcePath), StringComparison.OrdinalIgnoreCase));
-
-                if(string.IsNullOrEmpty(sourceFileEntry))
-                {
-                    newSyncPoint.AddEntry(relativeSourcePath, relativePath, SyncPointEntryType.Deleted);
-                    Console.WriteLine($"File '{relativeSourcePath}' marked as deleted in sync point '{newSyncPoint.SyncPointId}'.");
-                }
-            }
-
+            DetectRemovedFiles(sourceDirectory, allFilesPartOfSyncPoint, allSourceLocationFiles, newSyncPoint);
+            
             //now save the sync point
             newSyncPoint.Save(Path.Combine(_destination, newSyncPoint.SyncPointId, newSyncPoint.SyncPointId + ".syncpoint.json"));
         }
@@ -143,7 +126,7 @@ namespace SyncToyNext.Core
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="destFilePath">The full path to the destination file.</param>
         /// <param name="oldDestFilePath">The old destination file path to delete (optional, for renames).</param>
-        public void SynchronizeFile(string srcFilePath, string destFilePath, string? oldDestFilePath = null)
+        public override void SynchronizeFile(string srcFilePath, string destFilePath, string? oldDestFilePath = null)
         {
             if (!string.IsNullOrEmpty(oldDestFilePath) && File.Exists(oldDestFilePath))
             {
@@ -232,14 +215,6 @@ namespace SyncToyNext.Core
             {
                 _logger.LogError($"Failed to sync file '{srcFilePath}' to '{destFilePath}'", ex);
             }
-        }
-
-        private static string ComputeSHA256(string filePath)
-        {
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
-            using var stream = File.OpenRead(filePath);
-            var hash = sha256.ComputeHash(stream);
-            return BitConverter.ToString(hash).Replace("-", string.Empty);
         }
     }
 }

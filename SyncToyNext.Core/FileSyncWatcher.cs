@@ -37,7 +37,7 @@ namespace SyncToyNext.Core
         private readonly OverwriteOption _overwriteOption;
         private readonly bool _destinationIsZip;
         private readonly Logger _logger;
-        private readonly ISynchronizer _synchronizer;
+        private readonly Synchronizer _synchronizer;
         private readonly SyncInterval _syncInterval;
         private readonly SyncMode _syncMode;
         private readonly Stack<FileSyncAction>? _pendingChanges;

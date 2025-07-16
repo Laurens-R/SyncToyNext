@@ -221,6 +221,20 @@ static void RunListSyncPoints()
     }
 }
 
+static void RunService(CommandLineArguments cmdArgs)
+{
+    if (OperatingSystem.IsWindows())
+    {
+        var service = new SyncToyNextService(cmdArgs.Get("config"));
+        System.ServiceProcess.ServiceBase.Run(service);
+    }
+    else
+    {
+        Console.Error.WriteLine("Error: Service mode is only supported on Windows.");
+        Environment.Exit(1);
+    }
+}
+
 static void RunHelp()
 {
     Console.WriteLine("Usage: SyncToyNext [options]");
@@ -258,6 +272,7 @@ static void RunHelp()
     Console.WriteLine("  --config <file>        Specify a custom configuration file path.");
     Console.WriteLine("  --strict               Enable strict mode for synchronization (Checksum validation for differences)");
     Console.WriteLine("  --recover              Force a full sync to recover from an interrupted state.");
+    Console.WriteLine("  --service              Run the application as a Windows service (Windows only).");
 }
 
 static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
@@ -293,19 +308,8 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
             RunHelp();
         }
         else if(cmdArgs.Has("service"))
-        { 
-            if(OperatingSystem.IsWindows())
-            {
-                var service = new SyncToyNextService(cmdArgs.Get("config"));
-                System.ServiceProcess.ServiceBase.Run(service);
-            }
-
-            // If not Windows, print a message and exit
-            else
-            {
-                Console.Error.WriteLine("Error: Service mode is only supported on Windows.");
-                Environment.Exit(1);
-            }
+        {
+            RunService(cmdArgs);
         }
         else
         {
