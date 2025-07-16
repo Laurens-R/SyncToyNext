@@ -25,7 +25,7 @@ namespace SyncToyNext.Core
                 var parentPath = Directory.GetParent(currentPath);
                 if (parentPath == null)
                 {
-                    Console.WriteLine($"Could not find remote configuration in path chain. Assuming {Environment.CurrentDirectory}");
+                    UserIO.Message($"Could not find remote configuration in path chain. Assuming {Environment.CurrentDirectory}");
                     RestorePath = Environment.CurrentDirectory;
                     return;
                 }
@@ -165,7 +165,7 @@ namespace SyncToyNext.Core
             {
                 //for single file restores, we don't delete the file and skip the operation. Users probably don't have the intent
                 //to delete the file, but rather restore it to the state it was in at some sync point.
-                Console.WriteLine($"The file '{requestedFile}' was marked as deleted in the sync point '{syncPointID}'. Nothing to restore.");
+                UserIO.Message($"The file '{requestedFile}' was marked as deleted in the sync point '{syncPointID}'. Nothing to restore.");
                 return false;
             }
 
@@ -193,7 +193,7 @@ namespace SyncToyNext.Core
                 }
 
                 zipEntry.ExtractToFile(fullTargetPath, true);
-                Console.WriteLine($"Restored single file '{requestedFile}' from sync point '{syncPointID}' to '{fullTargetPath}' from zip.");
+                UserIO.Message($"Restored single file '{requestedFile}' from sync point '{syncPointID}' to '{fullTargetPath}' from zip.");
             }
             else
             {
@@ -206,7 +206,7 @@ namespace SyncToyNext.Core
 
                 File.Copy(fullSyncPointPath, fullTargetPath, true);
 
-                Console.WriteLine($"Restored single file '{requestedFile}' from sync point '{syncPointID}' to '{fullTargetPath}'.");
+                UserIO.Message($"Restored single file '{requestedFile}' from sync point '{syncPointID}' to '{fullTargetPath}'.");
             }
 
             return true;
@@ -245,7 +245,7 @@ namespace SyncToyNext.Core
                     {
                         if (File.Exists(restorePath))
                         {
-                            Console.WriteLine($"File marked as deleted in sync point, removing: {restorePath}");
+                            UserIO.Message($"File marked as deleted in sync point, removing: {restorePath}");
                             File.Delete(restorePath);
                             continue;
                         }
@@ -268,7 +268,7 @@ namespace SyncToyNext.Core
                         }
                     }
 
-                    Console.WriteLine($"Restoring file from zip: {restorePath}");
+                    UserIO.Message($"Restoring file from zip: {restorePath}");
                     zipEntry.ExtractToFile(restorePath, true);
                 }
                 else
@@ -301,12 +301,12 @@ namespace SyncToyNext.Core
                         }
                     }
 
-                    Console.WriteLine($"Restoring file: {restorePath}");
+                    UserIO.Message($"Restoring file: {restorePath}");
                     File.Copy(syncPointPath, restorePath, true);
                 }
             }
 
-            Console.WriteLine("Cleaning up files not part of the sync point...");
+            UserIO.Message("Cleaning up files not part of the sync point...");
 
             // after restoring files to the proper version, we also need to remove any files that were not part of the sync point
             foreach (var file in allFilesInRestoreLocation)
@@ -318,17 +318,17 @@ namespace SyncToyNext.Core
                     // this file was not part of the sync point, so we can remove it
                     try
                     {
-                        Console.WriteLine($"Removing file not part of sync point: {file}");
+                        UserIO.Message($"Removing file not part of sync point: {file}");
                         File.Delete(file);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error removing file '{file}': {ex.Message}");
+                        UserIO.Message($"Error removing file '{file}': {ex.Message}");
                     }
                 }
             }
 
-            Console.WriteLine($"Restoration of sync point '{syncPointID}' completed successfully.");
+            UserIO.Message($"Restoration of sync point '{syncPointID}' completed successfully.");
         }
     }
 }

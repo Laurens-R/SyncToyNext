@@ -25,11 +25,12 @@ namespace SyncToyNext.Core
             string resolvedConfigPath = configPath ?? SyncConfiguration.GetDefaultConfigPath();
             if (!System.IO.File.Exists(resolvedConfigPath))
             {
-                Console.WriteLine("Error: No configuration file was provided and none was found at the default location.");
-                Console.WriteLine($"Expected config file at: {resolvedConfigPath}");
-                Console.WriteLine("Please provide a config file using the --config <file> argument, or create a config file at the default location.");
+                UserIO.Error("Error: No configuration file was provided and none was found at the default location.");
+                UserIO.Error($"Expected config file at: {resolvedConfigPath}");
+                UserIO.Error("Please provide a config file using the --config <file> argument, or create a config file at the default location.");
                 Environment.Exit(1);
             }
+
             Configuration = SyncConfiguration.Load(configPath);
             _strictMode = strictMode;
 
@@ -59,16 +60,15 @@ namespace SyncToyNext.Core
 
         private static void InitializeProfile(bool strictMode, SyncProfile profile)
         {
-            var logger = new Logger(profile.SourcePath);
             var overwriteOption = profile.OverwriteOption;
             if (profile.DestinationIsZip)
             {
-                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
+                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, strictMode);
                 zipSync.FullSynchronization(profile.SourcePath);
             }
             else
             {
-                var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, logger, strictMode);
+                var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, strictMode);
                 fileSync.FullSynchronization(profile.SourcePath);
             }
         }
@@ -77,27 +77,27 @@ namespace SyncToyNext.Core
         {
             if (string.IsNullOrWhiteSpace(profile.Id))
             {
-                Console.Error.WriteLine("Error: Each profile must have a non-empty 'Id'. Please correct your configuration.");
+                UserIO.Error("Error: Each profile must have a non-empty 'Id'. Please correct your configuration.");
                 return false;
             }
             if (!idSet.Add(profile.Id))
             {
-                Console.Error.WriteLine($"Error: Duplicate profile Id detected: '{profile.Id}'. Each profile Id must be unique.");
+                UserIO.Error($"Error: Duplicate profile Id detected: '{profile.Id}'. Each profile Id must be unique.");
                 return false;
             }
             if (string.IsNullOrWhiteSpace(profile.SourcePath))
             {
-                Console.Error.WriteLine($"Error: Profile '{profile.Id}' is missing a 'SourcePath'. Please correct your configuration.");
+                UserIO.Error($"Error: Profile '{profile.Id}' is missing a 'SourcePath'. Please correct your configuration.");
                 return false;
             }
             if (string.IsNullOrWhiteSpace(profile.DestinationPath))
             {
-                Console.Error.WriteLine($"Error: Profile '{profile.Id}' is missing a 'DestinationPath'. Please correct your configuration.");
+                UserIO.Error($"Error: Profile '{profile.Id}' is missing a 'DestinationPath'. Please correct your configuration.");
                 return false;
             }
             if (!System.IO.Directory.Exists(profile.SourcePath))
             {
-                Console.Error.WriteLine($"Error: SourcePath '{profile.SourcePath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                UserIO.Error($"Error: SourcePath '{profile.SourcePath}' for profile '{profile.Id}' does not exist on the filesystem.");
                 return false;
             }
             // For DestinationPath, check directory or parent directory if destination is zip
@@ -106,7 +106,7 @@ namespace SyncToyNext.Core
                 var destDir = System.IO.Path.GetDirectoryName(profile.DestinationPath);
                 if (string.IsNullOrWhiteSpace(destDir) || !System.IO.Directory.Exists(destDir))
                 {
-                    Console.Error.WriteLine($"Error: The parent directory for DestinationPath '{profile.DestinationPath}' (profile '{profile.Id}') does not exist.");
+                    UserIO.Error($"Error: The parent directory for DestinationPath '{profile.DestinationPath}' (profile '{profile.Id}') does not exist.");
                     return false;
                 }
             }
@@ -114,7 +114,7 @@ namespace SyncToyNext.Core
             {
                 if (!System.IO.Directory.Exists(profile.DestinationPath))
                 {
-                    Console.Error.WriteLine($"Error: DestinationPath '{profile.DestinationPath}' for profile '{profile.Id}' does not exist on the filesystem.");
+                    UserIO.Error($"Error: DestinationPath '{profile.DestinationPath}' for profile '{profile.Id}' does not exist on the filesystem.");
                     return false;
                 }
             }
@@ -174,15 +174,15 @@ namespace SyncToyNext.Core
                 throw new ArgumentException($"No profile found with ID/Name '{profileIdOrName}'", nameof(profileIdOrName));
             // Use the profile's DestinationIsZip unless overridden
             bool useZip = profile.DestinationIsZip;
-            var logger = new Logger(profile.SourcePath);
+
             if (useZip)
             {
-                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, profile.OverwriteOption, logger);
+                var zipSync = new ZipFileSynchronizer(profile.DestinationPath, profile.OverwriteOption);
                 zipSync.FullSynchronization(profile.SourcePath);
             }
             else
             {
-                var fileSync = new FileSynchronizer(profile.DestinationPath, profile.OverwriteOption, logger);
+                var fileSync = new FileSynchronizer(profile.DestinationPath, profile.OverwriteOption);
                 fileSync.FullSynchronization(profile.SourcePath);
             }
         }

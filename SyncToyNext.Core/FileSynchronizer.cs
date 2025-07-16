@@ -14,14 +14,12 @@ namespace SyncToyNext.Core
     {
         private readonly string _destination;
         private readonly OverwriteOption _overwriteOption;
-        private readonly Logger _logger;
         private readonly bool _strictMode;
 
-        public FileSynchronizer(string destination, OverwriteOption overwriteOption, Logger logger, bool strictMode = false)
+        public FileSynchronizer(string destination, OverwriteOption overwriteOption, bool strictMode = false)
         {
             _destination = destination;
             _overwriteOption = overwriteOption;
-            _logger = logger;
             _strictMode = strictMode;
         }
 
@@ -206,12 +204,12 @@ namespace SyncToyNext.Core
                         try
                         {
                             File.Copy(srcFilePath, destFilePath, true);
-                            _logger.LogSyncAction(destFilePath, action);
+                            UserIO.Message($"{action} - {destFilePath}");
                             break;
                         }
                         catch (IOException)
                         {
-                            _logger.LogError($"File locked when trying to sync from '{srcFilePath}' to '{destFilePath}'. Retrying {attempt + 1}/{maxRetries}...");
+                            UserIO.Error($"File locked when trying to sync from '{srcFilePath}' to '{destFilePath}'. Retrying {attempt + 1}/{maxRetries}...");
                             attempt++;
                             if (attempt >= maxRetries) throw new IOException($"Failed to copy file after {maxRetries} attempts.");
                             Thread.Sleep(delayMs);
@@ -221,7 +219,7 @@ namespace SyncToyNext.Core
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to sync file '{srcFilePath}' to '{destFilePath}'", ex);
+                UserIO.Error($"Failed to sync file '{srcFilePath}' to '{destFilePath}'", ex);
             }
         }
     }

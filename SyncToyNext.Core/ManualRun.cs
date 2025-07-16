@@ -25,7 +25,7 @@ namespace SyncToyNext.Core
             }
             else
             {
-                Console.Error.WriteLine("Error: --to flag is required for manual sync.");
+                UserIO.Error("Error: --to flag is required for manual sync.");
                 Environment.Exit(1);
             }
 
@@ -34,7 +34,7 @@ namespace SyncToyNext.Core
             if (String.IsNullOrWhiteSpace(fromPath)
             || string.IsNullOrWhiteSpace(toPath))
                 {
-                    Console.Error.WriteLine("Error: --from and --to flags are required for manual sync.");
+                UserIO.Error("Error: --from and --to flags are required for manual sync.");
                     Environment.Exit(1);
                 }
 
@@ -46,7 +46,7 @@ namespace SyncToyNext.Core
                     )
             )
             {
-                Console.Error.WriteLine("Error: Both source and destination paths must be directories for manual sync. Or the destination must be a zip file");
+                UserIO.Error("Error: Both source and destination paths must be directories for manual sync. Or the destination must be a zip file");
                 Environment.Exit(1);
             }
 
@@ -74,11 +74,11 @@ namespace SyncToyNext.Core
 
             if(toZip)
             {
-                var zipFileSynchronizer = new ZipFileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, new Logger(fromPath), false);
+                var zipFileSynchronizer = new ZipFileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
                 zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
             } else
             {
-                var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, new Logger(fromPath), false);
+                var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
                 fileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
             }
         }

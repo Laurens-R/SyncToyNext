@@ -36,7 +36,6 @@ namespace SyncToyNext.Core
         private readonly string _destinationPath;
         private readonly OverwriteOption _overwriteOption;
         private readonly bool _destinationIsZip;
-        private readonly Logger _logger;
         private readonly Synchronizer _synchronizer;
         private readonly SyncInterval _syncInterval;
         private readonly SyncMode _syncMode;
@@ -64,15 +63,14 @@ namespace SyncToyNext.Core
             _destinationPath = destinationPath;
             _overwriteOption = overwriteOption;
             _destinationIsZip = destinationIsZip;
-            _logger = new Logger(_sourcePath);
             _syncInterval = syncInterval;
             _syncMode = mode;
             _strictMode = strictMode;
 
             if (_destinationIsZip)
-                _synchronizer = new ZipFileSynchronizer(_destinationPath, _overwriteOption, _logger, strictMode);
+                _synchronizer = new ZipFileSynchronizer(_destinationPath, _overwriteOption, strictMode);
             else
-                _synchronizer = new FileSynchronizer(_destinationPath, _overwriteOption, _logger, strictMode);
+                _synchronizer = new FileSynchronizer(_destinationPath, _overwriteOption, strictMode);
 
             if (_syncInterval != SyncInterval.Realtime)
             {
@@ -180,15 +178,15 @@ namespace SyncToyNext.Core
             }
             catch (IOException ioEx)
             {
-                _logger.LogError($"IO error syncing '{e.FullPath}'", ioEx);
+                UserIO.Error($"IO error syncing '{e.FullPath}'", ioEx);
             }
             catch (UnauthorizedAccessException uaEx)
             {
-                _logger.LogError($"Access denied syncing '{e.FullPath}'", uaEx);
+                UserIO.Error($"Access denied syncing '{e.FullPath}'", uaEx);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Unexpected error syncing '{e.FullPath}'", ex);
+                UserIO.Error($"Unexpected error syncing '{e.FullPath}'", ex);
             }
         }
 
@@ -265,7 +263,7 @@ namespace SyncToyNext.Core
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error handling rename event for '{e.OldFullPath}' to '{e.FullPath}'", ex);
+                UserIO.Error($"Error handling rename event for '{e.OldFullPath}' to '{e.FullPath}'", ex);
             }
         }
 
@@ -335,7 +333,7 @@ namespace SyncToyNext.Core
         /// </summary>
         public void Dispose()
         {
-            _logger.Log($"Shutting down watcher and synchronizer for " + _sourcePath);
+            UserIO.Message($"Shutting down watcher and synchronizer for " + _sourcePath);
             _shutdownRequested = true;
             _shutdownEvent.Set();
             _intervalThread?.Join();

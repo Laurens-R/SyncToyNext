@@ -14,14 +14,12 @@ namespace SyncToyNext.Core
     {
         private string _zipFilePath;
         private OverwriteOption _overwriteOption;
-        private Logger _logger;
         private bool _strictMode;
 
-        public ZipFileSynchronizer(string zipFilePath, OverwriteOption overwriteOption, Logger logger, bool strictMode = false)
+        public ZipFileSynchronizer(string zipFilePath, OverwriteOption overwriteOption, bool strictMode = false)
         {
             _zipFilePath = zipFilePath;
             _overwriteOption = overwriteOption;
-            _logger = logger;
             _strictMode = strictMode;
         }
 
@@ -120,25 +118,25 @@ namespace SyncToyNext.Core
                     using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
                     fileStream.CopyTo(entryStream);
-                    _logger.LogSyncAction(relativePath, action, "zip");
+                    UserIO.Message($"{action} (zip): {relativePath}");
                 }
                 
             }
             catch (IOException ioEx)
             {
-                _logger.LogError($"IO error syncing '{srcFilePath}' to zip '{_zipFilePath}'", ioEx);
+                UserIO.Error($"IO error syncing '{srcFilePath}' to zip '{_zipFilePath}'", ioEx);
             }
             catch (UnauthorizedAccessException uaEx)
             {
-                _logger.LogError($"Access denied syncing '{srcFilePath}' to zip '{_zipFilePath}'", uaEx);
+                UserIO.Error($"Access denied syncing '{srcFilePath}' to zip '{_zipFilePath}'", uaEx);
             }
             catch (InvalidDataException dataEx)
             {
-                _logger.LogError($"Invalid data in zip '{_zipFilePath}'", dataEx);
+                UserIO.Error($"Invalid data in zip '{_zipFilePath}'", dataEx);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Unexpected error syncing '{srcFilePath}' to zip '{_zipFilePath}'", ex);
+                UserIO.Error($"Unexpected error syncing '{srcFilePath}' to zip '{_zipFilePath}'", ex);
             }
         }
 
