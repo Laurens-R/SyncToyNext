@@ -69,6 +69,7 @@ namespace SyncToyNext.Core
                     srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                     entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
                     var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
+                    
                     if (secondsDifference > 2) // ZIP format is only precise to 2 seconds
                     {
                         shouldCopy = true;

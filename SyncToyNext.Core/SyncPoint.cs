@@ -220,6 +220,13 @@ namespace SyncToyNext.Core
             return _syncPoints.FirstOrDefault(sp => sp.SyncPointId.Equals(syncPointID, StringComparison.OrdinalIgnoreCase));
         }
 
+        /// <summary>
+        /// Gets all the file entries at a specific sync point. Not only the entries of the sync point itself, but also all previous sync points that were created before the given sync point.
+        /// This way we get a complete state of the files at the time of the sync point.
+        /// </summary>
+        /// <param name="syncPointID">The syncpoint ID to check</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         public List<SyncPointEntry> GetFileEntriesAtSyncpoint(string syncPointID)
         {
             var requestedSyncPoint = GetSyncPoint(syncPointID);
@@ -235,18 +242,16 @@ namespace SyncToyNext.Core
 
             var result = new List<SyncPointEntry>();
 
-            //now we are going to create a complete list of all files that were synced at this point by going through all previous sync points
-            //and combining their entries (this is needed because the various syncpoints are incremental and only contain the files that were changed since the last sync)
-
-            //because we sorted the sync points by LastSyncTime, we can safely assume that all previous sync points are older than the current one
-
+            // Use a HashSet to track included restore targets
             HashSet<string> includedRestoreTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var syncPoint in allRelevantSyncPoints)
             {
                 foreach (var entry in syncPoint.Entries)
                 {
-                    if(!includedRestoreTargets.Contains(entry.SourcePath))
+                    // If the entry is already included in the result, as we sorted the sync points by LastSyncTime descending,
+                    // we know that this entry represents the most recent state of the file.
+                    if (!includedRestoreTargets.Contains(entry.SourcePath))
                     {
                         //if the entry does not exist in the current sync point, we add it
                         result.Add(new SyncPointEntry
