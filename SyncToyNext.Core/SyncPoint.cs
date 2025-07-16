@@ -48,6 +48,11 @@ namespace SyncToyNext.Core
         
         [JsonConverter(typeof(JsonStringEnumConverter<SyncPointEntryType>))]
         public SyncPointEntryType EntryType { get; set; } = SyncPointEntryType.AddOrChanged;
+
+        public override string ToString()
+        {
+            return RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries)[0];
+        }
     }
 
     public class SyncPoint
@@ -81,6 +86,13 @@ namespace SyncToyNext.Core
                 EntryType = type
             };
             Entries.Add(entry);
+        }
+
+        public override string ToString()
+        {
+            var descriptionToRender = String.IsNullOrWhiteSpace(Description) ? "(no description provided)" : Description;
+
+            return $"{SyncPointId} - {descriptionToRender}";
         }
     }
 
