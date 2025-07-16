@@ -129,7 +129,7 @@ namespace SyncToyNext.Core
             var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncPointID);
             var allFilesInRestoreLocation = Directory.GetFiles(RestorePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}.stn{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase)));
+                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
 
             if (cmdArgs.Has("file"))
