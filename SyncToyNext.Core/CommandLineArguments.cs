@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SyncToyNext.Client
+namespace SyncToyNext.Core
 {
     /// <summary>
     /// Parses and stores command line arguments as key-value pairs, supporting both flags and string parameters.
@@ -13,6 +13,8 @@ namespace SyncToyNext.Client
 
         public CommandLineArguments(string[] args)
         {
+            OriginalArgs = args;
+
             for (int i = 0; i < args.Length; i++)
             {
                 var arg = args[i];
@@ -37,6 +39,8 @@ namespace SyncToyNext.Client
             }
         }
 
+        public string[] OriginalArgs { get; private set; }
+
         /// <summary>
         /// Gets the value for a given key, or null if not present.
         /// </summary>
@@ -46,6 +50,15 @@ namespace SyncToyNext.Client
         /// Checks if a flag/parameter is present.
         /// </summary>
         public bool Has(string key) => _args.ContainsKey(key);
+
+        public void Set(string key, string value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new ArgumentException("Key cannot be null or whitespace.", nameof(key));
+            }
+            _args[key] = value;
+        }
     }
 
 }

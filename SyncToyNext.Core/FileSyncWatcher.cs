@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace SyncToyNext.Core
 {
@@ -33,8 +36,7 @@ namespace SyncToyNext.Core
         private readonly string _destinationPath;
         private readonly OverwriteOption _overwriteOption;
         private readonly bool _destinationIsZip;
-        private readonly Logger _logger;
-        private readonly ISynchronizer _synchronizer;
+        private readonly Synchronizer _synchronizer;
         private readonly SyncInterval _syncInterval;
         private readonly SyncMode _syncMode;
         private readonly Stack<FileSyncAction>? _pendingChanges;
@@ -61,15 +63,14 @@ namespace SyncToyNext.Core
             _destinationPath = destinationPath;
             _overwriteOption = overwriteOption;
             _destinationIsZip = destinationIsZip;
-            _logger = new Logger(_sourcePath);
             _syncInterval = syncInterval;
             _syncMode = mode;
             _strictMode = strictMode;
 
             if (_destinationIsZip)
-                _synchronizer = new ZipFileSynchronizer(_destinationPath, _overwriteOption, _logger, strictMode);
+                _synchronizer = new ZipFileSynchronizer(_destinationPath, _overwriteOption, strictMode);
             else
-                _synchronizer = new FileSynchronizer(_destinationPath, _overwriteOption, _logger, strictMode);
+                _synchronizer = new FileSynchronizer(_destinationPath, _overwriteOption, strictMode);
 
             if (_syncInterval != SyncInterval.Realtime)
             {
@@ -126,11 +127,23 @@ namespace SyncToyNext.Core
         {
             try
             {
+                // Ignore changes if the file is already being processed in the queue and we are not in realtime mode.
+                if (_syncInterval != SyncInterval.Realtime && e.ChangeType == WatcherChangeTypes.Changed) 
+                {
+                    lock(_queueLock)
+                    {
+                        if(_pendingChanges != null && _pendingChanges.Any(x => x.SourcePath == e.FullPath))
+                        {
+                            return; // Ignore changes if the file is already queued because it would create a double operation.
+                        }
+                    }
+                }
+
                 if (File.Exists(e.FullPath))
                 {
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
                     // Ignore any changes in the synclogs subfolder
-                    if (relativePath.StartsWith("synclogs" + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    if (relativePath.StartsWith(".stn" + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                         return;
                     if (_syncInterval == SyncInterval.Realtime)
                     {
@@ -165,15 +178,15 @@ namespace SyncToyNext.Core
             }
             catch (IOException ioEx)
             {
-                _logger.LogError($"IO error syncing '{e.FullPath}'", ioEx);
+                UserIO.Error($"IO error syncing '{e.FullPath}'", ioEx);
             }
             catch (UnauthorizedAccessException uaEx)
             {
-                _logger.LogError($"Access denied syncing '{e.FullPath}'", uaEx);
+                UserIO.Error($"Access denied syncing '{e.FullPath}'", uaEx);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Unexpected error syncing '{e.FullPath}'", ex);
+                UserIO.Error($"Unexpected error syncing '{e.FullPath}'", ex);
             }
         }
 
@@ -186,7 +199,7 @@ namespace SyncToyNext.Core
                     // Ignore changes in synclogs
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
 
-                    if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    if (relativePath.StartsWith(".stn" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                         return;
 
 
@@ -213,27 +226,44 @@ namespace SyncToyNext.Core
 
                         var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
 
-                        if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                        if (relativePath.StartsWith(".stn" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                             return;
 
-                        //get the old full destination path
-                        var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
-                        var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
-
-                        _pendingChanges?.Push(new FileSyncAction
+                        if(_pendingChanges == null)
                         {
-                            SourcePath = e.FullPath,
-                            DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath),
-                            OldDestinationPath = oldDestPath,
-                            ActionType = SyncTypes.Rename,
-                            OldFullSourcePath = e.OldFullPath
-                        });
+                            throw new InvalidProgramException("Pending changes stack is null. This should not happen.");
+                        }
+
+                        var existingEntryForFile = _pendingChanges.FirstOrDefault(x => x.SourcePath == e.OldFullPath);
+
+                        if (existingEntryForFile != null)
+                        {
+                            // If the file is already in the queue, update its destination path
+                            existingEntryForFile.SourcePath = e.FullPath;
+                            existingEntryForFile.DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath);
+                            existingEntryForFile.ActionType = SyncTypes.Rename;
+                        }
+                        else
+                        {
+                            //get the old full destination path
+                            var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
+                            var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+
+                            _pendingChanges?.Push(new FileSyncAction
+                            {
+                                SourcePath = e.FullPath,
+                                DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath),
+                                OldDestinationPath = oldDestPath,
+                                ActionType = SyncTypes.Rename,
+                                OldFullSourcePath = e.OldFullPath
+                            });
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error handling rename event for '{e.OldFullPath}' to '{e.FullPath}'", ex);
+                UserIO.Error($"Error handling rename event for '{e.OldFullPath}' to '{e.FullPath}'", ex);
             }
         }
 
@@ -267,6 +297,7 @@ namespace SyncToyNext.Core
                         if (processedFiles.Contains(queueItem.SourcePath))
                             continue;
 
+                        // the file might have been deleted in the meantime, so we check if it exists
                         if (File.Exists(queueItem.SourcePath))
                         {
 
@@ -302,7 +333,7 @@ namespace SyncToyNext.Core
         /// </summary>
         public void Dispose()
         {
-            _logger.Log($"Shutting down watcher and synchronizer for " + _sourcePath);
+            UserIO.Message($"Shutting down watcher and synchronizer for " + _sourcePath);
             _shutdownRequested = true;
             _shutdownEvent.Set();
             _intervalThread?.Join();

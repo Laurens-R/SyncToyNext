@@ -44,3 +44,4 @@ SyncToyNext.Client/bin/Release/net9.0/osx-x64/publish/
 #debugging stuff specific to local machine
 *.pdb
 Debugging/
+/.vs

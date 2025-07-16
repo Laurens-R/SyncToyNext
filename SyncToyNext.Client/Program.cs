@@ -1,86 +1,20 @@
 ﻿using SyncToyNext.Core;
 using SyncToyNext.Client; // For VersionUtil
 using System.Reflection;
-
-#if WINDOWS
-using System.Runtime.InteropServices;
-using SyncToyNext.Client;
-using System.ServiceProcess;
-#endif
+using System;
+using System.Threading;
+using System.IO;
 
 // Print banner with version
 PrintBanner();
 
-var cmdArgs = new SyncToyNext.Client.CommandLineArguments(args);
+var cmdArgs = new CommandLineArguments(args);
 
 bool isService = cmdArgs.Has("service");
 bool strictMode = cmdArgs.Has("strict");
 bool forceFullSync = cmdArgs.Has("recover");
 
-#if WINDOWS
-string? configPath = cmdArgs.Get("config");
-if (isService && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-{
-    // Windows service mode
-    var service = new SyncToyNextService(configPath);
-    System.ServiceProcess.ServiceBase.Run(service);
-    return;
-}
-
-// Service shutdown logic should happen here, before any sync logic to ensure
-// that the service is not running while we perform sync operations.
-// This prevents conflicts with the service's own sync operations.
-ServiceController? synctoyService = null;
-bool wasServiceRunning = false;
-if (!isService)
-{
-    try
-    {
-        synctoyService = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName.Equals("SyncToyNext", StringComparison.OrdinalIgnoreCase));
-        if (synctoyService != null && synctoyService.Status == ServiceControllerStatus.Running)
-        {
-            wasServiceRunning = true;
-            Console.WriteLine("Stopping SyncToyNext service...");
-            synctoyService.Stop();
-            synctoyService.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
-            Console.WriteLine("SyncToyNext service stopped.");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error: Could not check/stop SyncToyNext service: {ex.Message}");
-        Console.WriteLine("Exiting to prevent conflicting sync actions.");
-        Environment.Exit(1);
-    }
-    // If the service is still running after the attempt, exit
-    if (synctoyService != null && synctoyService.Status == ServiceControllerStatus.Running)
-    {
-        Console.WriteLine("Error: SyncToyNext service is still running and could not be stopped. Exiting to prevent conflicts.");
-        Environment.Exit(1);
-    }
-}
-#endif
-
 MainProgramEntry(cmdArgs, strictMode, forceFullSync);
-
-// If running as a service, restart the service if it was running before
-// This to ensure that the service doesn't conflict with the console app
-#if WINDOWS
-if (!isService && wasServiceRunning && synctoyService != null)
-{
-    try
-    {
-        Console.WriteLine("Restarting SyncToyNext service...");
-        synctoyService.Start();
-        synctoyService.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-        Console.WriteLine("SyncToyNext service restarted.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Warning: Could not restart SyncToyNext service: {ex.Message}");
-    }
-}
-#endif
 
 void PrintBanner()
 {
@@ -92,7 +26,29 @@ void PrintBanner()
     Console.WriteLine("===============================================================================\n");
 }
 
-static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
+/// <summary>
+/// Runs the application in profile mode, synchronizing a specific profile.
+/// </summary>
+static void RunSpecificProfileMode(CommandLineArguments cmdArgs, bool strictMode)
+{
+    var profileName = cmdArgs.Get("profile") ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(profileName))
+    {
+        Console.Error.WriteLine("Error: --profile flag requires a profile name.");
+        Environment.Exit(1);
+    }
+
+    string? configPath = cmdArgs.Get("config");
+    var syncContext = configPath != null ? new SyncContext(configPath, strictMode, false) : new SyncContext(null, strictMode, false);
+    syncContext.Start();
+    syncContext.ManualSyncProfile(profileName);
+    syncContext.Shutdown();
+}
+
+/// <summary>
+/// Runs the application in task mode, continuously synchronizing profiles.
+/// </summary>
+static void RunInTaskMode(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
 {
     string? configPath = cmdArgs.Get("config");
 
@@ -124,6 +80,7 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
             Thread.Sleep(100); // Reduce CPU usage
         }
     });
+
     keyThread.IsBackground = true;
     keyThread.Start();
 
@@ -136,3 +93,236 @@ static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool
     Console.WriteLine("Shutting down...");
     syncContext.Shutdown();
 }
+
+/// <summary>
+/// Runs a manual synchronization between two specified paths.
+/// </summary>
+static void RunManual(CommandLineArguments cmdArgs)
+{
+    ManualRun.Run(cmdArgs);
+}
+
+static void RunRestoreSyncPoint(CommandLineArguments cmdArgs)
+{
+    SyncPointRestorer.Run(cmdArgs);
+}
+
+static void ConfigureRemote(CommandLineArguments cmdArgs)
+{
+    //get the current working directory
+    var workingDirectory = Environment.CurrentDirectory;
+
+    var remotePath = cmdArgs.Get("remote") ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(remotePath))
+    {
+        Console.Error.WriteLine("Error: --remote flag requires a remote path.");
+        Environment.Exit(1);
+    }
+
+    var remoteConfig = new RemoteConfig(remotePath, workingDirectory);
+    remoteConfig.Save(workingDirectory);
+
+    Console.WriteLine($"Succesfully configured remote at {remotePath}");
+}
+
+static void RunPushCommand(CommandLineArguments cmdArgs)
+{
+    try
+    {
+        string currentDirectory = Environment.CurrentDirectory;
+        var remoteConfig = RemoteConfig.Load(currentDirectory);
+        var remotePath = string.Empty;
+
+        while(remoteConfig == null)
+        {
+            var parentDirectoryInfo = Directory.GetParent(currentDirectory);
+            if(parentDirectoryInfo ==  null)
+            {
+                currentDirectory = Environment.CurrentDirectory;
+                break;
+            }
+
+            currentDirectory = parentDirectoryInfo.FullName;
+            remoteConfig = RemoteConfig.Load(currentDirectory);
+        }
+
+        if (remoteConfig == null)
+        {
+            Console.Error.WriteLine("Error: Remote configuration not found. Please configure the remote first using --remote <path>.");
+            Environment.Exit(1);
+        }
+
+        cmdArgs.Set("from", currentDirectory);
+        cmdArgs.Set("to", remoteConfig.RemotePath);
+        cmdArgs.Set("syncpoint", string.Empty);
+        RunManual(cmdArgs);
+
+    }
+    catch (Exception)
+    {
+        Console.Error.WriteLine($"Error loading remote config. Make sure the remote has been configured before pushing.");
+    }
+}
+
+static void Print(string message, int columnWidth = 50)
+{
+    if (message.Length > columnWidth)
+    {
+        message = message.Substring(0, columnWidth - 3) + "...";
+    }
+    Console.Write($"{message}");
+    for(int i = message.Length; i < columnWidth; i++)
+    {
+        Console.Write(" ");
+    }
+}
+
+static void RunListSyncPoints()
+{
+    try
+    {
+        var currentDirectory = Environment.CurrentDirectory;
+        var remoteConfig = RemoteConfig.Load(currentDirectory);
+
+        if (remoteConfig == null)
+        {
+            Console.Error.WriteLine("Error: Remote configuration not found. Please configure the remote first using --remote <path>.");
+            Environment.Exit(1);
+        }
+
+        var remotePath = remoteConfig.RemotePath;
+        var syncPointManager = new SyncPointManager(remotePath, currentDirectory);
+
+        var syncPoints = syncPointManager.SyncPoints;
+
+        const int IDColumnWidth = 20;
+        const int DescriptionColumnWidth = 50;
+
+        Print("ID", IDColumnWidth);
+        Print("Description", DescriptionColumnWidth);
+        Console.WriteLine();
+        Print("--", IDColumnWidth);
+        Print("-----------", DescriptionColumnWidth);
+        Console.WriteLine();
+
+        const string NodeDescription = "(none provided)";
+
+        foreach (var syncpoint in syncPoints)
+        {
+            var description = !String.IsNullOrWhiteSpace(syncpoint.Description) ? syncpoint.Description : NodeDescription;
+
+            Print(syncpoint.SyncPointId, IDColumnWidth);
+            Print(description, DescriptionColumnWidth);
+            Console.WriteLine();
+        }
+
+    }
+    catch (Exception)
+    {
+        Console.Error.WriteLine($"Error loading remote config. Make sure the remote has been configured before listing syncpoints.");
+    }
+}
+
+static void RunService(CommandLineArguments cmdArgs)
+{
+    if (OperatingSystem.IsWindows())
+    {
+        var service = new SyncToyNextService(cmdArgs.Get("config"));
+        System.ServiceProcess.ServiceBase.Run(service);
+    }
+    else
+    {
+        Console.Error.WriteLine("Error: Service mode is only supported on Windows.");
+        Environment.Exit(1);
+    }
+}
+
+static void RunHelp()
+{
+    Console.WriteLine("Usage: stn [options]");
+    Console.WriteLine("Options:");
+
+    //print overview of logical option combinations in groupings as per the options etc in the main program entry
+    Console.WriteLine();
+    Console.WriteLine("General Options:");
+    Console.WriteLine("  --help                 Show this help message.");
+    Console.WriteLine("  --config <file>        Specify a custom configuration file path.");
+    Console.WriteLine("  --strict               Enable strict mode for synchronization (Checksum validation for differences)");
+    Console.WriteLine("  --recover              Force a full sync to recover from an interrupted state.");
+    Console.WriteLine("  --service              Run the application as a Windows service (Windows only).");
+    Console.WriteLine();
+
+    Console.WriteLine("Running a specific profile manually:");
+    Console.WriteLine("  --profile <name>       Run a specific profile in manual mode.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Manual Sync:");
+    Console.WriteLine("  --from <path>          Specify the source path for manual sync.");
+    Console.WriteLine("  --to <path>            Specify the destination path for manual sync.");
+    Console.WriteLine("  --syncpoint>           Indicate that this sync should create a syncpoint.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Pushing changes in folder (requires configured remote location):");
+    Console.WriteLine("  --push                 Push changes to the remote path.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Restoring a sync point:");
+    Console.WriteLine("  --restore <id>         Restore a sync point by ID.");
+    Console.WriteLine("  --from <path>          (Optional if no remote configured) Specify the source path for restoring a sync point.");
+    Console.WriteLine();
+    
+    Console.WriteLine("Configure syncpoint remote for current directory:");
+    Console.WriteLine("  --remote <path>        Configure a remote path for syncpoint operations.");
+    Console.WriteLine();
+    Console.WriteLine("Listing all sync points for the current location (requires configured remote location):");
+    Console.WriteLine("  --list                 List all sync points.");
+}
+
+static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
+{
+    try
+    {
+        if (cmdArgs.Has("profile"))
+        {
+            RunSpecificProfileMode(cmdArgs, strictMode);
+        }
+        else if (cmdArgs.Has("from"))
+        {
+            RunManual(cmdArgs);
+        }
+        else if (cmdArgs.Has("restore"))
+        {
+            RunRestoreSyncPoint(cmdArgs);
+        }
+        else if (cmdArgs.Has("remote"))
+        {
+            ConfigureRemote(cmdArgs);
+        }
+        else if (cmdArgs.Has("push"))
+        {
+            RunPushCommand(cmdArgs);
+        }
+        else if (cmdArgs.Has("list"))
+        {
+            RunListSyncPoints();
+        }
+        else if (cmdArgs.Has("help"))
+        {
+            RunHelp();
+        }
+        else if(cmdArgs.Has("service"))
+        {
+            RunService(cmdArgs);
+        }
+        else
+        {
+            RunInTaskMode(cmdArgs, strictMode, forceFullSync);
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error: {ex.Message}");
+        Environment.Exit(1);
+    }
+}
+

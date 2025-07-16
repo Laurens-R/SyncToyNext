@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "SyncToyNext.Client": {
+      "commandName": "Project",
+      "commandLineArgs": "--push",
+      "workingDirectory": "C:\\Temp\\a"
+    }
+  }
+}
