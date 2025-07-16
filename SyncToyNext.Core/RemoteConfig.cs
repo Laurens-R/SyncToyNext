@@ -34,25 +34,38 @@ namespace SyncToyNext.Core
             RemotePath = remotePath;
         }
 
-        public void Save(string filePath)
+        public void Save(string rootDirectory)
         {
-            if(!Directory.Exists(filePath))             {
-                throw new DirectoryNotFoundException($"The directory '{Path.GetDirectoryName(filePath)}' does not exist. Or a file was provided.");
+            if (!Directory.Exists(rootDirectory))
+            {
+                throw new DirectoryNotFoundException($"The directory '{Path.GetDirectoryName(rootDirectory)}' does not exist. Or a file was provided.");
+            }
+
+            var stnInternalsFolder = Path.Combine(rootDirectory, ".stn");
+            if (!Directory.Exists(stnInternalsFolder))
+            {
+                Directory.CreateDirectory(stnInternalsFolder);
             }
 
             var json = JsonSerializer.Serialize(this, RemoteConfigJsonContext.Default.RemoteConfig);
-            File.WriteAllText(Path.Combine(filePath, "stn.remote.json"), json, Encoding.UTF8);
+            File.WriteAllText(Path.Combine(rootDirectory, ".stn/stn.remote.json"), json, Encoding.UTF8);
         }
 
-        public static RemoteConfig? Load(string filePath)
+        public static RemoteConfig? Load(string rootDirectory)
         {
-            if (!Directory.Exists(filePath))
+            if (!Directory.Exists(rootDirectory))
             {
                 return null;
             }
 
-            var configFile = Path.Combine(filePath, "stn.remote.json");
-            
+            var stnInternalsFolder = Path.Combine(rootDirectory, ".stn");
+            if (!Directory.Exists(stnInternalsFolder))
+            {
+                Directory.CreateDirectory(stnInternalsFolder);
+            }
+
+            var configFile = Path.Combine(stnInternalsFolder, "stn.remote.json");
+
             if (!File.Exists(configFile))
             {
                 return null;
@@ -60,6 +73,23 @@ namespace SyncToyNext.Core
 
             var json = File.ReadAllText(configFile, Encoding.UTF8);
             return JsonSerializer.Deserialize(json, RemoteConfigJsonContext.Default.RemoteConfig) ?? new RemoteConfig(string.Empty, string.Empty);
+        }
+
+        public static bool RemoteConfigExists(string rootDirectory)
+        {
+            if (!Directory.Exists(rootDirectory))
+            {
+                return false;
+            }
+
+            var stnInternalsFolder = Path.Combine(rootDirectory, ".stn");
+            if (!Directory.Exists(stnInternalsFolder))
+            {
+                return false;
+            }
+
+            var configFile = Path.Combine(stnInternalsFolder, "stn.remote.json");
+            return File.Exists(configFile);
         }
     }
 }

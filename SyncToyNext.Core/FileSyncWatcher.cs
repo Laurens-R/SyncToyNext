@@ -143,7 +143,7 @@ namespace SyncToyNext.Core
                 {
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
                     // Ignore any changes in the synclogs subfolder
-                    if (relativePath.StartsWith("synclogs" + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    if (relativePath.StartsWith(".stn" + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                         return;
                     if (_syncInterval == SyncInterval.Realtime)
                     {
@@ -199,7 +199,7 @@ namespace SyncToyNext.Core
                     // Ignore changes in synclogs
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
 
-                    if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    if (relativePath.StartsWith(".stn" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                         return;
 
 
@@ -226,7 +226,7 @@ namespace SyncToyNext.Core
 
                         var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
 
-                        if (relativePath.StartsWith("synclogs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                        if (relativePath.StartsWith(".stn" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                             return;
 
                         if(_pendingChanges == null)

@@ -128,9 +128,8 @@ namespace SyncToyNext.Core
 
             var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncPointID);
             var allFilesInRestoreLocation = Directory.GetFiles(RestorePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}synclogs{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}synclogs", StringComparison.OrdinalIgnoreCase)
-                        && !f.EndsWith("stn.remote.json", StringComparison.OrdinalIgnoreCase));
+                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}.stn{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase)));
 
 
             if (cmdArgs.Has("file"))
@@ -313,7 +312,7 @@ namespace SyncToyNext.Core
             {
                 var relativeRestorePath = Path.GetRelativePath(RestorePath, file);
                 var foundFile = allSyncPointFiles.FirstOrDefault(f => f.SourcePath == relativeRestorePath);
-                if (foundFile == null && !Path.GetFileName(file).Equals("stn.remote.json", StringComparison.OrdinalIgnoreCase))
+                if (foundFile == null)
                 {
                     // this file was not part of the sync point, so we can remove it
                     try
