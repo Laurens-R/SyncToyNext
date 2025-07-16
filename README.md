@@ -1,10 +1,21 @@
-# ⚠️ Disclaimer: Project Under Development
-
-**This project is still heavily under development. Use at your own risk! The author takes no responsibility for any damages, data loss, or other issues caused by using this project in any environment.**
-
 # SyncToyNext
 
-SyncToyNext is a flexible, cross-platform file and folder synchronization tool for .NET. It supports local and network (UNC/SAMBA) paths, and can synchronize to both regular directories and zip files. SyncToyNext can run as a console application or as a Windows service, making it suitable for both interactive and background/service scenarios.
+SyncToyNext (STN in short)  is a flexible, cross-platform file and folder synchronization tool for .NET. It supports local and network (UNC/SAMBA) paths, and can synchronize to both regular directories and zip files. SyncToyNext can run as a console application or as a Windows service, making it suitable for both interactive and background/service scenarios.
+
+It is ideal for scenario's where you need to keep files in sync across multiple locations or have versioning needs, without immediate access to 
+full backup/replication solutions, cloud services or more complex version control systems. This synchronization tool is designed to be simple and
+requires no dedicated server or cloud infrastructure to operate. The only thing you need is two file locations. These can be on the same drive,
+on different drives, or network shares. 
+
+STN can also be used a single step in a larger backup or replication workflow. So for example, on windows you can point the tool to the local 
+OneDrive folder, which will then in turn synchronize to the cloud. And this is only a simple example of how you can use the tool in a larger 
+workflow.
+
+You can also chain multiple steps together. For example: you can work with local syncpoints on the same machine to have quick version control
+and then replicate these syncpoints to a remote location for backup purposes. This last step can also be done at handy moments, such as when the
+computer is shutting down.
+
+Right now only single user scenarios are supported, but in the future multi-user scenarios will be added.
 
 ## Features
 - Synchronize files and folders between any two locations (including network shares)
@@ -19,6 +30,10 @@ SyncToyNext is a flexible, cross-platform file and folder synchronization tool f
 - Centralized logging to both file and console
 - Runs as a console app or Windows service
 - Produces a standalone, self-contained executable (no .NET runtime required)
+
+# Disclaimer
+
+**This project is still under development. The author takes no responsibility for any damages, data loss, or other issues caused by using this project/tool in any environment.**
 
 ## Getting Started
 

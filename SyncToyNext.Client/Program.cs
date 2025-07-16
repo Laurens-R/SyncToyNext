@@ -121,6 +121,8 @@ static void ConfigureRemote(CommandLineArguments cmdArgs)
 
     var remoteConfig = new RemoteConfig(remotePath, workingDirectory);
     remoteConfig.Save(workingDirectory);
+
+    Console.WriteLine($"Succesfully configured remote at {remotePath}");
 }
 
 static void RunPushCommand(CommandLineArguments cmdArgs)
@@ -237,10 +239,19 @@ static void RunService(CommandLineArguments cmdArgs)
 
 static void RunHelp()
 {
-    Console.WriteLine("Usage: SyncToyNext [options]");
+    Console.WriteLine("Usage: stn [options]");
     Console.WriteLine("Options:");
-    
+
     //print overview of logical option combinations in groupings as per the options etc in the main program entry
+    Console.WriteLine();
+    Console.WriteLine("General Options:");
+    Console.WriteLine("  --help                 Show this help message.");
+    Console.WriteLine("  --config <file>        Specify a custom configuration file path.");
+    Console.WriteLine("  --strict               Enable strict mode for synchronization (Checksum validation for differences)");
+    Console.WriteLine("  --recover              Force a full sync to recover from an interrupted state.");
+    Console.WriteLine("  --service              Run the application as a Windows service (Windows only).");
+    Console.WriteLine();
+
     Console.WriteLine("Running a specific profile manually:");
     Console.WriteLine("  --profile <name>       Run a specific profile in manual mode.");
     Console.WriteLine();
@@ -260,19 +271,11 @@ static void RunHelp()
     Console.WriteLine("  --from <path>          (Optional if no remote configured) Specify the source path for restoring a sync point.");
     Console.WriteLine();
     
-    Console.WriteLine("Configure remote for current director:");
-    Console.WriteLine("  --remote <path>        Configure a remote path for sync operations.");
+    Console.WriteLine("Configure syncpoint remote for current directory:");
+    Console.WriteLine("  --remote <path>        Configure a remote path for syncpoint operations.");
     Console.WriteLine();
     Console.WriteLine("Listing all sync points for the current location (requires configured remote location):");
     Console.WriteLine("  --list                 List all sync points.");
-
-    Console.WriteLine();
-    Console.WriteLine("General Options:");
-    Console.WriteLine("  --help                 Show this help message.");
-    Console.WriteLine("  --config <file>        Specify a custom configuration file path.");
-    Console.WriteLine("  --strict               Enable strict mode for synchronization (Checksum validation for differences)");
-    Console.WriteLine("  --recover              Force a full sync to recover from an interrupted state.");
-    Console.WriteLine("  --service              Run the application as a Windows service (Windows only).");
 }
 
 static void MainProgramEntry(CommandLineArguments cmdArgs, bool strictMode, bool forceFullSync)
