@@ -98,7 +98,7 @@
             // menuChangeRemote
             // 
             menuChangeRemote.Name = "menuChangeRemote";
-            menuChangeRemote.Size = new Size(115, 22);
+            menuChangeRemote.Size = new Size(180, 22);
             menuChangeRemote.Text = "Change";
             menuChangeRemote.Click += menuChangeRemote_Click;
             // 
@@ -226,32 +226,33 @@
             // 
             contextMenuRemote.Items.AddRange(new ToolStripItem[] { menuContextCompareLocal, menuContextEditor, toolStripMenuItem1, contextMenuRestoreItems });
             contextMenuRemote.Name = "contextMenuRemote";
-            contextMenuRemote.Size = new Size(178, 76);
+            contextMenuRemote.Size = new Size(181, 98);
             // 
             // menuContextCompareLocal
             // 
             menuContextCompareLocal.Name = "menuContextCompareLocal";
-            menuContextCompareLocal.Size = new Size(177, 22);
+            menuContextCompareLocal.Size = new Size(180, 22);
             menuContextCompareLocal.Text = "Compare with local";
             menuContextCompareLocal.Click += menuContextCompareLocal_Click;
             // 
             // menuContextEditor
             // 
             menuContextEditor.Name = "menuContextEditor";
-            menuContextEditor.Size = new Size(177, 22);
+            menuContextEditor.Size = new Size(180, 22);
             menuContextEditor.Text = "Open in Editor";
             menuContextEditor.Click += menuContextEditor_Click;
             // 
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(174, 6);
+            toolStripMenuItem1.Size = new Size(177, 6);
             // 
             // contextMenuRestoreItems
             // 
             contextMenuRestoreItems.Name = "contextMenuRestoreItems";
-            contextMenuRestoreItems.Size = new Size(177, 22);
+            contextMenuRestoreItems.Size = new Size(180, 22);
             contextMenuRestoreItems.Text = "Restore item(s)";
+            contextMenuRestoreItems.Click += contextMenuRestoreItems_Click;
             // 
             // statusStrip
             // 

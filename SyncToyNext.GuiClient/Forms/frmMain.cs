@@ -541,5 +541,49 @@ namespace SyncToyNext.GuiClient
             if (string.IsNullOrEmpty(SessionContext.RemoteFolderPath)) return;
             lblRemotePath.Text = $"Remote path: {Path.Combine(Path.GetDirectoryName(SessionContext.RemoteFolderPath) ?? SessionContext.RemoteFolderPath, fileBrowserRemote.CurrentPath)}";
         }
+
+        private void contextMenuRestoreItems_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (MessageBox.Show("Are you sure you want to restore the selected items? This will overwrite the files on the local repository.", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    UserIO.Message("Started restoring individual items from syncpoint.");
+
+                    if (String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
+                    {
+                        throw new InvalidOperationException("Local folder path should not be empty.");
+                    }
+
+                    var currentSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
+                    SyncPointRestorer.RestorePath = SessionContext.LocalFolderPath;
+
+                    bool isZipped = Path.HasExtension(SessionContext.RemoteFolderPath) && Path.GetExtension(SessionContext.RemoteFolderPath) == ".zip";
+
+                    if (fileBrowserRemote.SelectedItems.Count() > 0 && currentSyncPoint != null)
+                    {
+                        foreach (var selectedItem in fileBrowserRemote.SelectedItems)
+                        {
+                            var entry = selectedItem as SyncPointEntry;
+                            if (entry != null) {
+                                var entryParts = entry.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
+                                var relativeEntryPath = entryParts[0];
+
+                                if (selectedItem != null && !String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
+                                {
+                                    SyncPointRestorer.Run(currentSyncPoint.SyncPointId, string.Empty, relativeEntryPath);
+                                }
+                            }
+                        }
+                    }
+
+                    UserIO.Message("Completed restoring individual items from syncpoint.");
+                    ShowLog();
+                }
+            } catch (Exception ex)
+            {
+                UserIO.Error(ex.Message);
+            }
+        }
     }
 }
