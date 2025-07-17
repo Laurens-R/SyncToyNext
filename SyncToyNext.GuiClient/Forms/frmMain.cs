@@ -170,7 +170,6 @@ namespace SyncToyNext.GuiClient
                                             .Where(x => x.EntryType == SyncPointEntryType.AddOrChanged);
 
                 fileBrowserRemote.AllItemPaths = syncPointEntries;
-                //fileBrowserRemote.RootPath = SessionContext.RemoteFolderPath;
                 fileBrowserRemote.NavigateToPath(".");
                 fileBrowserRemote.RefreshItems();
             }
