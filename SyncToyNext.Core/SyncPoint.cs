@@ -48,6 +48,11 @@ namespace SyncToyNext.Core
         
         [JsonConverter(typeof(JsonStringEnumConverter<SyncPointEntryType>))]
         public SyncPointEntryType EntryType { get; set; } = SyncPointEntryType.AddOrChanged;
+
+        public override string ToString()
+        {
+            return RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries)[0];
+        }
     }
 
     public class SyncPoint
@@ -81,6 +86,13 @@ namespace SyncToyNext.Core
                 EntryType = type
             };
             Entries.Add(entry);
+        }
+
+        public override string ToString()
+        {
+            var descriptionToRender = String.IsNullOrWhiteSpace(Description) ? "(no description provided)" : Description;
+
+            return $"{SyncPointId} - {descriptionToRender}";
         }
     }
 
@@ -170,6 +182,12 @@ namespace SyncToyNext.Core
 
             // Sort sync points by LastSyncTime, descending
             _syncPoints.Sort((sp1, sp2) => sp2.LastSyncTime.CompareTo(sp1.LastSyncTime));
+        }
+
+        public void RefreshSyncPoints()
+        {
+            _syncPoints.Clear();
+            LoadSyncPoints();
         }
 
         public SyncPoint AddSyncPoint(string sourcePath, string syncPointID = "", string description = "")

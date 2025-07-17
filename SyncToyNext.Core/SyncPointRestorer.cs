@@ -16,7 +16,7 @@ namespace SyncToyNext.Core
 
         public static void EstablishRestorePath()
         {
-            var currentPath = Environment.CurrentDirectory;
+            var currentPath = RestorePath;
             RemoteConfig? config = RemoteConfig.Load(currentPath);
 
             while (config == null)
@@ -37,23 +37,17 @@ namespace SyncToyNext.Core
             RestorePath = currentPath;
         }
 
-        public static void Run(CommandLineArguments cmdArgs)
+        public static void Run(string syncpointId, string remotePath = "", string singleFile = "")
         {
-            if(cmdArgs == null)
-            {
-                throw new ArgumentNullException(nameof(cmdArgs), "Command line arguments cannot be null.");
-            }
-
-            var syncPointID = cmdArgs.Get("restore");
-            bool hasManualFrom = cmdArgs.Has("from");
+            bool hasManualRemotePath = !string.IsNullOrWhiteSpace(remotePath);
 
             EstablishRestorePath();
 
-            if (hasManualFrom)
+            if (hasManualRemotePath)
             {
-                RemotePath = cmdArgs.Get("from") ?? string.Empty;
+                RemotePath = remotePath;
 
-                if(String.IsNullOrEmpty(RemotePath))
+                if(string.IsNullOrEmpty(RemotePath))
                 {
                     throw new ArgumentException("The 'from' argument must provide a path value.");
                 }
@@ -103,7 +97,7 @@ namespace SyncToyNext.Core
 
             SyncPoint? syncPoint = null;
 
-            if (String.IsNullOrWhiteSpace(syncPointID) || syncPointID == "latest")
+            if (string.IsNullOrWhiteSpace(syncpointId) || syncpointId == "latest")
             {
                 // if no sync point ID is provided, we will try to restore the latest sync point
                 if (syncPointManager.SyncPoints.Count == 0)
@@ -112,39 +106,38 @@ namespace SyncToyNext.Core
                 }
 
                 syncPoint = syncPointManager.SyncPoints.First();
-                syncPointID = syncPoint.SyncPointId;
+                syncpointId = syncPoint.SyncPointId;
             }
             else
             {
-                syncPoint = syncPointManager.GetSyncPoint(syncPointID);
+                syncPoint = syncPointManager.GetSyncPoint(syncpointId);
             }
 
             if (syncPoint == null)
             {
-                throw new InvalidOperationException($"Sync point with ID '{syncPointID}' not found in the specified path.");
+                throw new InvalidOperationException($"Sync point with ID '{syncpointId}' not found in the specified path.");
             }
 
             bool isZipped = syncPointManager.IsZipped;
 
-            var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncPointID);
+            var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncpointId);
             var allFilesInRestoreLocation = Directory.GetFiles(RestorePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}.stn{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
+                    .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
 
-            if (cmdArgs.Has("file"))
+            if (!String.IsNullOrWhiteSpace(singleFile))
             {
-                SingleFileRestore(cmdArgs, syncPointID, isZipped, allSyncPointFiles);
+                SingleFileRestore(singleFile, syncpointId, isZipped, allSyncPointFiles);
             }
             else
             {
-                FullSyncPointRestore(syncPointID, isZipped, allSyncPointFiles, allFilesInRestoreLocation);
+                FullSyncPointRestore(syncpointId, isZipped, allSyncPointFiles, allFilesInRestoreLocation);
             }
         }
 
-        private static bool SingleFileRestore(CommandLineArguments cmdArgs, string syncPointID,  bool isZipped, List<SyncPointEntry> allSyncPointFiles)
+        private static bool SingleFileRestore(string requestedFile, string syncPointID,  bool isZipped, List<SyncPointEntry> allSyncPointFiles)
         {
-            var requestedFile = cmdArgs.Get("file");
             if (string.IsNullOrWhiteSpace(requestedFile))
             {
                 throw new ArgumentException("The 'file' argument cannot be null or empty when restoring a specific file.");

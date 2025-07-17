@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link rel="stylesheet"
+          data-name="vs/editor/editor.main"
+          href="./min/vs/editor/editor.main.css" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        #container {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <script src="./min/vs/loader.js"></script>
+    <script>
+        require.config({ paths: { 'vs': './min/vs' } });
+    </script>
+    <script src="./min/vs/editor/editor.main.js"></script>
+    <script>
+        var diffEditor = monaco.editor.createDiffEditor(document.getElementById('container'), {
+            automaticLayout: true,
+            theme: 'vs-dark',
+            readOnly: true,
+            enableSplitViewResizing: true,
+            renderSideBySide: true
+        });
+        window.chrome.webview.postMessage('monaco-ready');
+    </script>
+</body>
+</html>
