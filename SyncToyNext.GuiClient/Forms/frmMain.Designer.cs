@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmMain));
             menuMain = new MenuStrip();
             menuFile = new ToolStripMenuItem();
@@ -36,15 +37,19 @@
             menuChangeRemote = new ToolStripMenuItem();
             menuLog = new ToolStripMenuItem();
             mainSplitContainer = new SplitContainer();
-            toolStrip2 = new ToolStrip();
+            toolStripLocal = new ToolStrip();
             btnPush = new ToolStripButton();
             lblLocalPath = new Label();
             fileBrowserLocal = new FileBrowserListView();
-            toolStrip1 = new ToolStrip();
+            toolStripRemote = new ToolStrip();
             btnRestore = new ToolStripButton();
             comboSyncPoints = new ComboBox();
             lblRemotePath = new Label();
             fileBrowserRemote = new FileBrowserListView();
+            contextMenuRemote = new ContextMenuStrip(components);
+            menuContextEditor = new ToolStripMenuItem();
+            toolStripMenuItem1 = new ToolStripSeparator();
+            contextMenuRestoreItems = new ToolStripMenuItem();
             statusStrip = new StatusStrip();
             lblStatus = new ToolStripStatusLabel();
             browserFolders = new FolderBrowserDialog();
@@ -53,8 +58,9 @@
             mainSplitContainer.Panel1.SuspendLayout();
             mainSplitContainer.Panel2.SuspendLayout();
             mainSplitContainer.SuspendLayout();
-            toolStrip2.SuspendLayout();
-            toolStrip1.SuspendLayout();
+            toolStripLocal.SuspendLayout();
+            toolStripRemote.SuspendLayout();
+            contextMenuRemote.SuspendLayout();
             statusStrip.SuspendLayout();
             SuspendLayout();
             // 
@@ -77,7 +83,7 @@
             // menuOpenLocalLocation
             // 
             menuOpenLocalLocation.Name = "menuOpenLocalLocation";
-            menuOpenLocalLocation.Size = new Size(177, 22);
+            menuOpenLocalLocation.Size = new Size(180, 22);
             menuOpenLocalLocation.Text = "Open local location";
             menuOpenLocalLocation.Click += menuOpenLocalLocation_Click;
             // 
@@ -91,7 +97,7 @@
             // menuChangeRemote
             // 
             menuChangeRemote.Name = "menuChangeRemote";
-            menuChangeRemote.Size = new Size(115, 22);
+            menuChangeRemote.Size = new Size(180, 22);
             menuChangeRemote.Text = "Change";
             menuChangeRemote.Click += menuChangeRemote_Click;
             // 
@@ -111,13 +117,13 @@
             // 
             // mainSplitContainer.Panel1
             // 
-            mainSplitContainer.Panel1.Controls.Add(toolStrip2);
+            mainSplitContainer.Panel1.Controls.Add(toolStripLocal);
             mainSplitContainer.Panel1.Controls.Add(lblLocalPath);
             mainSplitContainer.Panel1.Controls.Add(fileBrowserLocal);
             // 
             // mainSplitContainer.Panel2
             // 
-            mainSplitContainer.Panel2.Controls.Add(toolStrip1);
+            mainSplitContainer.Panel2.Controls.Add(toolStripRemote);
             mainSplitContainer.Panel2.Controls.Add(comboSyncPoints);
             mainSplitContainer.Panel2.Controls.Add(lblRemotePath);
             mainSplitContainer.Panel2.Controls.Add(fileBrowserRemote);
@@ -125,14 +131,13 @@
             mainSplitContainer.SplitterDistance = 561;
             mainSplitContainer.TabIndex = 1;
             // 
-            // toolStrip2
+            // toolStripLocal
             // 
-            toolStrip2.Items.AddRange(new ToolStripItem[] { btnPush });
-            toolStrip2.Location = new Point(0, 0);
-            toolStrip2.Name = "toolStrip2";
-            toolStrip2.Size = new Size(561, 25);
-            toolStrip2.TabIndex = 3;
-            toolStrip2.Text = "toolStrip2";
+            toolStripLocal.Items.AddRange(new ToolStripItem[] { btnPush });
+            toolStripLocal.Location = new Point(0, 0);
+            toolStripLocal.Name = "toolStripLocal";
+            toolStripLocal.Size = new Size(561, 25);
+            toolStripLocal.TabIndex = 3;
             // 
             // btnPush
             // 
@@ -162,14 +167,14 @@
             fileBrowserLocal.TabIndex = 0;
             fileBrowserLocal.DoubleClickSelectedItem += fileBrowserLocal_DoubleClickSelectedItem;
             // 
-            // toolStrip1
+            // toolStripRemote
             // 
-            toolStrip1.Items.AddRange(new ToolStripItem[] { btnRestore });
-            toolStrip1.Location = new Point(0, 0);
-            toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(552, 25);
-            toolStrip1.TabIndex = 4;
-            toolStrip1.Text = "toolStrip1";
+            toolStripRemote.Items.AddRange(new ToolStripItem[] { btnRestore });
+            toolStripRemote.Location = new Point(0, 0);
+            toolStripRemote.Name = "toolStripRemote";
+            toolStripRemote.Size = new Size(552, 25);
+            toolStripRemote.TabIndex = 4;
+            toolStripRemote.Text = "toolStrip1";
             // 
             // btnRestore
             // 
@@ -180,7 +185,7 @@
             btnRestore.Size = new Size(23, 22);
             btnRestore.Text = "Restore current syncpoint";
             btnRestore.TextAlign = ContentAlignment.MiddleRight;
-            btnRestore.Click += this.btnRestore_Click;
+            btnRestore.Click += btnRestore_Click;
             // 
             // comboSyncPoints
             // 
@@ -204,11 +209,36 @@
             // fileBrowserRemote
             // 
             fileBrowserRemote.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            fileBrowserRemote.ContextMenuStrip = contextMenuRemote;
             fileBrowserRemote.Location = new Point(3, 93);
             fileBrowserRemote.Name = "fileBrowserRemote";
             fileBrowserRemote.Size = new Size(537, 650);
             fileBrowserRemote.TabIndex = 0;
             fileBrowserRemote.DoubleClickSelectedItem += fileBrowserRemote_DoubleClickSelectedItem;
+            // 
+            // contextMenuRemote
+            // 
+            contextMenuRemote.Items.AddRange(new ToolStripItem[] { menuContextEditor, toolStripMenuItem1, contextMenuRestoreItems });
+            contextMenuRemote.Name = "contextMenuRemote";
+            contextMenuRemote.Size = new Size(154, 54);
+            // 
+            // menuContextEditor
+            // 
+            menuContextEditor.Name = "menuContextEditor";
+            menuContextEditor.Size = new Size(153, 22);
+            menuContextEditor.Text = "Open in Editor";
+            menuContextEditor.Click += menuContextEditor_Click;
+            // 
+            // toolStripMenuItem1
+            // 
+            toolStripMenuItem1.Name = "toolStripMenuItem1";
+            toolStripMenuItem1.Size = new Size(150, 6);
+            // 
+            // contextMenuRestoreItems
+            // 
+            contextMenuRestoreItems.Name = "contextMenuRestoreItems";
+            contextMenuRestoreItems.Size = new Size(153, 22);
+            contextMenuRestoreItems.Text = "Restore item(s)";
             // 
             // statusStrip
             // 
@@ -223,8 +253,8 @@
             // lblStatus
             // 
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(118, 17);
-            lblStatus.Text = "toolStripStatusLabel1";
+            lblStatus.Size = new Size(60, 17);
+            lblStatus.Text = "Status: Ok";
             // 
             // frmMain
             // 
@@ -246,10 +276,11 @@
             mainSplitContainer.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).EndInit();
             mainSplitContainer.ResumeLayout(false);
-            toolStrip2.ResumeLayout(false);
-            toolStrip2.PerformLayout();
-            toolStrip1.ResumeLayout(false);
-            toolStrip1.PerformLayout();
+            toolStripLocal.ResumeLayout(false);
+            toolStripLocal.PerformLayout();
+            toolStripRemote.ResumeLayout(false);
+            toolStripRemote.PerformLayout();
+            contextMenuRemote.ResumeLayout(false);
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
             ResumeLayout(false);
@@ -270,12 +301,16 @@
         private Label lblLocalPath;
         private Label lblRemotePath;
         private ComboBox comboSyncPoints;
-        private ToolStrip toolStrip2;
-        private ToolStrip toolStrip1;
+        private ToolStrip toolStripLocal;
+        private ToolStrip toolStripRemote;
         private ToolStripButton btnPush;
         private ToolStripButton btnRestore;
         private ToolStripMenuItem menuRemote;
         private ToolStripMenuItem menuChangeRemote;
         private ToolStripMenuItem menuLog;
+        private ContextMenuStrip contextMenuRemote;
+        private ToolStripMenuItem contextMenuRestoreItems;
+        private ToolStripMenuItem menuContextEditor;
+        private ToolStripSeparator toolStripMenuItem1;
     }
 }

@@ -9,6 +9,7 @@ namespace SyncToyNext.GuiClient
     {
         private SyncPointManager? syncPointManager = null;
         private SyncPoint? currentSyncPoint = null;
+        private List<string> acceptedTextExtensions = new List<string>();
 
         public frmMain()
         {
@@ -18,6 +19,46 @@ namespace SyncToyNext.GuiClient
             {
                 MessageBox.Show(message, "Oops...", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
+
+            acceptedTextExtensions.Add(".txt");
+            acceptedTextExtensions.Add(".html");
+            acceptedTextExtensions.Add(".htm");
+            acceptedTextExtensions.Add(".md");
+            acceptedTextExtensions.Add(".json");
+            acceptedTextExtensions.Add(".xml");
+            acceptedTextExtensions.Add(".cs");
+            acceptedTextExtensions.Add(".cpp");
+            acceptedTextExtensions.Add(".c");
+            acceptedTextExtensions.Add(".h");
+            acceptedTextExtensions.Add(".hpp");
+            acceptedTextExtensions.Add(".h++");
+            acceptedTextExtensions.Add(".c++");
+            acceptedTextExtensions.Add(".js");
+            acceptedTextExtensions.Add(".css");
+            acceptedTextExtensions.Add(".ts");
+            acceptedTextExtensions.Add(".tsx");
+            acceptedTextExtensions.Add(".py");
+            acceptedTextExtensions.Add(".java");
+            acceptedTextExtensions.Add(".php");
+            acceptedTextExtensions.Add(".rb");
+            acceptedTextExtensions.Add(".go");
+            acceptedTextExtensions.Add(".sh");
+            acceptedTextExtensions.Add(".bat");
+            acceptedTextExtensions.Add(".ps1");
+            acceptedTextExtensions.Add(".sql");
+            acceptedTextExtensions.Add(".yaml");
+            acceptedTextExtensions.Add(".yml");
+            acceptedTextExtensions.Add(".log");
+            acceptedTextExtensions.Add(".conf");
+            acceptedTextExtensions.Add(".ini");
+            acceptedTextExtensions.Add(".properties");
+            acceptedTextExtensions.Add(".mdx");
+            acceptedTextExtensions.Add(".txt");
+            acceptedTextExtensions.Add(".csv");
+            acceptedTextExtensions.Add(".tsv");
+            acceptedTextExtensions.Add(".bas");
+            acceptedTextExtensions.Add(".sh");
+            acceptedTextExtensions.Add(".rs");
         }
 
         frmLog? logForm = null;
@@ -27,10 +68,10 @@ namespace SyncToyNext.GuiClient
             if (logForm == null || logForm.IsDisposed)
             {
                 logForm = new frmLog();
-                
+
             }
 
-            if(!logForm.Visible)
+            if (!logForm.Visible)
                 logForm.Show(this);
         }
 
@@ -202,10 +243,13 @@ namespace SyncToyNext.GuiClient
                 var selectedItem = fileBrowserLocal.SelectedItems.FirstOrDefault() as String;
                 if (selectedItem != null)
                 {
-                    //open the file with the default associated program
-                    OpenFileUsingDefaultHandler(selectedItem);
+                    if (!TryOpenInBuiltInEditor(selectedItem))
+                    {
+                        OpenFileUsingDefaultHandler(selectedItem);
+                    }
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 UserIO.Error("Something went wrong when trying to open the local file using the default handler for the file type.");
             }
@@ -219,55 +263,86 @@ namespace SyncToyNext.GuiClient
 
                 if (selectedItem != null)
                 {
-                    var pathParts = selectedItem.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
-                    var relativePath = pathParts[0];
-
-                    if (pathParts.Length > 0)
-                    {
-                        var remoteFolderPath = Path.GetDirectoryName(SessionContext.RemoteFolderPath);
-
-                        if (remoteFolderPath == null) throw new InvalidOperationException("Remote folder path could not be retrieved");
-
-                        var zipPath = Path.Combine(remoteFolderPath, pathParts[1]);
-                        using var zip = new FileStream(zipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                        using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
-                        var entryPath = relativePath.Replace("\\", "/");
-                        var zipEntry = archive.GetEntry(entryPath);
-
-                        var tempFolder = Path.GetTempPath();
-                        var tempPath = Path.Combine(tempFolder, Path.GetFileName(relativePath));
-
-                        if (zipEntry != null)
-                        {
-                            zipEntry.ExtractToFile(tempPath, true);
-                            OpenFileUsingDefaultHandler(tempPath);
-                        }
-                    }
-                    else
-                    {
-                        if (SessionContext.RemoteFolderPath == null)
-                        {
-                            throw new InvalidOperationException("Remote folder path is not set.");
-                        }
-
-                        var fullPath = Path.Combine(SessionContext.RemoteFolderPath, relativePath);
-
-                        if (File.Exists(fullPath))
-                        {
-                            OpenFileUsingDefaultHandler(fullPath);
-                        }
-                    }
+                    OpenRemoteItem(selectedItem);
                 }
-            } 
+            }
             catch (Exception ex)
             {
                 UserIO.Error(ex.Message);
             }
         }
 
+        private bool TryOpenInBuiltInEditor(string filePath)
+        {
+            if (File.Exists(filePath))
+            {
+                var extension = Path.GetExtension(filePath).ToLowerInvariant();
+                if (acceptedTextExtensions.Contains(extension))
+                {
+                    frmEditor.ShowEditor(filePath);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private void OpenRemoteItem(SyncPointEntry selectedItem)
+        {
+            var pathParts = selectedItem.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
+            var relativePath = pathParts[0];
+
+            if (pathParts.Length > 0)
+            {
+                var remoteFolderPath = Path.GetDirectoryName(SessionContext.RemoteFolderPath);
+
+                if (remoteFolderPath == null) throw new InvalidOperationException("Remote folder path could not be retrieved");
+
+                var zipPath = Path.Combine(remoteFolderPath, pathParts[1]);
+                using var zip = new FileStream(zipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
+                var entryPath = relativePath.Replace("\\", "/");
+                var zipEntry = archive.GetEntry(entryPath);
+
+                var tempFolder = Path.GetTempPath();
+                var tempPath = Path.Combine(tempFolder, Path.GetFileName(relativePath));
+
+                if (zipEntry != null)
+                {
+                    zipEntry.ExtractToFile(tempPath, true);
+
+                    if (!TryOpenInBuiltInEditor(tempPath))
+                    {
+                        OpenFileUsingDefaultHandler(tempPath);
+                    }
+                }
+            }
+            else
+            {
+                if (SessionContext.RemoteFolderPath == null)
+                {
+                    throw new InvalidOperationException("Remote folder path is not set.");
+                }
+
+                var fullPath = Path.Combine(SessionContext.RemoteFolderPath, relativePath);
+
+                if (File.Exists(fullPath))
+                {
+                    if (!TryOpenInBuiltInEditor(fullPath))
+                    {
+                        OpenFileUsingDefaultHandler(fullPath);
+                    }
+                }
+            }
+        }
+
         private void btnPush_Click(object sender, EventArgs e)
         {
-            if(syncPointManager != null)
+            if (syncPointManager != null)
             {
                 try
                 {
@@ -331,7 +406,7 @@ namespace SyncToyNext.GuiClient
                     LoadRemote();
                     UserIO.Message("Completed configuring remote location.");
                 }
-            } 
+            }
             catch (Exception ex)
             {
                 UserIO.Error(ex.Message);
@@ -376,6 +451,18 @@ namespace SyncToyNext.GuiClient
             catch (Exception ex)
             {
                 UserIO.Error(ex.Message);
+            }
+        }
+
+        private void menuContextEditor_Click(object sender, EventArgs e)
+        {
+            if(fileBrowserRemote.SelectedItems.Count() > 0)
+            {
+                var selectedItem = fileBrowserRemote.SelectedItems.FirstOrDefault() as SyncPointEntry;
+                if (selectedItem != null) {
+                    OpenRemoteItem(selectedItem);
+                }
+
             }
         }
     }
