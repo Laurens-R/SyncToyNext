@@ -184,6 +184,12 @@ namespace SyncToyNext.Core
             _syncPoints.Sort((sp1, sp2) => sp2.LastSyncTime.CompareTo(sp1.LastSyncTime));
         }
 
+        public void RefreshSyncPoints()
+        {
+            _syncPoints.Clear();
+            LoadSyncPoints();
+        }
+
         public SyncPoint AddSyncPoint(string sourcePath, string syncPointID = "", string description = "")
         {
             //first check if the syncPointID is already used

@@ -45,6 +45,8 @@
             statusStrip = new StatusStrip();
             lblStatus = new ToolStripStatusLabel();
             browserFolders = new FolderBrowserDialog();
+            menuRemote = new ToolStripMenuItem();
+            menuChangeRemote = new ToolStripMenuItem();
             menuMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).BeginInit();
             mainSplitContainer.Panel1.SuspendLayout();
@@ -57,7 +59,7 @@
             // 
             // menuMain
             // 
-            menuMain.Items.AddRange(new ToolStripItem[] { menuFile });
+            menuMain.Items.AddRange(new ToolStripItem[] { menuFile, menuRemote });
             menuMain.Location = new Point(0, 0);
             menuMain.Name = "menuMain";
             menuMain.Size = new Size(1117, 24);
@@ -74,7 +76,7 @@
             // menuOpenLocalLocation
             // 
             menuOpenLocalLocation.Name = "menuOpenLocalLocation";
-            menuOpenLocalLocation.Size = new Size(177, 22);
+            menuOpenLocalLocation.Size = new Size(180, 22);
             menuOpenLocalLocation.Text = "Open local location";
             menuOpenLocalLocation.Click += menuOpenLocalLocation_Click;
             // 
@@ -117,7 +119,7 @@
             btnPush.ImageTransparentColor = Color.Magenta;
             btnPush.Name = "btnPush";
             btnPush.Size = new Size(23, 22);
-            btnPush.Text = "toolStripButton1";
+            btnPush.Text = "Push Changes";
             btnPush.Click += btnPush_Click;
             // 
             // lblLocalPath
@@ -154,7 +156,8 @@
             btnRestore.ImageTransparentColor = Color.Magenta;
             btnRestore.Name = "btnRestore";
             btnRestore.Size = new Size(23, 22);
-            btnRestore.Text = "toolStripButton2";
+            btnRestore.Text = "Restore current syncpoint";
+            btnRestore.TextAlign = ContentAlignment.MiddleRight;
             // 
             // comboSyncPoints
             // 
@@ -199,6 +202,20 @@
             lblStatus.Name = "lblStatus";
             lblStatus.Size = new Size(118, 17);
             lblStatus.Text = "toolStripStatusLabel1";
+            // 
+            // menuRemote
+            // 
+            menuRemote.DropDownItems.AddRange(new ToolStripItem[] { menuChangeRemote });
+            menuRemote.Name = "menuRemote";
+            menuRemote.Size = new Size(60, 20);
+            menuRemote.Text = "&Remote";
+            // 
+            // menuChangeRemote
+            // 
+            menuChangeRemote.Name = "menuChangeRemote";
+            menuChangeRemote.Size = new Size(180, 22);
+            menuChangeRemote.Text = "Change";
+            menuChangeRemote.Click += this.menuChangeRemote_Click;
             // 
             // frmMain
             // 
@@ -248,5 +265,7 @@
         private ToolStrip toolStrip1;
         private ToolStripButton btnPush;
         private ToolStripButton btnRestore;
+        private ToolStripMenuItem menuRemote;
+        private ToolStripMenuItem menuChangeRemote;
     }
 }

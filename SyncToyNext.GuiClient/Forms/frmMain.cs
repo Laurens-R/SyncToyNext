@@ -1,4 +1,5 @@
 using SyncToyNext.Core;
+using SyncToyNext.GuiClient.Forms;
 using System.IO.Compression;
 
 namespace SyncToyNext.GuiClient
@@ -36,19 +37,61 @@ namespace SyncToyNext.GuiClient
                     var remoteConfig = RemoteConfig.Load(SessionContext.LocalFolderPath);
                     if (remoteConfig == null) throw new InvalidOperationException("Remote configuration is invalid");
                     SessionContext.RemoteFolderPath = remoteConfig.RemotePath;
-                    syncPointManager = new SyncPointManager(SessionContext.RemoteFolderPath, SessionContext.LocalFolderPath);
-                    var syncPoints = syncPointManager.SyncPoints;
 
-                    foreach (var syncpoint in syncPoints)
+                    LoadRemote();
+                }
+                else
+                {
+                    MessageBox.Show("No remote configured for this location. Please select the remote location in the next dialog.");
+
+                    var dialogResult = frmRemote.ShowRemoteDialog(this);
+
+                    if(dialogResult == null)
                     {
-                        comboSyncPoints.Items.Add(syncpoint);
+                        throw new InvalidOperationException("Remote must be specified");
                     }
+                    
+                    SessionContext.RemoteFolderPath = dialogResult.RemotePath;
 
-                    comboSyncPoints.SelectedIndex = 0;
+                    if(dialogResult.IsCompressed)
+                    {
+                        SessionContext.RemoteFolderPath = Path.Combine(SessionContext.RemoteFolderPath, Path.GetFileName(SessionContext.LocalFolderPath) + ".zip");
+                    }
+                    
+                    var remoteConfig = new RemoteConfig(browserFolders.SelectedPath, SessionContext.LocalFolderPath);
+                    remoteConfig.Save(SessionContext.LocalFolderPath);
+                    SessionContext.RemoteFolderPath = browserFolders.SelectedPath;
 
-                    lblRemotePath.Text = SessionContext.RemoteFolderPath;
+                    LoadRemote();
+                    
                 }
             }
+        }
+
+        private void LoadRemote()
+        {
+            if (String.IsNullOrWhiteSpace(SessionContext.RemoteFolderPath) || String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
+            {
+                throw new InvalidOperationException("Remote or Local folder path is not set.");
+            }
+
+            syncPointManager = new SyncPointManager(SessionContext.RemoteFolderPath, SessionContext.LocalFolderPath);
+            var syncPoints = syncPointManager.SyncPoints;
+            RefreshSyncPoints(syncPoints);
+        }
+
+        private void RefreshSyncPoints(IReadOnlyList<SyncPoint> syncPoints)
+        {
+            comboSyncPoints.Items.Clear();
+
+            foreach (var syncpoint in syncPoints)
+            {
+                comboSyncPoints.Items.Add(syncpoint);
+            }
+
+            comboSyncPoints.SelectedIndex = 0;
+
+            lblRemotePath.Text = SessionContext.RemoteFolderPath;
         }
 
         private void menuOpenRemoteLocation_Click(object sender, EventArgs e)
@@ -146,47 +189,58 @@ namespace SyncToyNext.GuiClient
         private void btnPush_Click(object sender, EventArgs e)
         {
             if(syncPointManager != null)
-            {
-                //TODO: create popup dialog to ask for push details.
+            { 
                 try
                 {
-                    string currentDirectory = Environment.CurrentDirectory;
-                    var remoteConfig = RemoteConfig.Load(currentDirectory);
-                    var remotePath = string.Empty;
+                    if (SessionContext.LocalFolderPath == null)
+                        throw new InvalidOperationException("No Local Folder Path known. Please load a local folder first.");
 
-                    while (remoteConfig == null)
-                    {
-                        var parentDirectoryInfo = Directory.GetParent(currentDirectory);
-                        if (parentDirectoryInfo == null)
-                        {
-                            currentDirectory = Environment.CurrentDirectory;
-                            break;
-                        }
+                    if (SessionContext.RemoteFolderPath == null)
+                        throw new InvalidOperationException("No remote specified for local path.");
 
-                        currentDirectory = parentDirectoryInfo.FullName;
-                        remoteConfig = RemoteConfig.Load(currentDirectory);
-                    }
+                    var result = frmPush.ShowPushDialog(this);
 
-                    if (remoteConfig == null)
-                    {
-                        Console.Error.WriteLine("Error: Remote configuration not found. Please configure the remote first using --remote <path>.");
-                        Environment.Exit(1);
-                    }
+                    if (result == null) return;
 
-                    var cmdArgs = new CommandLineArguments(new string[] { });
+                    ManualRun.Run(SessionContext.LocalFolderPath, SessionContext.RemoteFolderPath, true, result.ID, result.Description);
 
-                    cmdArgs.Set("id", string.Empty);
-                    cmdArgs.Set("desc", string.Empty);
-                    cmdArgs.Set("from", currentDirectory);
-                    cmdArgs.Set("to", remoteConfig.RemotePath);
-                    cmdArgs.Set("syncpoint", string.Empty);
-                    ManualRun.Run(cmdArgs);
+                    syncPointManager.RefreshSyncPoints();
+                    RefreshSyncPoints(syncPointManager.SyncPoints);
 
                 }
                 catch (Exception)
                 {
                     Console.Error.WriteLine($"Error loading remote config. Make sure the remote has been configured before pushing.");
                 }
+            }
+        }
+
+        private void menuChangeRemote_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
+                throw new InvalidOperationException("Cannot load remote config if no local folder path is loaded");
+
+            var existingRemoteConfig = RemoteConfig.Load(SessionContext.LocalFolderPath);
+
+            if (existingRemoteConfig == null)
+                throw new InvalidOperationException("Could not load remote config.");
+
+            var result = frmRemote.ShowRemoteDialog(this, existingRemoteConfig);
+
+            if(result != null)
+            {
+                var currentRemotePath = SessionContext.RemoteFolderPath;
+                SessionContext.RemoteFolderPath = result.RemotePath;
+
+                if(result.IsCompressed)
+                {
+                    SessionContext.RemoteFolderPath = Path.Combine(SessionContext.RemoteFolderPath, Path.GetFileName(SessionContext.LocalFolderPath) + ".zip");
+                }
+
+                existingRemoteConfig.RemotePath = SessionContext.RemoteFolderPath;
+                existingRemoteConfig.Save(SessionContext.LocalFolderPath);
+
+                LoadRemote();
             }
         }
     }

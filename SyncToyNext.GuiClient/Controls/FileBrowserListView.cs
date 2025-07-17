@@ -56,11 +56,22 @@ namespace SyncToyNext.GuiClient
                 HashSet<string> itemsAtPath = new HashSet<string>();
                 var results = new List<FileBrowserEntry>();
 
-                foreach (var item in _itemPaths)
+                foreach (var pathItem in _itemPaths)
                 {
-                    if(item == null) continue;
-                        
-                    var partialPath = !String.IsNullOrWhiteSpace(RootPath) ?  Path.GetRelativePath(RootPath, item.ToString()) : item.ToString();
+                    if(pathItem == null) continue;
+                    var pathItemString = pathItem.ToString();
+
+                    if (string.IsNullOrWhiteSpace(pathItemString))
+                    {
+                        continue; // Skip null or empty paths
+                    }
+
+                    var partialPath = !String.IsNullOrWhiteSpace(RootPath) ?  Path.GetRelativePath(RootPath, pathItemString) : pathItem.ToString();
+
+                    if(string.IsNullOrWhiteSpace(partialPath))
+                    {
+                        continue; // Skip null or empty paths
+                    }
 
                     if (!partialPath.StartsWith(CurrentPath + "\\") && CurrentPath != ".")
                     {
@@ -81,7 +92,7 @@ namespace SyncToyNext.GuiClient
                             results.Add(new FileBrowserEntry
                             {
                                 DisplayValue = pathParts[0],
-                                Value = item
+                                Value = pathItem
                             });
                         }
                     }

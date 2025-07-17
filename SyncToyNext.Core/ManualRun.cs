@@ -9,29 +9,10 @@ namespace SyncToyNext.Core
 {
     public class ManualRun
     {
-        public static void Run(CommandLineArguments cmdArgs)
+        public static void Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "")
         {
-            string? fromPath = null;
-            string? toPath = null;
 
-            if (cmdArgs.Has("from"))
-            {
-                fromPath = cmdArgs.Get("from");
-            }
-
-            if (cmdArgs.Has("to"))
-            {
-                toPath = cmdArgs.Get("to");
-            }
-            else
-            {
-                UserIO.Error("Error: --to flag is required for manual sync.");
-                Environment.Exit(1);
-            }
-
-            bool useSyncPoint = cmdArgs.Has("syncpoint");
-
-            if (String.IsNullOrWhiteSpace(fromPath)
+            if (string.IsNullOrWhiteSpace(fromPath)
             || string.IsNullOrWhiteSpace(toPath))
                 {
                 UserIO.Error("Error: --from and --to flags are required for manual sync.");
@@ -40,9 +21,9 @@ namespace SyncToyNext.Core
 
             if (!Path.Exists(fromPath)
                 && (!Path.Exists(toPath)
-                    || (!Directory.Exists(toPath)
+                    || !Directory.Exists(toPath)
                         && Path.HasExtension(toPath)
-                        && Path.GetExtension(toPath).ToLowerInvariant() == "zip")
+                        && Path.GetExtension(toPath).ToLowerInvariant() == "zip"
                     )
             )
             {
@@ -65,11 +46,7 @@ namespace SyncToyNext.Core
             if (useSyncPoint)
             {
                 syncPointManager = new SyncPointManager(toPath, fromPath);
-
-                var syncPointID = cmdArgs.Get("id") ?? string.Empty;
-                var description = cmdArgs.Get("desc") ?? string.Empty;
-
-                syncPoint = syncPointManager.AddSyncPoint(fromPath, syncPointID, description);
+                syncPoint = syncPointManager.AddSyncPoint(fromPath, syncpointId, syncpointDescription);
             }
 
             if(toZip)
