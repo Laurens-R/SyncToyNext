@@ -19,10 +19,10 @@ namespace SyncToyNext.GuiClient
             {
                 MessageBox.Show(message, "Oops...", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
-            NewMethod();
+            InitializeKnownTextExtensions();
         }
 
-        private void NewMethod()
+        private void InitializeKnownTextExtensions()
         {
             acceptedTextExtensions.Add(".txt");
             acceptedTextExtensions.Add(".html");
