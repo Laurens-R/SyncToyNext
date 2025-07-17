@@ -16,7 +16,7 @@ namespace SyncToyNext.Core
 
         public static void EstablishRestorePath()
         {
-            var currentPath = Environment.CurrentDirectory;
+            var currentPath = RestorePath;
             RemoteConfig? config = RemoteConfig.Load(currentPath);
 
             while (config == null)
@@ -126,7 +126,7 @@ namespace SyncToyNext.Core
                         && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
 
-            if (!String.IsNullOrWhiteSpace("file"))
+            if (!String.IsNullOrWhiteSpace(singleFile))
             {
                 SingleFileRestore(singleFile, syncpointId, isZipped, allSyncPointFiles);
             }

@@ -37,9 +37,13 @@
             // txtLog
             // 
             txtLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            txtLog.BackColor = Color.FromArgb(64, 64, 64);
+            txtLog.Font = new Font("Consolas", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
             txtLog.Location = new Point(12, 12);
             txtLog.Multiline = true;
             txtLog.Name = "txtLog";
+            txtLog.ReadOnly = true;
+            txtLog.ScrollBars = ScrollBars.Both;
             txtLog.Size = new Size(842, 430);
             txtLog.TabIndex = 0;
             txtLog.Enter += txtLog_Enter;

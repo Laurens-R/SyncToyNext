@@ -237,8 +237,10 @@ namespace SyncToyNext.Core
                 }
             }
 
+            var updatedFileListOfSyncpoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
+
             // Now we need to check for files that were deleted since the last sync point
-            DetectRemovedFiles(sourceDirectory, allFilesPartOfSyncPoint, allSourceLocationFiles, newSyncPoint);
+            DetectRemovedFiles(sourceDirectory, updatedFileListOfSyncpoint, allSourceLocationFiles, newSyncPoint);
 
             newSyncPoint.Save(Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, $"{newSyncPoint.SyncPointId}.syncpoint.json"));
         }

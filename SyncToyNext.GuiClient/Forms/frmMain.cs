@@ -39,6 +39,16 @@ namespace SyncToyNext.GuiClient
             lblLocalPath.Text = $"Local Path: {fileBrowserLocal.CurrentPath}";
         }
 
+        private void RefreshLocalFolderBrowser()
+        {
+            var files = Directory.GetFiles(browserFolders.SelectedPath, "*", SearchOption.AllDirectories);
+
+            fileBrowserLocal.AllItemPaths = files;
+            fileBrowserLocal.RootPath = SessionContext.LocalFolderPath;
+            fileBrowserLocal.NavigateToPath(".");
+            fileBrowserLocal.RefreshItems();
+        }
+
         private void ResetState()
         {
             syncPointManager = null;
@@ -57,12 +67,8 @@ namespace SyncToyNext.GuiClient
                 if (browserFolders.ShowDialog(this) == DialogResult.OK)
                 {
                     SessionContext.LocalFolderPath = browserFolders.SelectedPath;
-                    var files = Directory.GetFiles(browserFolders.SelectedPath, "*", SearchOption.AllDirectories);
 
-                    fileBrowserLocal.AllItemPaths = files;
-                    fileBrowserLocal.RootPath = SessionContext.LocalFolderPath;
-                    fileBrowserLocal.NavigateToPath(".");
-                    fileBrowserLocal.RefreshItems();
+                    RefreshLocalFolderBrowser();
 
                     if (RemoteConfig.RemoteConfigExists(SessionContext.LocalFolderPath))
                     {
@@ -262,7 +268,7 @@ namespace SyncToyNext.GuiClient
         private void btnPush_Click(object sender, EventArgs e)
         {
             if(syncPointManager != null)
-            { 
+            {
                 try
                 {
                     if (SessionContext.LocalFolderPath == null)
@@ -275,10 +281,14 @@ namespace SyncToyNext.GuiClient
 
                     if (result == null) return;
 
+                    UserIO.Message("Starting push to remote location.");
+
                     ManualRun.Run(SessionContext.LocalFolderPath, SessionContext.RemoteFolderPath, true, result.ID, result.Description);
 
                     syncPointManager.RefreshSyncPoints();
                     RefreshSyncPoints(syncPointManager.SyncPoints);
+
+                    UserIO.Message("Completed push to remote location.");
 
                     ShowLog();
 
@@ -306,6 +316,7 @@ namespace SyncToyNext.GuiClient
 
                 if (result != null)
                 {
+                    UserIO.Message("Changing configured remote location.");
                     var currentRemotePath = SessionContext.RemoteFolderPath;
                     SessionContext.RemoteFolderPath = result.RemotePath;
 
@@ -318,6 +329,7 @@ namespace SyncToyNext.GuiClient
                     existingRemoteConfig.Save(SessionContext.LocalFolderPath);
 
                     LoadRemote();
+                    UserIO.Message("Completed configuring remote location.");
                 }
             } 
             catch (Exception ex)
@@ -351,8 +363,12 @@ namespace SyncToyNext.GuiClient
                         throw new InvalidOperationException("No valid remote path was opened");
                     }
 
-                    SyncPointRestorer.RemotePath = SessionContext.LocalFolderPath;
+                    UserIO.Message($"Starting with restore of syncpoint {selectedSyncPoint.SyncPointId}");
+
+                    SyncPointRestorer.RestorePath = SessionContext.LocalFolderPath;
                     SyncPointRestorer.Run(selectedSyncPoint.SyncPointId);
+
+                    RefreshLocalFolderBrowser();
 
                     ShowLog();
                 }
