@@ -58,7 +58,7 @@ namespace SyncToyNext.GuiClient
 
                 foreach (var pathItem in _itemPaths)
                 {
-                    if(pathItem == null) continue;
+                    if (pathItem == null) continue;
                     var pathItemString = pathItem.ToString();
 
                     if (string.IsNullOrWhiteSpace(pathItemString))
@@ -66,9 +66,9 @@ namespace SyncToyNext.GuiClient
                         continue; // Skip null or empty paths
                     }
 
-                    var partialPath = !String.IsNullOrWhiteSpace(RootPath) ?  Path.GetRelativePath(RootPath, pathItemString) : pathItem.ToString();
+                    var partialPath = !String.IsNullOrWhiteSpace(RootPath) ? Path.GetRelativePath(RootPath, pathItemString) : pathItem.ToString();
 
-                    if(string.IsNullOrWhiteSpace(partialPath))
+                    if (string.IsNullOrWhiteSpace(partialPath))
                     {
                         continue; // Skip null or empty paths
                     }
@@ -97,6 +97,24 @@ namespace SyncToyNext.GuiClient
                         }
                     }
                 }
+
+                var comparer = Comparer<FileBrowserEntry>.Create((x, y) => {
+                    bool isXFolder = !Path.HasExtension(x.DisplayValue) || x.DisplayValue.StartsWith(".");
+                    bool isYFolder = !Path.HasExtension(y.DisplayValue) || y.DisplayValue.StartsWith(".");
+
+                    int folderCompare = isYFolder.CompareTo(isXFolder); // folders first (true < false)
+                    if(folderCompare != 0)
+                    {
+                        return folderCompare;
+                    }
+
+                    var stringDifference = string.Compare(x.DisplayValue, y.DisplayValue, StringComparison.OrdinalIgnoreCase);
+                    return stringDifference;
+                }); 
+
+
+                //sort the items based on folder type
+                results.Sort(comparer);
 
                 return results;
             }
@@ -183,6 +201,12 @@ namespace SyncToyNext.GuiClient
         public FileBrowserListView()
         {
             InitializeComponent();
+        }
+
+        public void Reset()
+        {
+            listEntries.Items.Clear();
+            Array.Empty<object>();
         }
 
         private void listEntries_DoubleClick(object sender, EventArgs e)

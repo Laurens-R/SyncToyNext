@@ -10,6 +10,8 @@ namespace SyncToyNext.Core
 {
     public class UserIO
     {
+        private static List<string> messages = new List<string>();
+
         protected static bool InConsoleMode
         {
             get
@@ -28,14 +30,36 @@ namespace SyncToyNext.Core
             }
         }
 
+        public static string MessageLog
+        {
+            get
+            {
+                var builder = new StringBuilder();
+                foreach (var message in messages)
+                {
+                    builder.AppendLine(message);
+                }
+
+                return builder.ToString();
+            }
+        }
+
         public static Action<string>? OnMessageReceivedHandler { get; set; }
         public static Action<string, string?>? OnErrorReceivedHandler { get; set; }
 
+        public static void ClearLog()
+        {
+            messages.Clear();
+        }
+
         public static void Message(string message)
         {
+            var formattedMessage = $"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message}";
+            messages.Add(formattedMessage);
+
             if (InConsoleMode)
             {
-                Console.WriteLine($"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message}");
+                Console.WriteLine(formattedMessage);
             }
 
             if (OnMessageReceivedHandler != null)
@@ -47,19 +71,25 @@ namespace SyncToyNext.Core
 
         public static void Error(string message)
         {
+            var formattedMessage = $"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message}";
+            messages.Add(formattedMessage);
+
             if (InConsoleMode)
             {
-                Console.Error.WriteLine($"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message}");
-            }
+                Console.Error.WriteLine(formattedMessage);
+            } 
 
             OnErrorReceivedHandler?.Invoke(message, null);
         }
 
         public static void Error(string message, Exception ex)
         {
+            var formattedMessage = $"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message} - {ex.Message}";
+            messages.Add(formattedMessage);
+
             if (InConsoleMode)
             {
-                Console.Error.WriteLine($"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message} - {ex.Message}");
+                Console.Error.WriteLine(formattedMessage);
             }
 
             OnErrorReceivedHandler?.Invoke(message, ex.Message);
