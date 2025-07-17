@@ -103,12 +103,13 @@ namespace SyncToyNext.GuiClient
 
         private void FileBrowserLocal_PathChanged(object? sender, EventArgs e)
         {
-            lblLocalPath.Text = $"Local Path: {fileBrowserLocal.CurrentPath}";
+            if (string.IsNullOrEmpty(SessionContext.LocalFolderPath)) return;
+            lblLocalPath.Text = $"Local path: {Path.Combine(SessionContext.LocalFolderPath, fileBrowserLocal.CurrentPath)}";
         }
 
         private void RefreshLocalFolderBrowser()
         {
-            if(String.IsNullOrEmpty(SessionContext.LocalFolderPath))
+            if (String.IsNullOrEmpty(SessionContext.LocalFolderPath))
             {
                 UserIO.Error("Local folder path is not set. Please select a local folder first.");
                 return;
@@ -216,9 +217,9 @@ namespace SyncToyNext.GuiClient
                     comboSyncPoints.Items.Add(syncpoint);
                 }
 
-                comboSyncPoints.SelectedIndex = 0;
+                if (syncPoints.Count > 0) comboSyncPoints.SelectedIndex = 0;
 
-                lblRemotePath.Text = SessionContext.RemoteFolderPath;
+                lblRemotePath.Text = "Remote path: " + Path.GetDirectoryName(SessionContext.RemoteFolderPath);
             }
             catch (Exception ex)
             {
@@ -312,6 +313,26 @@ namespace SyncToyNext.GuiClient
                 if (acceptedTextExtensions.Contains(extension))
                 {
                     frmEditor.ShowEditor(filePath);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryOpenInBuiltInDiffer(string filePath, string otherPath)
+        {
+            if (File.Exists(filePath) && File.Exists(otherPath))
+            {
+                var extension = Path.GetExtension(filePath).ToLowerInvariant();
+                var otherExtension = Path.GetExtension(otherPath).ToLowerInvariant();
+                if (acceptedTextExtensions.Contains(extension) && acceptedTextExtensions.Contains(otherExtension))
+                {
+                    frmEditor.ShowEditor(filePath, otherPath);
                     return true;
                 }
                 else
@@ -489,14 +510,36 @@ namespace SyncToyNext.GuiClient
 
         private void menuContextEditor_Click(object sender, EventArgs e)
         {
-            if(fileBrowserRemote.SelectedItems.Count() > 0)
+            if (fileBrowserRemote.SelectedItems.Count() > 0)
             {
                 var selectedItem = fileBrowserRemote.SelectedItems.FirstOrDefault() as SyncPointEntry;
-                if (selectedItem != null) {
+                if (selectedItem != null)
+                {
                     OpenRemoteItem(selectedItem);
                 }
 
             }
+        }
+
+        private void menuContextCompareLocal_Click(object sender, EventArgs e)
+        {
+            if (fileBrowserRemote.SelectedItems.Count() > 0)
+            {
+                var selectedItem = fileBrowserRemote.SelectedItems.FirstOrDefault() as SyncPointEntry;
+                if (selectedItem != null && !String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
+                {
+                    var localPath = Path.Combine(SessionContext.LocalFolderPath, selectedItem.SourcePath);
+                    var remoteItem = RetrieveRemoteItem(selectedItem);
+
+                    TryOpenInBuiltInDiffer(localPath, remoteItem);
+                }
+            }
+        }
+
+        private void fileBrowserRemote_PathChanged(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(SessionContext.RemoteFolderPath)) return;
+            lblRemotePath.Text = $"Remote path: {Path.Combine(Path.GetDirectoryName(SessionContext.RemoteFolderPath) ?? SessionContext.RemoteFolderPath, fileBrowserRemote.CurrentPath)}";
         }
     }
 }

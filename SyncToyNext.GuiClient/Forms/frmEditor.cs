@@ -21,6 +21,9 @@ namespace SyncToyNext.GuiClient.Forms
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string FilePath { get; set; } = string.Empty;
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string OtherFilePath { get; set; } = string.Empty;
+
         public frmEditor()
         {
             InitializeComponent();
@@ -38,7 +41,18 @@ namespace SyncToyNext.GuiClient.Forms
 
             frmEditor frmEditor = new frmEditor();
             frmEditor.FilePath = filePath;
-            frmEditor.Text = "Editor - " + filePath;
+            frmEditor.Text = "Viewer - " + filePath;
+            frmEditor.Show();
+
+        }
+
+        public static void ShowEditor(string localPath, string remotePath)
+        {
+
+            frmEditor frmEditor = new frmEditor();
+            frmEditor.FilePath = localPath;
+            frmEditor.OtherFilePath = remotePath;
+            frmEditor.Text = "Diff Viewer - " + Path.GetFileName(localPath);
             frmEditor.Show();
 
         }
@@ -52,10 +66,19 @@ namespace SyncToyNext.GuiClient.Forms
         {
             await webViewEditor.EnsureCoreWebView2Async();
 
-            webViewEditor.Source =
-                   new Uri(System.IO.Path.Combine(
-                   System.AppDomain.CurrentDomain.BaseDirectory,
-                   @"Controls\Monaco\index.html"));
+            if (string.IsNullOrWhiteSpace(OtherFilePath))
+            {
+                webViewEditor.Source =
+                       new Uri(System.IO.Path.Combine(
+                       System.AppDomain.CurrentDomain.BaseDirectory,
+                       @"Controls\Monaco\editor.html"));
+            } else
+            {
+                webViewEditor.Source =
+                      new Uri(System.IO.Path.Combine(
+                      System.AppDomain.CurrentDomain.BaseDirectory,
+                      @"Controls\Monaco\differ.html"));
+            }
 
         }
 
@@ -63,15 +86,35 @@ namespace SyncToyNext.GuiClient.Forms
         {
             if (e.TryGetWebMessageAsString() == "monaco-ready")
             {
-                var sourceUri = new Uri(FilePath);
-                var sourceContent = JsonSerializer.Serialize(File.ReadAllText(FilePath));
+                if (String.IsNullOrEmpty(OtherFilePath))
+                {
+                    var sourceUri = new Uri(FilePath);
+                    var sourceContent = JsonSerializer.Serialize(File.ReadAllText(FilePath));
 
-                string changeContentScript = @$"
-                    var currentModel = monaco.editor.createModel({sourceContent}, null, '{sourceUri}');
-                    editor.setModel(currentModel);
-                ";
+                    string changeContentScript = @$"
+                        var currentModel = monaco.editor.createModel({sourceContent}, null, '{sourceUri}');
+                        editor.setModel(currentModel);
+                    ";
 
-                await webViewEditor.ExecuteScriptAsync(changeContentScript);
+                    await webViewEditor.ExecuteScriptAsync(changeContentScript);
+                } else
+                {
+                    var sourceUri = new Uri(FilePath);
+                    var otherSourceUri = new Uri(OtherFilePath);
+                    var sourceContent = JsonSerializer.Serialize(File.ReadAllText(FilePath));
+                    var otherSourceContent = JsonSerializer.Serialize(File.ReadAllText(OtherFilePath));
+
+                    string changeContentScript = @$"
+                        var localModel = monaco.editor.createModel({sourceContent}, null, '{sourceUri}');
+                        var remoteModel = monaco.editor.createModel({otherSourceContent}, null, '{otherSourceUri}');
+                        diffEditor.setModel({{
+                            original: remoteModel,
+                            modified: localModel
+                        }});
+                    ";
+
+                    await webViewEditor.ExecuteScriptAsync(changeContentScript);
+                }
             }
         }
     }

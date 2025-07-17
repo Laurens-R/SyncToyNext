@@ -39,9 +39,11 @@
             // 
             // txtRemotePath
             // 
-            txtRemotePath.Enabled = false;
+            txtRemotePath.BackColor = Color.FromArgb(64, 64, 64);
+            txtRemotePath.ForeColor = SystemColors.WindowText;
             txtRemotePath.Location = new Point(244, 31);
             txtRemotePath.Name = "txtRemotePath";
+            txtRemotePath.ReadOnly = true;
             txtRemotePath.Size = new Size(524, 23);
             txtRemotePath.TabIndex = 0;
             // 

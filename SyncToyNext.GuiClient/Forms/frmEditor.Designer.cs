@@ -40,7 +40,7 @@
             webViewEditor.DefaultBackgroundColor = Color.White;
             webViewEditor.Location = new Point(0, 2);
             webViewEditor.Name = "webViewEditor";
-            webViewEditor.Size = new Size(800, 443);
+            webViewEditor.Size = new Size(1373, 751);
             webViewEditor.TabIndex = 0;
             webViewEditor.ZoomFactor = 1D;
             webViewEditor.WebMessageReceived += webViewEditor_WebMessageReceived;
@@ -49,7 +49,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1373, 758);
             Controls.Add(webViewEditor);
             Name = "frmEditor";
             Text = "frmEditor";

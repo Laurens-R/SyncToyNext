@@ -47,6 +47,7 @@
             lblRemotePath = new Label();
             fileBrowserRemote = new FileBrowserListView();
             contextMenuRemote = new ContextMenuStrip(components);
+            menuContextCompareLocal = new ToolStripMenuItem();
             menuContextEditor = new ToolStripMenuItem();
             toolStripMenuItem1 = new ToolStripSeparator();
             contextMenuRestoreItems = new ToolStripMenuItem();
@@ -83,7 +84,7 @@
             // menuOpenLocalLocation
             // 
             menuOpenLocalLocation.Name = "menuOpenLocalLocation";
-            menuOpenLocalLocation.Size = new Size(180, 22);
+            menuOpenLocalLocation.Size = new Size(177, 22);
             menuOpenLocalLocation.Text = "Open local location";
             menuOpenLocalLocation.Click += menuOpenLocalLocation_Click;
             // 
@@ -97,7 +98,7 @@
             // menuChangeRemote
             // 
             menuChangeRemote.Name = "menuChangeRemote";
-            menuChangeRemote.Size = new Size(180, 22);
+            menuChangeRemote.Size = new Size(115, 22);
             menuChangeRemote.Text = "Change";
             menuChangeRemote.Click += menuChangeRemote_Click;
             // 
@@ -133,19 +134,21 @@
             // 
             // toolStripLocal
             // 
+            toolStripLocal.ImageScalingSize = new Size(48, 48);
             toolStripLocal.Items.AddRange(new ToolStripItem[] { btnPush });
             toolStripLocal.Location = new Point(0, 0);
             toolStripLocal.Name = "toolStripLocal";
-            toolStripLocal.Size = new Size(561, 25);
+            toolStripLocal.Size = new Size(561, 31);
             toolStripLocal.TabIndex = 3;
             // 
             // btnPush
             // 
             btnPush.DisplayStyle = ToolStripItemDisplayStyle.Image;
             btnPush.Image = (Image)resources.GetObject("btnPush.Image");
+            btnPush.ImageScaling = ToolStripItemImageScaling.None;
             btnPush.ImageTransparentColor = Color.Magenta;
             btnPush.Name = "btnPush";
-            btnPush.Size = new Size(23, 22);
+            btnPush.Size = new Size(28, 28);
             btnPush.Text = "Push Changes";
             btnPush.Click += btnPush_Click;
             // 
@@ -169,10 +172,11 @@
             // 
             // toolStripRemote
             // 
+            toolStripRemote.ImageScalingSize = new Size(48, 48);
             toolStripRemote.Items.AddRange(new ToolStripItem[] { btnRestore });
             toolStripRemote.Location = new Point(0, 0);
             toolStripRemote.Name = "toolStripRemote";
-            toolStripRemote.Size = new Size(552, 25);
+            toolStripRemote.Size = new Size(552, 31);
             toolStripRemote.TabIndex = 4;
             toolStripRemote.Text = "toolStrip1";
             // 
@@ -180,9 +184,10 @@
             // 
             btnRestore.DisplayStyle = ToolStripItemDisplayStyle.Image;
             btnRestore.Image = (Image)resources.GetObject("btnRestore.Image");
+            btnRestore.ImageScaling = ToolStripItemImageScaling.None;
             btnRestore.ImageTransparentColor = Color.Magenta;
             btnRestore.Name = "btnRestore";
-            btnRestore.Size = new Size(23, 22);
+            btnRestore.Size = new Size(28, 28);
             btnRestore.Text = "Restore current syncpoint";
             btnRestore.TextAlign = ContentAlignment.MiddleRight;
             btnRestore.Click += btnRestore_Click;
@@ -214,30 +219,38 @@
             fileBrowserRemote.Name = "fileBrowserRemote";
             fileBrowserRemote.Size = new Size(537, 650);
             fileBrowserRemote.TabIndex = 0;
+            fileBrowserRemote.PathChanged += fileBrowserRemote_PathChanged;
             fileBrowserRemote.DoubleClickSelectedItem += fileBrowserRemote_DoubleClickSelectedItem;
             // 
             // contextMenuRemote
             // 
-            contextMenuRemote.Items.AddRange(new ToolStripItem[] { menuContextEditor, toolStripMenuItem1, contextMenuRestoreItems });
+            contextMenuRemote.Items.AddRange(new ToolStripItem[] { menuContextCompareLocal, menuContextEditor, toolStripMenuItem1, contextMenuRestoreItems });
             contextMenuRemote.Name = "contextMenuRemote";
-            contextMenuRemote.Size = new Size(154, 54);
+            contextMenuRemote.Size = new Size(178, 76);
+            // 
+            // menuContextCompareLocal
+            // 
+            menuContextCompareLocal.Name = "menuContextCompareLocal";
+            menuContextCompareLocal.Size = new Size(177, 22);
+            menuContextCompareLocal.Text = "Compare with local";
+            menuContextCompareLocal.Click += menuContextCompareLocal_Click;
             // 
             // menuContextEditor
             // 
             menuContextEditor.Name = "menuContextEditor";
-            menuContextEditor.Size = new Size(153, 22);
+            menuContextEditor.Size = new Size(177, 22);
             menuContextEditor.Text = "Open in Editor";
             menuContextEditor.Click += menuContextEditor_Click;
             // 
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(150, 6);
+            toolStripMenuItem1.Size = new Size(174, 6);
             // 
             // contextMenuRestoreItems
             // 
             contextMenuRestoreItems.Name = "contextMenuRestoreItems";
-            contextMenuRestoreItems.Size = new Size(153, 22);
+            contextMenuRestoreItems.Size = new Size(177, 22);
             contextMenuRestoreItems.Text = "Restore item(s)";
             // 
             // statusStrip
@@ -312,5 +325,6 @@
         private ToolStripMenuItem contextMenuRestoreItems;
         private ToolStripMenuItem menuContextEditor;
         private ToolStripSeparator toolStripMenuItem1;
+        private ToolStripMenuItem menuContextCompareLocal;
     }
 }
