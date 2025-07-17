@@ -19,7 +19,11 @@ namespace SyncToyNext.GuiClient
             {
                 MessageBox.Show(message, "Oops...", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
+            NewMethod();
+        }
 
+        private void NewMethod()
+        {
             acceptedTextExtensions.Add(".txt");
             acceptedTextExtensions.Add(".html");
             acceptedTextExtensions.Add(".htm");
@@ -35,6 +39,7 @@ namespace SyncToyNext.GuiClient
             acceptedTextExtensions.Add(".c++");
             acceptedTextExtensions.Add(".js");
             acceptedTextExtensions.Add(".css");
+            acceptedTextExtensions.Add(".scss");
             acceptedTextExtensions.Add(".ts");
             acceptedTextExtensions.Add(".tsx");
             acceptedTextExtensions.Add(".py");
@@ -57,6 +62,27 @@ namespace SyncToyNext.GuiClient
             acceptedTextExtensions.Add(".csv");
             acceptedTextExtensions.Add(".tsv");
             acceptedTextExtensions.Add(".bas");
+            acceptedTextExtensions.Add(".vb");
+            acceptedTextExtensions.Add(".vbs");
+            acceptedTextExtensions.Add(".lua");
+            acceptedTextExtensions.Add(".swift");
+            acceptedTextExtensions.Add(".kotlin");
+            acceptedTextExtensions.Add(".dart");
+            acceptedTextExtensions.Add(".r");
+            acceptedTextExtensions.Add(".scala");
+            acceptedTextExtensions.Add(".groovy");
+            acceptedTextExtensions.Add(".clj");
+            acceptedTextExtensions.Add(".clojure");
+            acceptedTextExtensions.Add(".elixir");
+            acceptedTextExtensions.Add(".erl");
+            acceptedTextExtensions.Add(".ex");
+            acceptedTextExtensions.Add(".exs");
+            acceptedTextExtensions.Add(".asm");
+            acceptedTextExtensions.Add(".asmx");
+            acceptedTextExtensions.Add(".pl");
+            acceptedTextExtensions.Add(".perl");
+            acceptedTextExtensions.Add(".ps");
+            acceptedTextExtensions.Add(".ps1xml");
             acceptedTextExtensions.Add(".sh");
             acceptedTextExtensions.Add(".rs");
         }
@@ -82,6 +108,12 @@ namespace SyncToyNext.GuiClient
 
         private void RefreshLocalFolderBrowser()
         {
+            if(String.IsNullOrEmpty(SessionContext.LocalFolderPath))
+            {
+                UserIO.Error("Local folder path is not set. Please select a local folder first.");
+                return;
+            }
+
             var files = Directory.GetFiles(browserFolders.SelectedPath, "*", SearchOption.AllDirectories);
 
             fileBrowserLocal.AllItemPaths = files;
@@ -249,7 +281,7 @@ namespace SyncToyNext.GuiClient
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 UserIO.Error("Something went wrong when trying to open the local file using the default handler for the file type.");
             }
@@ -293,9 +325,19 @@ namespace SyncToyNext.GuiClient
 
         private void OpenRemoteItem(SyncPointEntry selectedItem)
         {
+            string remotePath = RetrieveRemoteItem(selectedItem);
+
+            if (!TryOpenInBuiltInEditor(remotePath))
+            {
+                OpenFileUsingDefaultHandler(remotePath);
+            }
+
+        }
+
+        private static string RetrieveRemoteItem(SyncPointEntry selectedItem)
+        {
             var pathParts = selectedItem.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
             var relativePath = pathParts[0];
-
             if (pathParts.Length > 0)
             {
                 var remoteFolderPath = Path.GetDirectoryName(SessionContext.RemoteFolderPath);
@@ -314,11 +356,7 @@ namespace SyncToyNext.GuiClient
                 if (zipEntry != null)
                 {
                     zipEntry.ExtractToFile(tempPath, true);
-
-                    if (!TryOpenInBuiltInEditor(tempPath))
-                    {
-                        OpenFileUsingDefaultHandler(tempPath);
-                    }
+                    return tempPath;
                 }
             }
             else
@@ -329,15 +367,10 @@ namespace SyncToyNext.GuiClient
                 }
 
                 var fullPath = Path.Combine(SessionContext.RemoteFolderPath, relativePath);
-
-                if (File.Exists(fullPath))
-                {
-                    if (!TryOpenInBuiltInEditor(fullPath))
-                    {
-                        OpenFileUsingDefaultHandler(fullPath);
-                    }
-                }
+                return fullPath;
             }
+
+            return string.Empty;
         }
 
         private void btnPush_Click(object sender, EventArgs e)
