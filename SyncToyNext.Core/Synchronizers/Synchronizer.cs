@@ -1,11 +1,12 @@
-﻿using System;
+﻿using SyncToyNext.Core.UX;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.Synchronizers
 {
     public abstract class Synchronizer
     {
@@ -25,8 +26,8 @@ namespace SyncToyNext.Core
         protected IEnumerable<string> GetFilesInPath(string sourcePath)
         {
             return Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !f.Contains($"{System.IO.Path.DirectorySeparatorChar}.stn{System.IO.Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.TrimEnd(System.IO.Path.DirectorySeparatorChar).EndsWith($"{System.IO.Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
+                    .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
         }
 

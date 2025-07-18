@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.GuiClient
+namespace SyncToyNext.GuiClient.Models
 {
     public class PushChangesDialogResult
     {

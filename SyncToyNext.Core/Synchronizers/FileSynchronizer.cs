@@ -1,3 +1,5 @@
+using SyncToyNext.Core.Models;
+using SyncToyNext.Core.UX;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.Synchronizers
 {
     /// <summary>
     /// Provides file and directory synchronization between two paths with configurable overwrite behavior.
@@ -89,7 +91,7 @@ namespace SyncToyNext.Core
                     }
 
                     //check if the sync point is old compared to the source file.
-                    if (File.Exists(syncPointPath) && (sourceFileDateTime > targetFileDateTime))
+                    if (File.Exists(syncPointPath) && sourceFileDateTime > targetFileDateTime)
                     {                       
                         if (sourceFileInfo.Length != targetFileInfo.Length)
                         {

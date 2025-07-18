@@ -1,25 +1,29 @@
+using SyncToyNext.Core.Synchronizers;
+using SyncToyNext.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SyncToyNext.Core.UX;
+using SyncToyNext.Core.Runners;
 
 namespace SyncToyNext.Core
 {
     /// <summary>
     /// Represents the root context for the sync application, managing configuration, watchers, and manual syncs.
     /// </summary>
-    public class SyncContext : IDisposable
+    public class ExecutionContext : IDisposable
     {
-        private readonly List<FileSyncWatcher> _watchers = new();
+        private readonly List<FileSystemRunner> _watchers = new();
         private bool _isRunning = false;
         private readonly bool _strictMode;
         public SyncConfiguration Configuration { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SyncContext"/> class and loads configuration.
+        /// Initializes a new instance of the <see cref="ExecutionContext"/> class and loads configuration.
         /// </summary>
         /// <param name="configPath">Optional path to the configuration file.</param>
         /// <param name="strictMode">Optional flag to enable strict mode.</param>
-        public SyncContext(string? configPath = null, bool strictMode = false, bool enterWatchMode = true)
+        public ExecutionContext(string? configPath = null, bool strictMode = false, bool enterWatchMode = true)
         {
             // If no config file is provided and none is found, show a helpful error and exit
             string resolvedConfigPath = configPath ?? SyncConfiguration.GetDefaultConfigPath();
@@ -134,7 +138,7 @@ namespace SyncToyNext.Core
 
                 if (ValidateProfile(idSet, profile))
                 {
-                    var watcher = new FileSyncWatcher(
+                    var watcher = new FileSystemRunner(
                         profile.SourcePath,
                         profile.DestinationPath,
                         profile.OverwriteOption,

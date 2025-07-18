@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SyncToyNext.Core.UX;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -6,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.SyncPoints
 {
     public class SyncPointRestorer
     {
@@ -126,7 +127,7 @@ namespace SyncToyNext.Core
                         && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
 
-            if (!String.IsNullOrWhiteSpace(singleFile))
+            if (!string.IsNullOrWhiteSpace(singleFile))
             {
                 SingleFileRestore(singleFile, syncpointId, isZipped, allSyncPointFiles);
             }

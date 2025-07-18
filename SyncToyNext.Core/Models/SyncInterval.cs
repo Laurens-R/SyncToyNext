@@ -1,4 +1,4 @@
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.Models
 {
     /// <summary>
     /// Specifies how and when a sync profile should be synchronized.

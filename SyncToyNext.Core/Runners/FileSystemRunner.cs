@@ -1,3 +1,6 @@
+using SyncToyNext.Core.Models;
+using SyncToyNext.Core.Synchronizers;
+using SyncToyNext.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -6,7 +9,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.Runners
 {
     enum SyncTypes
     {
@@ -18,8 +21,8 @@ namespace SyncToyNext.Core
 
     class FileSyncAction
     {
-        public string SourcePath { get; set; } = String.Empty;
-        public string DestinationPath { get; set; } = String.Empty;
+        public string SourcePath { get; set; } = string.Empty;
+        public string DestinationPath { get; set; } = string.Empty;
         public string OldDestinationPath { get; set; } = string.Empty;
         public string OldFullSourcePath { get; set; } = string.Empty;
         public SyncTypes ActionType { get; set; } = SyncTypes.Create;
@@ -29,7 +32,7 @@ namespace SyncToyNext.Core
     /// <summary>
     /// Monitors a directory for file creation and update events, and synchronizes affected files to a destination using FileSynchronizer.
     /// </summary>
-    public class FileSyncWatcher : IDisposable
+    public class FileSystemRunner : IDisposable
     {
         private readonly FileSystemWatcher _watcher;
         private readonly string _sourcePath;
@@ -49,7 +52,7 @@ namespace SyncToyNext.Core
         private readonly ManualResetEventSlim _shutdownEvent = new ManualResetEventSlim(false);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileSyncWatcher"/> class.
+        /// Initializes a new instance of the <see cref="FileSystemRunner"/> class.
         /// </summary>
         /// <param name="sourcePath">The directory to monitor for changes.</param>
         /// <param name="destinationPath">The directory or zip file to synchronize files to.</param>
@@ -57,7 +60,7 @@ namespace SyncToyNext.Core
         /// <param name="destinationIsZip">Whether the destination is a zip file.</param>
         /// <param name="syncInterval">The synchronization interval.</param>
         /// <param name="strictMode">Whether to enable strict mode for synchronization.</param>
-        public FileSyncWatcher(string sourcePath, string destinationPath, OverwriteOption overwriteOption, bool destinationIsZip = false, SyncInterval syncInterval = SyncInterval.Realtime, SyncMode mode = SyncMode.Incremental, bool strictMode = false)
+        public FileSystemRunner(string sourcePath, string destinationPath, OverwriteOption overwriteOption, bool destinationIsZip = false, SyncInterval syncInterval = SyncInterval.Realtime, SyncMode mode = SyncMode.Incremental, bool strictMode = false)
         {
             _sourcePath = sourcePath;
             _destinationPath = destinationPath;
@@ -143,14 +146,14 @@ namespace SyncToyNext.Core
                 {
                     var relativePath = Path.GetRelativePath(_sourcePath, e.FullPath);
                     // Ignore any changes in the synclogs subfolder
-                    if (relativePath.StartsWith(".stn" + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    if (relativePath.StartsWith(".stn" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                         return;
                     if (_syncInterval == SyncInterval.Realtime)
                     {
                         if (_destinationIsZip)
                             _synchronizer.SynchronizeFile(e.FullPath, relativePath);
                         else
-                            _synchronizer.SynchronizeFile(e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath));
+                            _synchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath));
                     }
                     else if(_syncMode == SyncMode.Incremental)
                     {
@@ -169,7 +172,7 @@ namespace SyncToyNext.Core
                                 _pendingChanges?.Push(new FileSyncAction
                                 {
                                     SourcePath = e.FullPath,
-                                    DestinationPath = System.IO.Path.Combine(_destinationPath, relativePath),
+                                    DestinationPath = Path.Combine(_destinationPath, relativePath),
                                     ActionType = e.ChangeType == WatcherChangeTypes.Created ? SyncTypes.Create : SyncTypes.Update
                                 });
                         }
@@ -205,7 +208,7 @@ namespace SyncToyNext.Core
 
                     //get the old full destination path
                     var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
-                    var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+                    var oldDestPath = _destinationIsZip ? oldRelativePath : Path.Combine(_destinationPath, oldRelativePath);
 
                     if (File.Exists(e.FullPath))
                     {
@@ -214,7 +217,7 @@ namespace SyncToyNext.Core
                         if (_destinationIsZip)
                             _synchronizer.SynchronizeFile(e.FullPath, relativePath, oldDestPath);
                         else
-                            _synchronizer.SynchronizeFile(e.FullPath, System.IO.Path.Combine(_destinationPath, relativePath), oldDestPath);
+                            _synchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath), oldDestPath);
                     }
                 }
                 else if (_syncMode == SyncMode.Incremental)
@@ -240,19 +243,19 @@ namespace SyncToyNext.Core
                         {
                             // If the file is already in the queue, update its destination path
                             existingEntryForFile.SourcePath = e.FullPath;
-                            existingEntryForFile.DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath);
+                            existingEntryForFile.DestinationPath = _destinationIsZip ? relativePath : Path.Combine(_destinationPath, relativePath);
                             existingEntryForFile.ActionType = SyncTypes.Rename;
                         }
                         else
                         {
                             //get the old full destination path
                             var oldRelativePath = Path.GetRelativePath(_sourcePath, e.OldFullPath);
-                            var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+                            var oldDestPath = _destinationIsZip ? oldRelativePath : Path.Combine(_destinationPath, oldRelativePath);
 
                             _pendingChanges?.Push(new FileSyncAction
                             {
                                 SourcePath = e.FullPath,
-                                DestinationPath = _destinationIsZip ? relativePath : System.IO.Path.Combine(_destinationPath, relativePath),
+                                DestinationPath = _destinationIsZip ? relativePath : Path.Combine(_destinationPath, relativePath),
                                 OldDestinationPath = oldDestPath,
                                 ActionType = SyncTypes.Rename,
                                 OldFullSourcePath = e.OldFullPath
@@ -304,7 +307,7 @@ namespace SyncToyNext.Core
                             if (queueItem.ActionType == SyncTypes.Rename)
                             {
                                 var oldRelativePath = Path.GetRelativePath(_sourcePath, queueItem.OldDestinationPath);
-                                var oldDestPath = _destinationIsZip ? oldRelativePath : System.IO.Path.Combine(_destinationPath, oldRelativePath);
+                                var oldDestPath = _destinationIsZip ? oldRelativePath : Path.Combine(_destinationPath, oldRelativePath);
                                 _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath, queueItem.OldDestinationPath);
 
                                 processedFiles.Add(queueItem.SourcePath);

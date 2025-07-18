@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Client
 {
     /// <summary>
     /// Parses and stores command line arguments as key-value pairs, supporting both flags and string parameters.

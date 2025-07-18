@@ -1,4 +1,4 @@
-﻿using SyncToyNext.Core;
+﻿using SyncToyNext.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

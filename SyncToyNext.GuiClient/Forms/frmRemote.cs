@@ -1,4 +1,5 @@
 ﻿using SyncToyNext.Core;
+using SyncToyNext.GuiClient.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

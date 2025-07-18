@@ -1,5 +1,9 @@
 using SyncToyNext.Core;
+using SyncToyNext.Core.Runners;
+using SyncToyNext.Core.UX;
 using SyncToyNext.GuiClient.Forms;
+using SyncToyNext.GuiClient.Helpers;
+using SyncToyNext.GuiClient.Models;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 
@@ -9,8 +13,7 @@ namespace SyncToyNext.GuiClient
     {
         private SyncPointManager? syncPointManager = null;
         private SyncPoint? currentSyncPoint = null;
-        private List<string> acceptedTextExtensions = new List<string>();
-
+        
         public frmMain()
         {
             InitializeComponent();
@@ -19,72 +22,6 @@ namespace SyncToyNext.GuiClient
             {
                 MessageBox.Show(message, "Oops...", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
-            InitializeKnownTextExtensions();
-        }
-
-        private void InitializeKnownTextExtensions()
-        {
-            acceptedTextExtensions.Add(".txt");
-            acceptedTextExtensions.Add(".html");
-            acceptedTextExtensions.Add(".htm");
-            acceptedTextExtensions.Add(".md");
-            acceptedTextExtensions.Add(".json");
-            acceptedTextExtensions.Add(".xml");
-            acceptedTextExtensions.Add(".cs");
-            acceptedTextExtensions.Add(".cpp");
-            acceptedTextExtensions.Add(".c");
-            acceptedTextExtensions.Add(".h");
-            acceptedTextExtensions.Add(".hpp");
-            acceptedTextExtensions.Add(".h++");
-            acceptedTextExtensions.Add(".c++");
-            acceptedTextExtensions.Add(".js");
-            acceptedTextExtensions.Add(".css");
-            acceptedTextExtensions.Add(".scss");
-            acceptedTextExtensions.Add(".ts");
-            acceptedTextExtensions.Add(".tsx");
-            acceptedTextExtensions.Add(".py");
-            acceptedTextExtensions.Add(".java");
-            acceptedTextExtensions.Add(".php");
-            acceptedTextExtensions.Add(".rb");
-            acceptedTextExtensions.Add(".go");
-            acceptedTextExtensions.Add(".sh");
-            acceptedTextExtensions.Add(".bat");
-            acceptedTextExtensions.Add(".ps1");
-            acceptedTextExtensions.Add(".sql");
-            acceptedTextExtensions.Add(".yaml");
-            acceptedTextExtensions.Add(".yml");
-            acceptedTextExtensions.Add(".log");
-            acceptedTextExtensions.Add(".conf");
-            acceptedTextExtensions.Add(".ini");
-            acceptedTextExtensions.Add(".properties");
-            acceptedTextExtensions.Add(".mdx");
-            acceptedTextExtensions.Add(".txt");
-            acceptedTextExtensions.Add(".csv");
-            acceptedTextExtensions.Add(".tsv");
-            acceptedTextExtensions.Add(".bas");
-            acceptedTextExtensions.Add(".vb");
-            acceptedTextExtensions.Add(".vbs");
-            acceptedTextExtensions.Add(".lua");
-            acceptedTextExtensions.Add(".swift");
-            acceptedTextExtensions.Add(".kotlin");
-            acceptedTextExtensions.Add(".dart");
-            acceptedTextExtensions.Add(".r");
-            acceptedTextExtensions.Add(".scala");
-            acceptedTextExtensions.Add(".groovy");
-            acceptedTextExtensions.Add(".clj");
-            acceptedTextExtensions.Add(".clojure");
-            acceptedTextExtensions.Add(".elixir");
-            acceptedTextExtensions.Add(".erl");
-            acceptedTextExtensions.Add(".ex");
-            acceptedTextExtensions.Add(".exs");
-            acceptedTextExtensions.Add(".asm");
-            acceptedTextExtensions.Add(".asmx");
-            acceptedTextExtensions.Add(".pl");
-            acceptedTextExtensions.Add(".perl");
-            acceptedTextExtensions.Add(".ps");
-            acceptedTextExtensions.Add(".ps1xml");
-            acceptedTextExtensions.Add(".sh");
-            acceptedTextExtensions.Add(".rs");
         }
 
         frmLog? logForm = null;
@@ -123,7 +60,7 @@ namespace SyncToyNext.GuiClient
             fileBrowserLocal.RefreshItems();
         }
 
-        private void ResetState()
+        private void ResetClientState()
         {
             syncPointManager = null;
             currentSyncPoint = null;
@@ -181,7 +118,7 @@ namespace SyncToyNext.GuiClient
             }
             catch (Exception ex)
             {
-                ResetState();
+                ResetClientState();
                 UserIO.Error(ex.Message);
             }
         }
@@ -310,7 +247,7 @@ namespace SyncToyNext.GuiClient
             if (File.Exists(filePath))
             {
                 var extension = Path.GetExtension(filePath).ToLowerInvariant();
-                if (acceptedTextExtensions.Contains(extension))
+                if (ClientHelpers.IsAcceptedTextExtension(extension))
                 {
                     frmEditor.ShowEditor(filePath);
                     return true;
@@ -330,7 +267,7 @@ namespace SyncToyNext.GuiClient
             {
                 var extension = Path.GetExtension(filePath).ToLowerInvariant();
                 var otherExtension = Path.GetExtension(otherPath).ToLowerInvariant();
-                if (acceptedTextExtensions.Contains(extension) && acceptedTextExtensions.Contains(otherExtension))
+                if (ClientHelpers.IsAcceptedTextExtension(extension) && ClientHelpers.IsAcceptedTextExtension(otherExtension))
                 {
                     frmEditor.ShowEditor(filePath, otherPath);
                     return true;
@@ -346,52 +283,12 @@ namespace SyncToyNext.GuiClient
 
         private void OpenRemoteItem(SyncPointEntry selectedItem)
         {
-            string remotePath = RetrieveRemoteItem(selectedItem);
+            string remotePath = ClientHelpers.RetrieveRemoteItem(selectedItem);
 
             if (!TryOpenInBuiltInEditor(remotePath))
             {
                 OpenFileUsingDefaultHandler(remotePath);
             }
-
-        }
-
-        private static string RetrieveRemoteItem(SyncPointEntry selectedItem)
-        {
-            var pathParts = selectedItem.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
-            var relativePath = pathParts[0];
-            if (pathParts.Length > 0)
-            {
-                var remoteFolderPath = Path.GetDirectoryName(SessionContext.RemoteFolderPath);
-
-                if (remoteFolderPath == null) throw new InvalidOperationException("Remote folder path could not be retrieved");
-
-                var zipPath = Path.Combine(remoteFolderPath, pathParts[1]);
-                using var zip = new FileStream(zipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
-                var entryPath = relativePath.Replace("\\", "/");
-                var zipEntry = archive.GetEntry(entryPath);
-
-                var tempFolder = Path.GetTempPath();
-                var tempPath = Path.Combine(tempFolder, Path.GetFileName(relativePath));
-
-                if (zipEntry != null)
-                {
-                    zipEntry.ExtractToFile(tempPath, true);
-                    return tempPath;
-                }
-            }
-            else
-            {
-                if (SessionContext.RemoteFolderPath == null)
-                {
-                    throw new InvalidOperationException("Remote folder path is not set.");
-                }
-
-                var fullPath = Path.Combine(SessionContext.RemoteFolderPath, relativePath);
-                return fullPath;
-            }
-
-            return string.Empty;
         }
 
         private void btnPush_Click(object sender, EventArgs e)
@@ -412,7 +309,7 @@ namespace SyncToyNext.GuiClient
 
                     UserIO.Message("Starting push to remote location.");
 
-                    ManualRun.Run(SessionContext.LocalFolderPath, SessionContext.RemoteFolderPath, true, result.ID, result.Description);
+                    ManualRunner.Run(SessionContext.LocalFolderPath, SessionContext.RemoteFolderPath, true, result.ID, result.Description);
 
                     syncPointManager.RefreshSyncPoints();
                     RefreshSyncPoints(syncPointManager.SyncPoints);
@@ -441,21 +338,11 @@ namespace SyncToyNext.GuiClient
                 if (existingRemoteConfig == null)
                     throw new InvalidOperationException("Could not load remote config.");
 
-                var result = frmRemote.ShowRemoteDialog(this, existingRemoteConfig);
+                var remoteConfigChanges = frmRemote.ShowRemoteDialog(this, existingRemoteConfig);
 
-                if (result != null)
+                if (remoteConfigChanges != null)
                 {
-                    UserIO.Message("Changing configured remote location.");
-                    var currentRemotePath = SessionContext.RemoteFolderPath;
-                    SessionContext.RemoteFolderPath = result.RemotePath;
-
-                    if (result.IsCompressed)
-                    {
-                        SessionContext.RemoteFolderPath = Path.Combine(SessionContext.RemoteFolderPath, Path.GetFileName(SessionContext.LocalFolderPath) + ".zip");
-                    }
-
-                    existingRemoteConfig.RemotePath = SessionContext.RemoteFolderPath;
-                    existingRemoteConfig.Save(SessionContext.LocalFolderPath);
+                    ClientHelpers.ApplyRemoteConfigChanges(existingRemoteConfig, remoteConfigChanges);
 
                     LoadRemote();
                     UserIO.Message("Completed configuring remote location.");
@@ -481,21 +368,7 @@ namespace SyncToyNext.GuiClient
                 if (questionResult == DialogResult.Yes)
                 {
                     var selectedSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
-
-                    if (selectedSyncPoint == null)
-                    {
-                        throw new InvalidOperationException("No valid syncpoint could be retrieved");
-                    }
-
-                    if (String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
-                    {
-                        throw new InvalidOperationException("No valid remote path was opened");
-                    }
-
-                    UserIO.Message($"Starting with restore of syncpoint {selectedSyncPoint.SyncPointId}");
-
-                    SyncPointRestorer.RestorePath = SessionContext.LocalFolderPath;
-                    SyncPointRestorer.Run(selectedSyncPoint.SyncPointId);
+                    ClientHelpers.RestoreSyncPoint(selectedSyncPoint);
 
                     RefreshLocalFolderBrowser();
 
@@ -508,6 +381,7 @@ namespace SyncToyNext.GuiClient
             }
         }
 
+
         private void menuContextEditor_Click(object sender, EventArgs e)
         {
             if (fileBrowserRemote.SelectedItems.Count() > 0)
@@ -517,7 +391,6 @@ namespace SyncToyNext.GuiClient
                 {
                     OpenRemoteItem(selectedItem);
                 }
-
             }
         }
 
@@ -526,13 +399,16 @@ namespace SyncToyNext.GuiClient
             if (fileBrowserRemote.SelectedItems.Count() > 0)
             {
                 var selectedItem = fileBrowserRemote.SelectedItems.FirstOrDefault() as SyncPointEntry;
-                if (selectedItem != null && !String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
+                
+                if (selectedItem == null || String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
                 {
-                    var localPath = Path.Combine(SessionContext.LocalFolderPath, selectedItem.SourcePath);
-                    var remoteItem = RetrieveRemoteItem(selectedItem);
-
-                    TryOpenInBuiltInDiffer(localPath, remoteItem);
+                    return;
                 }
+
+                var localPath = Path.Combine(SessionContext.LocalFolderPath, selectedItem.SourcePath);
+                var remoteItem = ClientHelpers.RetrieveRemoteItem(selectedItem);
+
+                TryOpenInBuiltInDiffer(localPath, remoteItem);
             }
         }
 
@@ -546,8 +422,12 @@ namespace SyncToyNext.GuiClient
         {
             try
             {
+
                 if (MessageBox.Show("Are you sure you want to restore the selected items? This will overwrite the files on the local repository.", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 {
+                    var remoteSelectedItems = fileBrowserRemote.SelectedItems.Select(x => (SyncPointEntry)x);
+                    var currentSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
+
                     UserIO.Message("Started restoring individual items from syncpoint.");
 
                     if (String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
@@ -555,27 +435,12 @@ namespace SyncToyNext.GuiClient
                         throw new InvalidOperationException("Local folder path should not be empty.");
                     }
 
-                    var currentSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
-                    SyncPointRestorer.RestorePath = SessionContext.LocalFolderPath;
-
-                    bool isZipped = Path.HasExtension(SessionContext.RemoteFolderPath) && Path.GetExtension(SessionContext.RemoteFolderPath) == ".zip";
-
-                    if (fileBrowserRemote.SelectedItems.Count() > 0 && currentSyncPoint != null)
-                    {
-                        foreach (var selectedItem in fileBrowserRemote.SelectedItems)
-                        {
-                            var entry = selectedItem as SyncPointEntry;
-                            if (entry != null) {
-                                var entryParts = entry.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
-                                var relativeEntryPath = entryParts[0];
-
-                                if (selectedItem != null && !String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
-                                {
-                                    SyncPointRestorer.Run(currentSyncPoint.SyncPointId, string.Empty, relativeEntryPath);
-                                }
-                            }
-                        }
-                    }
+                    ClientHelpers.RestoreMultipleEntriesFromSyncPoint(
+                        remoteSelectedItems, 
+                        currentSyncPoint, 
+                        SessionContext.LocalFolderPath, 
+                        SessionContext.RemoteFolderPath, 
+                        SessionContext.LocalFolderPath);
 
                     UserIO.Message("Completed restoring individual items from syncpoint.");
                     ShowLog();

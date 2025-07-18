@@ -1,13 +1,16 @@
-﻿using System;
+﻿using SyncToyNext.Core.Models;
+using SyncToyNext.Core.Synchronizers;
+using SyncToyNext.Core.UX;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.Runners
 {
-    public class ManualRun
+    public class ManualRunner
     {
         public static void Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "")
         {
