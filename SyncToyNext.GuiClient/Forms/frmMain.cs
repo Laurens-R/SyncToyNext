@@ -1,4 +1,5 @@
 using SyncToyNext.Core;
+using SyncToyNext.Core.Helpers;
 using SyncToyNext.Core.Runners;
 using SyncToyNext.Core.UX;
 using SyncToyNext.GuiClient.Forms;
@@ -247,7 +248,7 @@ namespace SyncToyNext.GuiClient
             if (File.Exists(filePath))
             {
                 var extension = Path.GetExtension(filePath).ToLowerInvariant();
-                if (ClientHelpers.IsAcceptedTextExtension(extension))
+                if (FileHelpers.IsAcceptedTextExtension(extension))
                 {
                     frmEditor.ShowEditor(filePath);
                     return true;
@@ -267,7 +268,7 @@ namespace SyncToyNext.GuiClient
             {
                 var extension = Path.GetExtension(filePath).ToLowerInvariant();
                 var otherExtension = Path.GetExtension(otherPath).ToLowerInvariant();
-                if (ClientHelpers.IsAcceptedTextExtension(extension) && ClientHelpers.IsAcceptedTextExtension(otherExtension))
+                if (FileHelpers.IsAcceptedTextExtension(extension) && FileHelpers.IsAcceptedTextExtension(otherExtension))
                 {
                     frmEditor.ShowEditor(filePath, otherPath);
                     return true;

@@ -1,3 +1,4 @@
+using SyncToyNext.Core.Helpers;
 using SyncToyNext.Core.Models;
 using SyncToyNext.Core.UX;
 using System;
@@ -61,54 +62,11 @@ namespace SyncToyNext.Core.Synchronizers
                 }
                 else if (entry != null)
                 {
-                    var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
-                    // ZIP entries store time as UTC, but DateTime.Kind is Unspecified - force it to UTC
-                    var entryLastWrite = DateTime.SpecifyKind(entry.LastWriteTime.DateTime, DateTimeKind.Utc);
-                    
-                    // Truncate to whole seconds for both to handle ZIP format precision issues
-                    srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
-                    entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
-                    var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
-                    
-                    if (secondsDifference > 2) // ZIP format is only precise to 2 seconds
+                    shouldCopy = FileHelpers.IsFileDifferent(srcFilePath, entry);
+
+                    if (shouldCopy)
                     {
-                        shouldCopy = true;
                         action = "Update";
-                    }
-                    else
-                    {
-                        long srcSize = new FileInfo(srcFilePath).Length;
-                        long entrySize = entry.Length;
-                        if (srcSize != entrySize)
-                        {
-                            shouldCopy = true;
-                            action = "Update";
-                        }
-                        else
-                        {
-                            using var sourceFileStream = File.OpenRead(srcFilePath);
-                            using var zipEntryStream = entry.Open();
-
-                            bool areDifferent = AreFirst4KDifferent(sourceFileStream, zipEntryStream);
-
-                            if (areDifferent)
-                            {
-                                shouldCopy = true;
-                                action = "Update";
-                            } 
-                            else
-                            {
-                                zipEntryStream.Seek(0, SeekOrigin.Begin);
-                                var srcHash = ComputeSHA256(srcFilePath);
-                                string destHash =  ComputeSHA256(zipEntryStream);
-                                
-                                if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    shouldCopy = true;
-                                    action = "Update";
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -152,7 +110,7 @@ namespace SyncToyNext.Core.Synchronizers
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
             // Exclude 'synclogs' subfolder from sync
-            var allFilesInSourcePath = GetFilesInPath(sourcePath);
+            var allFilesInSourcePath = FileHelpers.GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
             {
