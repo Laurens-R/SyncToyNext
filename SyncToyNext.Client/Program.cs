@@ -1,5 +1,5 @@
-﻿using SyncToyNext.Client;
-using SyncToyNext.Client.ExecutionModes;
+﻿using SyncToyNext.Client.ExecutionModes;
+using SyncToyNext.Client.Helpers;
 using System;
 
 // Print banner with version
@@ -18,41 +18,54 @@ bool forceFullSync = cmdArgs.Has("recover");
 
 try
 {
-    if (cmdArgs.Has("profile"))
+    if (cmdArgs.EnsureValidCombination("profile") 
+        && cmdArgs.RequiredPresent("profile"))
     {
         ProfileMode.RunSpecificProfileMode(cmdArgs, strictMode);
     }
-    else if (cmdArgs.Has("from"))
+    else if (cmdArgs.EnsureValidCombination("from", "to", "syncpoint")
+        && cmdArgs.RequiredPresent("from", "to"))
     {
         ManualMode.RunManual(cmdArgs);
     }
-    else if (cmdArgs.Has("restore"))
+    else if (cmdArgs.EnsureValidCombination("restore", "from", "file")
+        && cmdArgs.RequiredPresent("restore"))
     {
         SyncPointMode.RunRestoreSyncPoint(cmdArgs);
     }
-    else if (cmdArgs.Has("remote"))
+    else if (cmdArgs.EnsureValidCombination("remote")
+        && cmdArgs.RequiredPresent("remote"))
     {
         SyncPointMode.ConfigureRemote(cmdArgs);
     }
-    else if (cmdArgs.Has("push"))
+    else if (cmdArgs.EnsureValidCombination("push", "id", "desc")
+        && cmdArgs.RequiredPresent("push"))
     {
         SyncPointMode.RunPushCommand(cmdArgs);
     }
-    else if (cmdArgs.Has("list"))
+    else if (cmdArgs.EnsureValidCombination("list")
+        && cmdArgs.RequiredPresent("list"))
     {
         SyncPointMode.RunListSyncPoints();
     }
-    else if (cmdArgs.Has("help"))
+    else if (cmdArgs.EnsureValidCombination("help") 
+        && cmdArgs.RequiredPresent("help"))
     {
         HelpMode.RunHelp();
     }
-    else if(cmdArgs.Has("service"))
+    else if(cmdArgs.EnsureValidCombination("service", "config")
+        && cmdArgs.RequiredPresent("service"))
     {
         ServiceMode.RunService(cmdArgs);
     }
-    else
+    else if(!cmdArgs.Any() || cmdArgs.EnsureValidCombination("config", "strict", "recover"))
     {
         ProfileMode.RunInTaskMode(cmdArgs, strictMode, forceFullSync);
+    } else
+    {
+        Console.WriteLine("No valid combination of arguments provided.");
+        Console.WriteLine();
+        HelpMode.RunHelp();
     }
 }
 catch (Exception ex)

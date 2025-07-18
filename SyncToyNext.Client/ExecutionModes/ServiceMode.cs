@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SyncToyNext.Client.Helpers;
+using System;
 
 namespace SyncToyNext.Client.ExecutionModes
 {

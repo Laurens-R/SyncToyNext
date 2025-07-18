@@ -1,4 +1,5 @@
-﻿using SyncToyNext.Core.Runners;
+﻿using SyncToyNext.Client.Helpers;
+using SyncToyNext.Core.Runners;
 using SyncToyNext.Core.UX;
 using System;
 

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SyncToyNext.Client
+namespace SyncToyNext.Client.Helpers
 {
     /// <summary>
     /// Parses and stores command line arguments as key-value pairs, supporting both flags and string parameters.
@@ -58,6 +58,44 @@ namespace SyncToyNext.Client
             }
             _args[key] = value;
         }
-    }
 
+        /// <summary>
+        /// Ensures that all present arguments are among the allowed set. Returns true if valid, false otherwise.
+        /// </summary>
+        /// <param name="allowedKeys">The set of allowed argument keys.</param>
+        /// <returns>True if all present arguments are in the allowed set, false otherwise.</returns>
+        public bool EnsureValidCombination(params string[] allowedKeys)
+        {
+            if (allowedKeys == null || allowedKeys.Length == 0)
+                return _args.Count == 0; // If no allowed keys, only valid if no args present
+
+            var allowedSet = new HashSet<string>(allowedKeys, StringComparer.OrdinalIgnoreCase);
+            foreach (var key in _args.Keys)
+            {
+                if (!allowedSet.Contains(key))
+                    return false;
+            }
+            return true;
+        }
+
+        public bool RequiredPresent(params string[] requiredKeys)
+        {
+            if (requiredKeys == null || requiredKeys.Length == 0)
+                return _args.Count == 0; // If no allowed keys, only valid if no args present
+
+            if(requiredKeys.Length > _args.Count) return false;
+
+            foreach(var requiredKey in requiredKeys)
+            {
+                if (!_args.Keys.Contains(requiredKey)) return false;
+            }
+
+            return true;
+        }
+
+        public bool Any()
+        {
+            return _args.Count > 0;
+        }
+    }
 }

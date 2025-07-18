@@ -1,9 +1,10 @@
 using System;
 using System.ServiceProcess;
 using System.Threading;
+using SyncToyNext.Client.Helpers;
 using SyncToyNext.Core;
 
-namespace SyncToyNext.Client
+namespace SyncToyNext.Client.ExecutionModes
 {
     /// <summary>
     /// Windows Service wrapper for SyncToyNext.
