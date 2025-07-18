@@ -1,16 +1,17 @@
 using System;
 using System.ServiceProcess;
 using System.Threading;
+using SyncToyNext.Client.Helpers;
 using SyncToyNext.Core;
 
-namespace SyncToyNext.Client
+namespace SyncToyNext.Client.ExecutionModes
 {
     /// <summary>
     /// Windows Service wrapper for SyncToyNext.
     /// </summary>
     public class SyncToyNextService : ServiceBase
     {
-        private SyncContext? _syncContext;
+        private Core.ExecutionContext? _syncContext;
         private string? _configPath;
 
         public SyncToyNextService(string? configPath = null)
@@ -29,7 +30,7 @@ namespace SyncToyNext.Client
                 var cmdArgs = new CommandLineArguments(args);
                 _configPath = cmdArgs.Get("config");
             }
-            _syncContext = _configPath != null ? new SyncContext(_configPath) : new SyncContext();
+            _syncContext = _configPath != null ? new Core.ExecutionContext(_configPath) : new Core.ExecutionContext();
             _syncContext.Start();
         }
 

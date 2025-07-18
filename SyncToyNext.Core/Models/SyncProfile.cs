@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using SyncToyNext.Core;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.Models
 {
     /// <summary>
     /// Represents a synchronization profile with a unique ID/Name, source path, and destination path.
@@ -40,7 +39,7 @@ namespace SyncToyNext.Core
         /// Specifies when this profile should be synchronized (realtime, hourly, daily, at shutdown).
         /// </summary>
         [JsonConverter(typeof(JsonStringEnumConverter<SyncInterval>))]
-        public SyncInterval SyncInterval { get; set; } = SyncToyNext.Core.SyncInterval.Realtime;
+        public SyncInterval SyncInterval { get; set; } = SyncInterval.Realtime;
 
         /// <summary>
         /// Specifies how file overwrites are handled for this profile. Defaults to OnlyOverwriteIfNewer.

@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace SyncToyNext.Client
+namespace SyncToyNext.Client.Helpers
 {
     public static class VersionUtil
     {

@@ -6,7 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.UX
 {
     public class UserIO
     {

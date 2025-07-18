@@ -1,3 +1,5 @@
+using SyncToyNext.Core.Models;
+using SyncToyNext.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +7,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Xml.Schema;
 
-namespace SyncToyNext.Core
+namespace SyncToyNext.Core.Synchronizers
 {
     /// <summary>
     /// Provides file synchronization logic for writing files into a Zip archive.
