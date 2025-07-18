@@ -31,7 +31,7 @@ Right now only single user scenarios are supported, but in the future multi-user
 - Runs as a console app or Windows service
 - Produces a standalone, self-contained executable (no .NET runtime required)
 
-# Disclaimer
+## Disclaimer
 
 **This project is still under development. The author takes no responsibility for any damages, data loss, or other issues caused by using this project/tool in any environment.**
 

@@ -1,6 +1,6 @@
 ﻿using SyncToyNext.Core.Helpers;
 using SyncToyNext.Core.Runners;
-using SyncToyNext.Core.SyncPoints.Diff;
+using SyncToyNext.Core.Merging;
 using SyncToyNext.Core.UX;
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ namespace SyncToyNext.Core.SyncPoints
 {
     public class SyncPointMerger
     {
-        public static void Merge(string sourceLocalPath, string targetLocalPath)
+        public static void Merge(string sourceLocalPath, string targetLocalPath, TwoWayMergePolicy policy)
         {
             //to be clear both the source local path and the target local path are both local versions of their respective remotes.
             //
@@ -59,11 +59,7 @@ namespace SyncToyNext.Core.SyncPoints
 
             UserIO.Message($"Recovery syncpoints for both source and target created: {sourceSyncPoint.SyncPointId} and {targetSyncPoint.SyncPointId} respectively.");
 
-            UserIO.Message($"Starting actual file merging between source and target location.");
-
-            var conflicts = MergeSyncPoints(sourceLocalPath, targetLocalPath);
-
-            if (conflicts.Count > 0)
+            if(!Merger.MergeFileLocations(sourceLocalPath, targetLocalPath, policy))
             {
                 UserIO.Message("There are still some merge conflicts that need to be resolved. Please resolve the conflicts and finalize the merge.");
                 return;
@@ -77,7 +73,6 @@ namespace SyncToyNext.Core.SyncPoints
 
         private static void PostMergeSynchronization(string sourceLocalPath, string targetLocalPath, RemoteConfig sourceConfig, RemoteConfig targetConfig)
         {
-
             //if we get hear we assume we can proceed with step 3: creating a syncpoint for the target.
             UserIO.Message("Creating new post-merge syncpoint for target");
             ManualRunner.Run(targetLocalPath, targetConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint");
@@ -92,66 +87,6 @@ namespace SyncToyNext.Core.SyncPoints
             ManualRunner.Run(sourceLocalPath, sourceConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint");
 
             UserIO.Message("Merge process completed!");
-        }
-
-        /// <summary>
-        /// Performs the actual merge between two locations/syncpoints.
-        /// This method will try to perform auto-merge and will return a list if that fails
-        /// due to merge conflicts.
-        /// </summary>
-        /// <param name="sourceSyncPoint"></param>
-        /// <param name="targetSyncPoint"></param>
-        /// <param name="sourceManager"></param>
-        /// <param name="targetManager"></param>
-        /// <returns>The list of merge conflicts.</returns>
-        private static List<MergeConflict> MergeSyncPoints(string sourcePath, string targetPath)
-        {
-            var sourceFiles = FileHelpers.GetFilesInPath(sourcePath);
-            var targetFiles = FileHelpers.GetFilesInPath(targetPath);
-
-            foreach (var sourceEntryPath in sourceFiles)
-            {
-                var relativeSourcePath = Path.GetRelativePath(sourcePath, sourceEntryPath);
-                var targetEntryPath = Path.Combine(targetPath, relativeSourcePath);
-                bool targetExists = File.Exists(targetEntryPath);
-
-                if (targetExists)
-                {
-                    bool areFilesDifferent = FileHelpers.IsFileDifferent(sourceEntryPath, targetEntryPath);
-
-                    if (areFilesDifferent)
-                    {
-                        bool isTextFile = FileHelpers.IsAcceptedTextExtension(sourceEntryPath);
-                        if (isTextFile)
-                        {
-                            var mergeResults = Merger.TwoWayMerge(sourceEntryPath, targetEntryPath);
-                            File.WriteAllText(targetEntryPath, mergeResults.MergedFileContent);
-
-                            if (mergeResults.MergeConflicts.Count > 0) {
-                                UserIO.Message($"Merge conflicts in: { relativeSourcePath }");
-                            }
-                        }
-                        else
-                        {
-                            //this is either not a supported text format or a binary. In either case we as we cannot
-                            //do a safe line-by-line diff, we are going to do a full overwrite to the target.
-                            File.Copy(sourceEntryPath, targetEntryPath, true);
-                        }
-                    }
-                } else
-                {
-                    //ensure the directory exists for the target.
-                    var directory = Path.GetDirectoryName(sourcePath);
-                    if(!String.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
-                    {
-                        Directory.CreateDirectory(directory);
-                    }
-
-                    File.Copy(sourceEntryPath, targetEntryPath, true);
-                }
-            }
-
-            return new List<MergeConflict>();
         }
     }
 }

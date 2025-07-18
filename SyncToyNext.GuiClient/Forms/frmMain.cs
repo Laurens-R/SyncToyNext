@@ -14,7 +14,7 @@ namespace SyncToyNext.GuiClient
     {
         private SyncPointManager? syncPointManager = null;
         private SyncPoint? currentSyncPoint = null;
-        
+
         public frmMain()
         {
             InitializeComponent();
@@ -400,7 +400,7 @@ namespace SyncToyNext.GuiClient
             if (fileBrowserRemote.SelectedItems.Count() > 0)
             {
                 var selectedItem = fileBrowserRemote.SelectedItems.FirstOrDefault() as SyncPointEntry;
-                
+
                 if (selectedItem == null || String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
                 {
                     return;
@@ -437,18 +437,27 @@ namespace SyncToyNext.GuiClient
                     }
 
                     ClientHelpers.RestoreMultipleEntriesFromSyncPoint(
-                        remoteSelectedItems, 
-                        currentSyncPoint, 
-                        SessionContext.LocalFolderPath, 
-                        SessionContext.RemoteFolderPath, 
+                        remoteSelectedItems,
+                        currentSyncPoint,
+                        SessionContext.LocalFolderPath,
+                        SessionContext.RemoteFolderPath,
                         SessionContext.LocalFolderPath);
 
                     UserIO.Message("Completed restoring individual items from syncpoint.");
                     ShowLog();
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 UserIO.Error(ex.Message);
+            }
+        }
+
+        private void menuFileManualMerge_Click(object sender, EventArgs e)
+        {
+            if (frmManualMerge.ShowMergeDialog(this) == DialogResult.OK)
+            {
+                ShowLog();
             }
         }
     }

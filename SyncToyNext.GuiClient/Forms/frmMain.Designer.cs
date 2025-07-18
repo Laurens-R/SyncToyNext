@@ -54,6 +54,8 @@
             statusStrip = new StatusStrip();
             lblStatus = new ToolStripStatusLabel();
             browserFolders = new FolderBrowserDialog();
+            menuFileSeperator = new ToolStripSeparator();
+            menuFileManualMerge = new ToolStripMenuItem();
             menuMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).BeginInit();
             mainSplitContainer.Panel1.SuspendLayout();
@@ -76,7 +78,7 @@
             // 
             // menuFile
             // 
-            menuFile.DropDownItems.AddRange(new ToolStripItem[] { menuOpenLocalLocation });
+            menuFile.DropDownItems.AddRange(new ToolStripItem[] { menuOpenLocalLocation, menuFileSeperator, menuFileManualMerge });
             menuFile.Name = "menuFile";
             menuFile.Size = new Size(37, 20);
             menuFile.Text = "&File";
@@ -84,7 +86,7 @@
             // menuOpenLocalLocation
             // 
             menuOpenLocalLocation.Name = "menuOpenLocalLocation";
-            menuOpenLocalLocation.Size = new Size(177, 22);
+            menuOpenLocalLocation.Size = new Size(180, 22);
             menuOpenLocalLocation.Text = "Open local location";
             menuOpenLocalLocation.Click += menuOpenLocalLocation_Click;
             // 
@@ -98,7 +100,7 @@
             // menuChangeRemote
             // 
             menuChangeRemote.Name = "menuChangeRemote";
-            menuChangeRemote.Size = new Size(180, 22);
+            menuChangeRemote.Size = new Size(115, 22);
             menuChangeRemote.Text = "Change";
             menuChangeRemote.Click += menuChangeRemote_Click;
             // 
@@ -226,31 +228,31 @@
             // 
             contextMenuRemote.Items.AddRange(new ToolStripItem[] { menuContextCompareLocal, menuContextEditor, toolStripMenuItem1, contextMenuRestoreItems });
             contextMenuRemote.Name = "contextMenuRemote";
-            contextMenuRemote.Size = new Size(181, 98);
+            contextMenuRemote.Size = new Size(178, 76);
             // 
             // menuContextCompareLocal
             // 
             menuContextCompareLocal.Name = "menuContextCompareLocal";
-            menuContextCompareLocal.Size = new Size(180, 22);
+            menuContextCompareLocal.Size = new Size(177, 22);
             menuContextCompareLocal.Text = "Compare with local";
             menuContextCompareLocal.Click += menuContextCompareLocal_Click;
             // 
             // menuContextEditor
             // 
             menuContextEditor.Name = "menuContextEditor";
-            menuContextEditor.Size = new Size(180, 22);
+            menuContextEditor.Size = new Size(177, 22);
             menuContextEditor.Text = "Open in Editor";
             menuContextEditor.Click += menuContextEditor_Click;
             // 
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(177, 6);
+            toolStripMenuItem1.Size = new Size(174, 6);
             // 
             // contextMenuRestoreItems
             // 
             contextMenuRestoreItems.Name = "contextMenuRestoreItems";
-            contextMenuRestoreItems.Size = new Size(180, 22);
+            contextMenuRestoreItems.Size = new Size(177, 22);
             contextMenuRestoreItems.Text = "Restore item(s)";
             contextMenuRestoreItems.Click += contextMenuRestoreItems_Click;
             // 
@@ -269,6 +271,18 @@
             lblStatus.Name = "lblStatus";
             lblStatus.Size = new Size(60, 17);
             lblStatus.Text = "Status: Ok";
+            // 
+            // menuFileSeperator
+            // 
+            menuFileSeperator.Name = "menuFileSeperator";
+            menuFileSeperator.Size = new Size(177, 6);
+            // 
+            // menuFileManualMerge
+            // 
+            menuFileManualMerge.Name = "menuFileManualMerge";
+            menuFileManualMerge.Size = new Size(180, 22);
+            menuFileManualMerge.Text = "Manual Merge";
+            menuFileManualMerge.Click += menuFileManualMerge_Click;
             // 
             // frmMain
             // 
@@ -327,5 +341,7 @@
         private ToolStripMenuItem menuContextEditor;
         private ToolStripSeparator toolStripMenuItem1;
         private ToolStripMenuItem menuContextCompareLocal;
+        private ToolStripSeparator menuFileSeperator;
+        private ToolStripMenuItem menuFileManualMerge;
     }
 }
