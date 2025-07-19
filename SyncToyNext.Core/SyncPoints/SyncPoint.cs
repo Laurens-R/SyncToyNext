@@ -30,6 +30,11 @@ namespace SyncToyNext.Core
         public DateTime LastSyncTime { get; set; }
         public List<SyncPointEntry> Entries { get; set; } = new List<SyncPointEntry>();
 
+        public static string GenerateSyncpointID()
+        {
+            return $"{DateTime.UtcNow:yyyyMMddHHmmss}UTC";
+        }
+
         public static SyncPoint Load(string filePath)
         {
             if (!File.Exists(filePath))

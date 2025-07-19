@@ -13,7 +13,7 @@ namespace SyncToyNext.Core.SyncPoints
 {
     public class SyncPointMerger
     {
-        public static void Merge(string sourceLocalPath, string targetLocalPath, TwoWayMergePolicy policy)
+        public static void Merge(string sourceLocalPath, string targetLocalPath)
         {
             //to be clear both the source local path and the target local path are both local versions of their respective remotes.
             //
@@ -28,38 +28,19 @@ namespace SyncToyNext.Core.SyncPoints
 
             UserIO.Message("Starting merge process");
 
-            var sourceConfig = RemoteConfig.Load(sourceLocalPath);
-            var targetConfig = RemoteConfig.Load(targetLocalPath);
+            var sourceRepo = new LocalRepository(sourceLocalPath);
+            var targetRepo = new LocalRepository(targetLocalPath);
 
-            if (sourceConfig == null || targetConfig == null)
+            string newSyncPointID = SyncPoint.GenerateSyncpointID();
+
+            if (!MergePreparation(sourceRepo, targetRepo, newSyncPointID))
             {
-                UserIO.Error("Merging requires that the two provided local repositories both contain a remote configuration");
                 return;
             }
 
-            var sourceManager = new SyncPointManager(sourceConfig.RemotePath);
-            var targetManager = new SyncPointManager(targetConfig.RemotePath);
+            var referenceBaseSyncPoint = sourceRepo.LatestReferenceSyncPoint;
 
-            //step 1
-            ManualRunner.Run(sourceLocalPath, sourceConfig.RemotePath, true, string.Empty, "Pre-Merge Syncpoint");
-            ManualRunner.Run(targetLocalPath, targetConfig.RemotePath, true, string.Empty, "Pre-Merge Syncpoint");
-
-            sourceManager.RefreshSyncPoints();
-            targetManager.RefreshSyncPoints();
-
-            //step 2
-            var sourceSyncPoint = sourceManager.SyncPoints.FirstOrDefault();
-            var targetSyncPoint = targetManager.SyncPoints.FirstOrDefault();
-
-            if (sourceSyncPoint == null || targetSyncPoint == null)
-            {
-                UserIO.Error("Could not retrieve newly created recovery syncpoints.");
-                return;
-            }
-
-            UserIO.Message($"Recovery syncpoints for both source and target created: {sourceSyncPoint.SyncPointId} and {targetSyncPoint.SyncPointId} respectively.");
-
-            if(!Merger.MergeFileLocations(sourceLocalPath, targetLocalPath, policy))
+            if (!Merger.Merge(sourceRepo, targetRepo, referenceBaseSyncPoint?.SyncPointId ?? string.Empty))
             {
                 UserIO.Message("There are still some merge conflicts that need to be resolved. Please resolve the conflicts and finalize the merge.");
                 return;
@@ -68,23 +49,43 @@ namespace SyncToyNext.Core.SyncPoints
             UserIO.Message("No merge conflicts detected. Resuming post merge synchronization activities.");
 
             //perform step 3, 4 and 5
-            PostMergeSynchronization(sourceLocalPath, targetLocalPath, sourceConfig, targetConfig);
+            PostMergeSynchronization(sourceRepo, targetRepo, newSyncPointID);
         }
 
-        private static void PostMergeSynchronization(string sourceLocalPath, string targetLocalPath, RemoteConfig sourceConfig, RemoteConfig targetConfig)
+        private static bool MergePreparation(LocalRepository sourceRepo, LocalRepository targetRepo, string newSyncPointID)
         {
+            newSyncPointID = "PREMERGE-" + newSyncPointID;
+            string newSyncPointDesc = "Pre-Merge Syncpoint";
+
+            sourceRepo.Push(newSyncPointID, newSyncPointDesc);
+            targetRepo.Push(newSyncPointID, newSyncPointDesc);
+
+            if (sourceRepo.LatestSyncPoint?.SyncPointId != newSyncPointID || targetRepo.LatestSyncPoint?.SyncPointId == null)
+            {
+                UserIO.Error("Could not retrieve newly created recovery syncpoints.");
+                return false;
+            }
+
+            UserIO.Message($"Recovery syncpoints for both source and target created. Both with ID: {newSyncPointID}.");
+            return true;
+        }
+
+        private static void PostMergeSynchronization(LocalRepository sourceRepo, LocalRepository targetRepo, string newSyncPointID)
+        {
+            newSyncPointID = "POSTMERGE-" + newSyncPointID;
+            string newSyncPointDesc = "Post-Merge Syncpoint";
+
             //if we get hear we assume we can proceed with step 3: creating a syncpoint for the target.
             UserIO.Message("Creating new post-merge syncpoint for target");
-            ManualRunner.Run(targetLocalPath, targetConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint", true);
-
+            targetRepo.Push(newSyncPointID, newSyncPointDesc, true);
 
             //step 4: sync the contents of the target back to the source. (to receive back all the merged stuff as well).
             UserIO.Message("Synching changes in target back to source");
-            ManualRunner.Run(targetLocalPath, sourceLocalPath);
+            ManualRunner.Run(targetRepo.LocalPath, sourceRepo.LocalPath);
 
             //step 5: create a syncpoint for the source location.
             UserIO.Message("Creating new post-merge syncpoint for source");
-            ManualRunner.Run(sourceLocalPath, sourceConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint", true);
+            sourceRepo.Push(newSyncPointID, newSyncPointDesc, true);
 
             UserIO.Message("Merge process completed!");
         }

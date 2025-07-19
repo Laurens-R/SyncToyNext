@@ -2,6 +2,7 @@
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using SyncToyNext.Core.Helpers;
+using SyncToyNext.Core.SyncPoints;
 using SyncToyNext.Core.UX;
 using System;
 using System.Collections.Generic;
@@ -600,7 +601,7 @@ namespace SyncToyNext.Core.Merging
             return mergeResult;
         }
 
-        public static bool MergeFileLocations(string sourcePath, string targetPath, TwoWayMergePolicy policy, Action<string, int, int>? progressCallback = null)
+        public static bool ManualMerge(string sourcePath, string targetPath, TwoWayMergePolicy policy, Action<string, int, int>? progressCallback = null)
         {
             if (string.IsNullOrWhiteSpace(sourcePath) || !Directory.Exists(sourcePath))
             {
@@ -649,6 +650,113 @@ namespace SyncToyNext.Core.Merging
 
                                 var mergeResults = TwoWayMerge(sourceContent, targetContent, policy);
                                 File.WriteAllText(targetEntryPath, mergeResults.MergedFileContent);
+
+                                if (mergeResults.MergeConflicts.Count > 0)
+                                {
+                                    UserIO.Message($"Merge conflicts in: {relativeSourcePath} ({mergeResults.MergeConflicts.Count} conflicts)");
+                                    mergeSuccessful = false;
+                                }
+                                else
+                                {
+                                    UserIO.Message($"Successfully merged: {relativeSourcePath} ({mergeResults.Statistics.AutoMergedChanges + mergeResults.Statistics.SourceOnlyChanges} source/auto-merged changes)");
+                                }
+                            }
+                            else
+                            {
+                                //this is either not a supported text format or a binary. In either case we as we cannot
+                                //do a safe line-by-line diff, we are going to do a full overwrite to the target.
+                                File.Copy(sourceEntryPath, targetEntryPath, true);
+                                UserIO.Message($"Binary file copied: {relativeSourcePath}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //ensure the directory exists for the target.
+                        var directory = Path.GetDirectoryName(targetEntryPath);
+                        if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
+
+                        File.Copy(sourceEntryPath, targetEntryPath, true);
+                        UserIO.Message($"New file added: {relativeSourcePath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UserIO.Error($"Error processing file {sourceEntryPath}: {ex.Message}");
+                    mergeSuccessful = false;
+                }
+                finally
+                {
+                    processedFiles++;
+                }
+            }
+
+            progressCallback?.Invoke("Completed", totalFiles, totalFiles);
+            UserIO.Message($"File merging completed. Processed {processedFiles} files.");
+
+            return mergeSuccessful;
+        }
+
+        public static bool Merge(LocalRepository sourceRepo, LocalRepository targetRepo, string baseReferenceSyncID, Action<string, int, int>? progressCallback = null)
+        {
+
+            UserIO.Message($"Starting actual file merging between source and target location.");
+
+            var sourceFiles = sourceRepo.GetLocalFiles();
+            var targetFiles = targetRepo.GetLocalFiles();
+            var mergeSuccessful = true;
+            int totalFiles = sourceFiles.Count();
+            int processedFiles = 0;
+
+            //if the base reference id is set, make sure 
+            if (!String.IsNullOrEmpty(baseReferenceSyncID) && (!sourceRepo.HasSyncPointID(baseReferenceSyncID) || !targetRepo.HasSyncPointID(baseReferenceSyncID)))
+            {
+                UserIO.Error("Reference Sync ID was set, but it is not present in both locations. Cannot continue with merge");
+                return false;
+            }
+
+            bool useFallBackSyncMethod = String.IsNullOrEmpty(baseReferenceSyncID);
+
+            foreach (var sourceEntryPath in sourceFiles)
+            {
+                try
+                {
+                    var relativeSourcePath = Path.GetRelativePath(sourceRepo.LocalPath, sourceEntryPath);
+                    progressCallback?.Invoke(relativeSourcePath, processedFiles, totalFiles);
+
+                    var targetEntryPath = Path.Combine(targetRepo.LocalPath, relativeSourcePath);
+                    bool targetExists = File.Exists(targetEntryPath);
+
+                    if (targetExists)
+                    {
+                        bool areFilesDifferent = FileHelpers.IsFileDifferent(sourceEntryPath, targetEntryPath);
+
+                        if (areFilesDifferent)
+                        {
+                            bool isTextFile = FileHelpers.IsAcceptedTextExtension(Path.GetExtension(sourceEntryPath));
+                            if (isTextFile)
+                            {
+                                //we use two-way merge instead of 3-way merge, because on a file system it is hard
+                                //to guarantee a common-base. Maybe in the future if the remote side get's fleshed
+                                //out a bit more.
+                                var sourceContent = File.ReadAllText(sourceEntryPath);
+                                var targetContent = File.ReadAllText(targetEntryPath);
+
+                                MergeResult? mergeResults = null;
+
+                                if (!useFallBackSyncMethod)
+                                {
+                                    var baseContent = sourceRepo.ReadAllTextRemote(relativeSourcePath, baseReferenceSyncID);
+                                    mergeResults = ThreeWayMerge(baseContent, sourceContent, targetContent);
+                                    File.WriteAllText(targetEntryPath, mergeResults.MergedFileContent);
+                                } else
+                                {
+                                    mergeResults = TwoWayMerge(sourceContent, targetContent, TwoWayMergePolicy.SourceWins);
+                                    File.WriteAllText(targetEntryPath, mergeResults.MergedFileContent);
+                                }
 
                                 if (mergeResults.MergeConflicts.Count > 0)
                                 {

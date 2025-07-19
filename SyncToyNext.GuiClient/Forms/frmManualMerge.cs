@@ -40,7 +40,7 @@ namespace SyncToyNext.GuiClient.Forms
 
             TwoWayMergePolicy policy = radioPolicySourceLeading.Checked ? TwoWayMergePolicy.SourceWins : TwoWayMergePolicy.Union;
 
-            Merger.MergeFileLocations(txtSourcePath.Text, txtTargetPath.Text, policy);
+            Merger.ManualMerge(txtSourcePath.Text, txtTargetPath.Text, policy);
             this.DialogResult = DialogResult.OK;
             this.Close();
         }

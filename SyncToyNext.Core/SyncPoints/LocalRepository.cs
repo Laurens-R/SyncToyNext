@@ -1,7 +1,9 @@
 ﻿using SyncToyNext.Core.Helpers;
 using SyncToyNext.Core.Runners;
+using SyncToyNext.Core.UX;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -17,6 +19,9 @@ namespace SyncToyNext.Core.SyncPoints
 
         public string LocalPath { get; set; }
         public string RemotePath { get; set; }
+
+        public SyncPointManager Manager => _manager;
+        public RemoteConfig? Config => _remoteConfig;
 
         public IReadOnlyList<SyncPoint> SyncPoints
         {
@@ -44,11 +49,16 @@ namespace SyncToyNext.Core.SyncPoints
             }
         }
 
-        public RemoteConfig? Config
+        public SyncPoint? LatestReferenceSyncPoint
         {
             get
             {
-                return _remoteConfig;
+                if(_manager == null)
+                {
+                    throw new InvalidOperationException("Manager not loaded for repository.");
+                }
+
+                return _manager.SyncPoints.OrderByDescending(x => x.LastSyncTime).FirstOrDefault(s => s.ReferencePoint == true);
             }
         }
 
@@ -101,6 +111,19 @@ namespace SyncToyNext.Core.SyncPoints
             }
         }
 
+        public static bool RemoteExists(string remotePath)
+        {
+            if(Path.HasExtension(remotePath) && Path.GetExtension(remotePath) == ".zip") 
+            {
+                var parentDirectory = Path.GetDirectoryName(remotePath);
+                return Directory.Exists(parentDirectory);
+            } 
+            else
+            {
+                return Directory.Exists(remotePath);
+            }
+        }        
+
         public static LocalRepository Initialize(string localPath, string remotePath)
         {
             if (!Path.Exists(localPath))
@@ -108,7 +131,7 @@ namespace SyncToyNext.Core.SyncPoints
                 throw new InvalidOperationException("Local path doesn't exist.");
             }
 
-            if (!Path.Exists(remotePath))
+            if (!RemoteExists(remotePath))
             {
                 throw new InvalidOperationException("Remote path doesn't exist.");
             }
@@ -119,6 +142,40 @@ namespace SyncToyNext.Core.SyncPoints
             var repository = new LocalRepository(localPath);
 
             repository.RestoreLatestToLocal();
+
+            return repository;
+        }
+
+        public static LocalRepository CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath)
+        {
+            if (!Path.Exists(localPath))
+            {
+                throw new InvalidOperationException("Local path doesn't exist.");
+            }
+
+            if (!RemoteExists(newRemotePath))
+            {
+                throw new InvalidOperationException("Remote path doesn't exist.");
+            }
+
+            var config = new RemoteConfig(newRemotePath, localPath);
+            config.Save(localPath);
+
+            var repository = new LocalRepository(localPath);
+            var otherRemoteManager = new SyncPointManager(otherRemotePath);
+            var latestSyncPoint = otherRemoteManager.SyncPoints.Count > 0 ? otherRemoteManager.SyncPoints[0] : null;
+
+            if (latestSyncPoint != null)
+            {
+                SyncPointRestorer.RestorePath = repository.LocalPath;
+                SyncPointRestorer.Run(latestSyncPoint.SyncPointId, otherRemotePath);
+
+                repository.Push(latestSyncPoint.SyncPointId, $"Init push after clone from {otherRemotePath}", true);
+            } 
+            else
+            {
+                UserIO.Error("A clone from another remote requires that remote to have at least one syncpoint.");
+            }
 
             return repository;
         }
@@ -137,6 +194,11 @@ namespace SyncToyNext.Core.SyncPoints
 
             _manager = new SyncPointManager(newRemotePath);
             RestoreLatestToLocal();
+        }
+
+        public bool HasSyncPointID(string syncPointID)
+        {
+            return SyncPoints.Any(s => s.SyncPointId == syncPointID);
         }
 
         public IEnumerable<string> GetLocalFiles()
@@ -186,6 +248,12 @@ namespace SyncToyNext.Core.SyncPoints
             }
         }
 
+        /// <summary>
+        /// Gets a temporary local copy of a remote file.
+        /// </summary>
+        /// <param name="selectedItem"></param>
+        /// <returns>The path to the temporary location of the file.</returns>
+        /// <exception cref="InvalidOperationException"></exception>
         public string GetTempCopyOfFile(SyncPointEntry selectedItem)
         {
             var pathParts = selectedItem.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
@@ -229,6 +297,46 @@ namespace SyncToyNext.Core.SyncPoints
             return string.Empty;
         }
 
+        public string ReadAllTextRemote(string relativePath, string syncPointID)
+        {
+            var filesAtSyncPoint = _manager.GetFileEntriesAtSyncpoint(syncPointID);
+            var fileEntry = filesAtSyncPoint.FirstOrDefault(f => f.SourcePath == relativePath);
+
+            if (fileEntry == null) return string.Empty;
+
+            var remotePathParts = fileEntry.SourcePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if(remotePathParts.Length == 2)
+            {
+                //file is a zip.
+                var zipPath = Path.Combine(RemotePath, remotePathParts[1]);
+                using var zip = new FileStream(zipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
+                var entryPath = relativePath.Replace("\\", "/");
+                var zipEntry = archive.GetEntry(entryPath);
+
+                if(zipEntry == null) return string.Empty;
+
+                using var entryStream = zipEntry.Open();
+                using var reader = new StreamReader(entryStream);
+                var remoteTextContent = reader.ReadToEnd();
+                return remoteTextContent;
+            }
+            else
+            {
+                //file is not a zip.
+                var fullRemotePath = Path.Combine(RemotePath, relativePath);
+                if (File.Exists(fullRemotePath))
+                {
+                    return File.ReadAllText(fullRemotePath);
+                } else
+                {
+                    return String.Empty;
+                }
+                
+            }
+        }
+
         public void Push()
         {
             ManualRunner.Run(LocalPath, RemotePath, true);
@@ -239,19 +347,14 @@ namespace SyncToyNext.Core.SyncPoints
             _remoteConfig.Save(LocalPath);
         }
 
-        public void Push(string newSyncPointID, string newDescription)
+        public void Push(string newSyncPointID, string newDescription, bool isReferencePoint = false)
         {
-            ManualRunner.Run(LocalPath, RemotePath, true, newSyncPointID, newDescription);
+            ManualRunner.Run(LocalPath, RemotePath, true, newSyncPointID, newDescription, isReferencePoint);
             _manager.RefreshSyncPoints();
 
             if (_remoteConfig == null || LatestSyncPoint == null) return;
             _remoteConfig.CurrentSyncPoint = LatestSyncPoint.SyncPointId;
             _remoteConfig.Save(LocalPath);
-        }
-
-        public void Merge(string otherLocalTarget)
-        {
-            SyncPointMerger.Merge(LocalPath, otherLocalTarget, Merging.TwoWayMergePolicy.Union);
         }
     }
 }
