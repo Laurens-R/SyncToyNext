@@ -26,6 +26,7 @@ namespace SyncToyNext.Core
     {
         public string SyncPointId { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public bool ReferencePoint { get; set; } = false;
         public DateTime LastSyncTime { get; set; }
         public List<SyncPointEntry> Entries { get; set; } = new List<SyncPointEntry>();
 

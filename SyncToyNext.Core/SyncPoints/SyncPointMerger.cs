@@ -75,7 +75,7 @@ namespace SyncToyNext.Core.SyncPoints
         {
             //if we get hear we assume we can proceed with step 3: creating a syncpoint for the target.
             UserIO.Message("Creating new post-merge syncpoint for target");
-            ManualRunner.Run(targetLocalPath, targetConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint");
+            ManualRunner.Run(targetLocalPath, targetConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint", true);
 
 
             //step 4: sync the contents of the target back to the source. (to receive back all the merged stuff as well).
@@ -84,7 +84,7 @@ namespace SyncToyNext.Core.SyncPoints
 
             //step 5: create a syncpoint for the source location.
             UserIO.Message("Creating new post-merge syncpoint for source");
-            ManualRunner.Run(sourceLocalPath, sourceConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint");
+            ManualRunner.Run(sourceLocalPath, sourceConfig.RemotePath, true, string.Empty, "Post-Merge Syncpoint", true);
 
             UserIO.Message("Merge process completed!");
         }

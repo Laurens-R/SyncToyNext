@@ -130,9 +130,9 @@
             lblMergePolicy.AutoSize = true;
             lblMergePolicy.Location = new Point(28, 118);
             lblMergePolicy.Name = "lblMergePolicy";
-            lblMergePolicy.Size = new Size(73, 15);
+            lblMergePolicy.Size = new Size(76, 15);
             lblMergePolicy.TabIndex = 9;
-            lblMergePolicy.Text = "mergePolicy";
+            lblMergePolicy.Text = "Merge Policy";
             // 
             // frmManualMerge
             // 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SyncToyNext.Core.UX;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,13 @@ using System.Text.Json;
 
 namespace SyncToyNext.Core
 {
+    public enum SyncPointRootLoadResult
+    {
+        Failed,
+        LoadedExisting,
+        CreatedNew
+    }
+
     public class SyncPointManager
     {
         private List<SyncPoint> _syncPoints;
@@ -18,15 +26,20 @@ namespace SyncToyNext.Core
 
         public SyncPointRoot SyncPointRoot => _syncPointRoot ?? throw new InvalidOperationException("SyncPointRoot is not initialized.");
 
-        public SyncPointManager(string path, string sourcePath = "")
+        public SyncPointManager(string remotePath, string sourcePath = "")
         {
-            if(Path.HasExtension(path) && Path.GetExtension(path).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+            if(Path.HasExtension(remotePath) && Path.GetExtension(remotePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             {
                 _isZipped = true;
-                path = Path.GetDirectoryName(path) ?? throw new InvalidOperationException("Invalid zip file path.");
+                remotePath = Path.GetDirectoryName(remotePath) ?? throw new InvalidOperationException("Invalid zip file path.");
             }
 
-            _path = path;
+            if (!Directory.Exists(remotePath) || !Directory.Exists(sourcePath))
+            {
+                throw new InvalidOperationException("Local or remote paths don't exist");
+            }
+
+            _path = remotePath;
             _sourcePath = sourcePath;
             _syncPoints = new List<SyncPoint>();
             LoadSyncPointRoot();
@@ -36,7 +49,7 @@ namespace SyncToyNext.Core
 
         public IReadOnlyList<SyncPoint> SyncPoints => _syncPoints.AsReadOnly();
 
-        private void LoadSyncPointRoot()
+        private SyncPointRootLoadResult LoadSyncPointRoot()
         {
             var rootFilePath = Path.Combine(_path, "syncpointroot.json");
             if (File.Exists(rootFilePath))
@@ -47,12 +60,16 @@ namespace SyncToyNext.Core
 
                 if (_syncPointRoot.Zipped != _isZipped)
                 {
-                    throw new InvalidOperationException($"Cannot mix between zipped and non-zipped destination targets when working with syncpoints.");
+                    UserIO.Error($"Cannot mix between zipped and non-zipped destination targets when working with syncpoints.");
+                    return SyncPointRootLoadResult.Failed;
                 }
                 if (string.IsNullOrWhiteSpace(_syncPointRoot.SourceLocation) || _syncPointRoot.SourceLocation != _sourcePath)
                 {
-                    throw new InvalidOperationException($"SyncPointRoot source location mismatch. Expected: {_sourcePath}, Found: {_syncPointRoot.SourceLocation}");
+                    UserIO.Error($"SyncPointRoot source location mismatch. Expected: {_sourcePath}, Found: {_syncPointRoot.SourceLocation}");
+                    return SyncPointRootLoadResult.Failed;
                 }
+
+                return SyncPointRootLoadResult.LoadedExisting;
             }
             else
             {
@@ -61,6 +78,7 @@ namespace SyncToyNext.Core
                 _syncPointRoot.Zipped = _isZipped;
                 var json = JsonSerializer.Serialize(_syncPointRoot, SyncPointRootJsonContext.Default.SyncPointRoot);
                 File.WriteAllText(rootFilePath, json);
+                return SyncPointRootLoadResult.CreatedNew;
             }
         }
 
@@ -94,7 +112,7 @@ namespace SyncToyNext.Core
             LoadSyncPoints();
         }
 
-        public SyncPoint AddSyncPoint(string sourcePath, string syncPointID = "", string description = "")
+        public SyncPoint AddSyncPoint(string sourcePath, string syncPointID = "", string description = "", bool isReferencePoint = false)
         {
             //first check if the syncPointID is already used
             if (_syncPoints.Any(sp => sp.SyncPointId.Equals(syncPointID, StringComparison.OrdinalIgnoreCase)))
@@ -121,6 +139,7 @@ namespace SyncToyNext.Core
                 SyncPointId = syncPointID,
                 Description = description,
                 LastSyncTime = now,
+                ReferencePoint = isReferencePoint,
                 Entries = new List<SyncPointEntry>()
             };
 

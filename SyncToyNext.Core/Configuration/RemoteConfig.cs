@@ -25,6 +25,7 @@ namespace SyncToyNext.Core
     public class RemoteConfig
     {
         public string RemotePath { get; set; } = string.Empty;
+        public string CurrentSyncPoint { get; set; } = string.Empty;
 
         public RemoteConfig() { }
 

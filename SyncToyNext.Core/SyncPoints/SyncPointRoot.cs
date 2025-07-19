@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace SyncToyNext.Core
 {
@@ -16,6 +17,7 @@ namespace SyncToyNext.Core
 
     public class SyncPointRoot
     {
+        public Guid RootID { get; set; } = Guid.NewGuid();
         public string SourceLocation { get; set; } = string.Empty;
         public bool Zipped { get; set; } = false;
     }

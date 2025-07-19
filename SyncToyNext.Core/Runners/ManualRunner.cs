@@ -12,7 +12,7 @@ namespace SyncToyNext.Core.Runners
 {
     public class ManualRunner
     {
-        public static void Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "")
+        public static void Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "", bool isReferencePoint = false)
         {
 
             if (string.IsNullOrWhiteSpace(fromPath)
@@ -49,7 +49,7 @@ namespace SyncToyNext.Core.Runners
             if (useSyncPoint)
             {
                 syncPointManager = new SyncPointManager(toPath, fromPath);
-                syncPoint = syncPointManager.AddSyncPoint(fromPath, syncpointId, syncpointDescription);
+                syncPoint = syncPointManager.AddSyncPoint(fromPath, syncpointId, syncpointDescription, isReferencePoint);
             }
 
             if(toZip)
