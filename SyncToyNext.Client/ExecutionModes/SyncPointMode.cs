@@ -41,7 +41,7 @@ namespace SyncToyNext.Client.ExecutionModes
                 }
 
                 var remotePath = remoteConfig.RemotePath;
-                var syncPointManager = new SyncPointManager(remotePath, currentDirectory);
+                var syncPointManager = new SyncPointManager(remotePath);
 
                 var syncPoints = syncPointManager.SyncPoints;
 

@@ -37,8 +37,8 @@ namespace SyncToyNext.Core.SyncPoints
                 return;
             }
 
-            var sourceManager = new SyncPointManager(sourceConfig.RemotePath, sourceLocalPath);
-            var targetManager = new SyncPointManager(targetConfig.RemotePath, targetLocalPath);
+            var sourceManager = new SyncPointManager(sourceConfig.RemotePath);
+            var targetManager = new SyncPointManager(targetConfig.RemotePath);
 
             //step 1
             ManualRunner.Run(sourceLocalPath, sourceConfig.RemotePath, true, string.Empty, "Pre-Merge Syncpoint");

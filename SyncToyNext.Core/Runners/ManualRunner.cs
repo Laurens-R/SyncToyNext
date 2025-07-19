@@ -48,7 +48,7 @@ namespace SyncToyNext.Core.Runners
 
             if (useSyncPoint)
             {
-                syncPointManager = new SyncPointManager(toPath, fromPath);
+                syncPointManager = new SyncPointManager(toPath);
                 syncPoint = syncPointManager.AddSyncPoint(fromPath, syncpointId, syncpointDescription, isReferencePoint);
             }
 

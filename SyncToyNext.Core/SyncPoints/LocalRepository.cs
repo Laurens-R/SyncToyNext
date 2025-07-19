@@ -80,7 +80,7 @@ namespace SyncToyNext.Core.SyncPoints
 
             RemotePath = _remoteConfig.RemotePath;
 
-            _manager = new SyncPointManager(RemotePath, LocalPath);
+            _manager = new SyncPointManager(RemotePath);
         }
 
         protected void RestoreLatestToLocal()
@@ -92,7 +92,7 @@ namespace SyncToyNext.Core.SyncPoints
                     var latestSyncPoint = LatestSyncPoint?.SyncPointId ?? String.Empty;
                     if(!String.IsNullOrWhiteSpace(latestSyncPoint))
                     {
-                        if (_manager.GetFileEntriesAtSyncpoint(latestSyncPoint).Count > 0)
+                        if (_manager.GetFileEntriesAtSyncpoint(latestSyncPoint).Count() > 0)
                         {
                             Restore(latestSyncPoint);
                         }
@@ -135,7 +135,7 @@ namespace SyncToyNext.Core.SyncPoints
             _remoteConfig.RemotePath = newRemotePath;
             _remoteConfig.Save(LocalPath);
 
-            _manager = new SyncPointManager(newRemotePath, LocalPath);
+            _manager = new SyncPointManager(newRemotePath);
             RestoreLatestToLocal();
         }
 
@@ -144,9 +144,9 @@ namespace SyncToyNext.Core.SyncPoints
             return FileHelpers.GetFilesInPath(LocalPath);
         }
 
-        public IEnumerable<string> GetRemoteFiles(string syncpointId)
+        public IEnumerable<SyncPointEntry> GetRemoteFiles(string syncpointId)
         {
-            return (IEnumerable<string>)_manager.GetFileEntriesAtSyncpoint(syncpointId);
+            return _manager.GetFileEntriesAtSyncpoint(syncpointId);
         }
 
         public void Restore(string syncPointID)
@@ -233,19 +233,25 @@ namespace SyncToyNext.Core.SyncPoints
         {
             ManualRunner.Run(LocalPath, RemotePath, true);
             _manager.RefreshSyncPoints();
+
+            if (_remoteConfig == null || LatestSyncPoint == null) return;
+            _remoteConfig.CurrentSyncPoint = LatestSyncPoint.SyncPointId;
+            _remoteConfig.Save(LocalPath);
         }
 
         public void Push(string newSyncPointID, string newDescription)
         {
             ManualRunner.Run(LocalPath, RemotePath, true, newSyncPointID, newDescription);
             _manager.RefreshSyncPoints();
+
+            if (_remoteConfig == null || LatestSyncPoint == null) return;
+            _remoteConfig.CurrentSyncPoint = LatestSyncPoint.SyncPointId;
+            _remoteConfig.Save(LocalPath);
         }
 
         public void Merge(string otherLocalTarget)
         {
             SyncPointMerger.Merge(LocalPath, otherLocalTarget, Merging.TwoWayMergePolicy.Union);
         }
-
-        
     }
 }

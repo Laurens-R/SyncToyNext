@@ -18,7 +18,6 @@ namespace SyncToyNext.Core
     {
         private List<SyncPoint> _syncPoints;
         private string _path;
-        private string _sourcePath;
         private bool _isZipped = false;
         private SyncPointRoot? _syncPointRoot;
 
@@ -26,7 +25,7 @@ namespace SyncToyNext.Core
 
         public SyncPointRoot SyncPointRoot => _syncPointRoot ?? throw new InvalidOperationException("SyncPointRoot is not initialized.");
 
-        public SyncPointManager(string remotePath, string sourcePath = "")
+        public SyncPointManager(string remotePath)
         {
             if(Path.HasExtension(remotePath) && Path.GetExtension(remotePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             {
@@ -34,13 +33,12 @@ namespace SyncToyNext.Core
                 remotePath = Path.GetDirectoryName(remotePath) ?? throw new InvalidOperationException("Invalid zip file path.");
             }
 
-            if (!Directory.Exists(remotePath) || !Directory.Exists(sourcePath))
+            if (!Directory.Exists(remotePath))
             {
                 throw new InvalidOperationException("Local or remote paths don't exist");
             }
 
             _path = remotePath;
-            _sourcePath = sourcePath;
             _syncPoints = new List<SyncPoint>();
             LoadSyncPointRoot();
             LoadSyncPoints();
@@ -56,25 +54,18 @@ namespace SyncToyNext.Core
             {
                 var json = File.ReadAllText(rootFilePath);
                 _syncPointRoot =  JsonSerializer.Deserialize(json, SyncPointRootJsonContext.Default.SyncPointRoot) ?? new SyncPointRoot();
-                _sourcePath = _syncPointRoot.SourceLocation;
 
                 if (_syncPointRoot.Zipped != _isZipped)
                 {
                     UserIO.Error($"Cannot mix between zipped and non-zipped destination targets when working with syncpoints.");
                     return SyncPointRootLoadResult.Failed;
                 }
-                if (string.IsNullOrWhiteSpace(_syncPointRoot.SourceLocation) || _syncPointRoot.SourceLocation != _sourcePath)
-                {
-                    UserIO.Error($"SyncPointRoot source location mismatch. Expected: {_sourcePath}, Found: {_syncPointRoot.SourceLocation}");
-                    return SyncPointRootLoadResult.Failed;
-                }
-
+                
                 return SyncPointRootLoadResult.LoadedExisting;
             }
             else
             {
                 _syncPointRoot = new SyncPointRoot();
-                _syncPointRoot.SourceLocation = _sourcePath; // Set default source location to the current path
                 _syncPointRoot.Zipped = _isZipped;
                 var json = JsonSerializer.Serialize(_syncPointRoot, SyncPointRootJsonContext.Default.SyncPointRoot);
                 File.WriteAllText(rootFilePath, json);
