@@ -84,23 +84,28 @@ namespace SyncToyNext.GuiClient
                         repository = new Repository(localPath);
                     } catch
                     {
-                        MessageBox.Show("No remote configured for this location. Please select the remote location in the next dialog.");
-
-                        var dialogResult = frmRemote.ShowRemoteDialog(this);
-
-                        if (dialogResult == null)
+                        if (MessageBox.Show("Repository has not been initialized. Do you want to proceed to initialize it?", "Init repo?", MessageBoxButtons.YesNo) == DialogResult.Yes)
                         {
-                            throw new InvalidOperationException("Remote must be specified");
-                        }
+                            var dialogResult = frmRemote.ShowRemoteDialog(this);
 
-                        var remotePath = dialogResult.RemotePath;
+                            if (dialogResult == null)
+                            {
+                                throw new InvalidOperationException("Remote must be specified");
+                            }
 
-                        if (dialogResult.IsCompressed)
+                            var remotePath = dialogResult.RemotePath;
+
+                            if (dialogResult.IsCompressed)
+                            {
+                                remotePath = Path.Combine(remotePath, Path.GetFileName(localPath) + ".zip");
+                            }
+
+                            repository = Repository.Initialize(localPath, remotePath);
+                        } else
                         {
-                            remotePath = Path.Combine(remotePath, Path.GetFileName(localPath) + ".zip");
+                            ResetClientState();
+                            return;
                         }
-
-                        repository = Repository.Initialize(localPath, remotePath);
                     }
 
                     RefreshLocalFolderBrowser();
