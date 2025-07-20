@@ -14,7 +14,6 @@ namespace SyncToyNext.Core.Runners
     {
         public static void Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "", bool isReferencePoint = false)
         {
-
             if (string.IsNullOrWhiteSpace(fromPath)
             || string.IsNullOrWhiteSpace(toPath))
                 {
@@ -43,23 +42,40 @@ namespace SyncToyNext.Core.Runners
                 toZip = true;
             }
 
-            SyncPointManager? syncPointManager = null;
-            SyncPoint? syncPoint = null;
-
-            if (useSyncPoint)
+            if(toZip && useSyncPoint)
             {
-                syncPointManager = new SyncPointManager(toPath);
-                syncPoint = syncPointManager.AddSyncPoint(fromPath, syncpointId, syncpointDescription, isReferencePoint);
+                UserIO.Error("Cannot manually specify a zip file when using syncpoints/repository mode. This is determined at repo creation. Defining a zip target is only allowed for manual 1:1 syncs between file locations.");
+                Environment.Exit(1);
+            }
+
+            if (useSyncPoint && !toZip)
+            {
+                var syncPointManager = new SyncPointManager(toPath);
+                var syncPoint = syncPointManager.AddSyncPoint(fromPath, syncpointId, syncpointDescription, isReferencePoint);
+
+                if (syncPointManager.IsZipped && syncPointManager.SyncPointRoot != null)
+                {
+                    var zipFilePath = Path.Combine(toPath, syncPoint.SyncPointId, syncPointManager.SyncPointRoot.ZipFilename);
+                    var zipFileSynchronizer = new ZipFileSynchronizer(zipFilePath, OverwriteOption.OnlyOverwriteIfNewer, false);
+                    zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
+                }
+                else
+                {
+                    var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
+                    fileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
+                }
+
+                return;
             }
 
             if(toZip)
             {
                 var zipFileSynchronizer = new ZipFileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
-                zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
+                zipFileSynchronizer.FullSynchronization(fromPath);
             } else
             {
                 var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
-                fileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
+                fileSynchronizer.FullSynchronization(fromPath);
             }
         }
     }

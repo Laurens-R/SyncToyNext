@@ -89,14 +89,7 @@ namespace SyncToyNext.GuiClient
                                 throw new InvalidOperationException("Remote must be specified");
                             }
 
-                            var remotePath = dialogResult.RemotePath;
-
-                            if (dialogResult.IsCompressed)
-                            {
-                                remotePath = Path.Combine(remotePath, Path.GetFileName(localPath) + ".zip");
-                            }
-
-                            repository = Repository.Initialize(localPath, remotePath);
+                            repository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
                         } else
                         {
                             ResetClientState();
@@ -291,14 +284,7 @@ namespace SyncToyNext.GuiClient
 
                 if (remoteConfigChanges != null)
                 {
-                    var newRemoteConfigPath = remoteConfigChanges.RemotePath;
-                    
-                    if (remoteConfigChanges.IsCompressed)
-                    {
-                        newRemoteConfigPath = Path.Combine(newRemoteConfigPath, Path.GetFileName(repository.LocalPath) + ".zip");
-                    }
-
-                    repository.ChangeRemote(newRemoteConfigPath);
+                    repository.ChangeRemote(remoteConfigChanges.RemotePath, remoteConfigChanges.IsCompressed);
 
                     UserIO.Message("Completed configuring remote location.");
                 }

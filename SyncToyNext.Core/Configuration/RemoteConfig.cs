@@ -31,7 +31,6 @@ namespace SyncToyNext.Core
 
         public RemoteConfig(string remotePath, string sourcePath)
         {
-            var syncPointManager = new SyncPointManager(remotePath);
             RemotePath = remotePath;
         }
 

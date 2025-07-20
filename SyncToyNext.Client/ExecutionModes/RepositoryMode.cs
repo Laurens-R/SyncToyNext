@@ -16,10 +16,11 @@ namespace SyncToyNext.Client.ExecutionModes
             {
                 var remotePath = cmdArgs.Get("remote");
                 var localFolder = Environment.CurrentDirectory;
+                var compressed = cmdArgs.Has("compressed");
 
                 if (String.IsNullOrEmpty(remotePath) || !Path.Exists(remotePath)) throw new InvalidOperationException("Provided remote path not valid");
 
-                Repository.Initialize(localFolder, remotePath);
+                Repository.Initialize(localFolder, remotePath, compressed);
             }
             catch (Exception ex)
             {
@@ -54,28 +55,6 @@ namespace SyncToyNext.Client.ExecutionModes
             {
                 UserIO.Error(ex.Message);
             }
-        }
-
-        public static void ConfigureRemote(CommandLineArguments cmdArgs)
-        {
-            try
-            {
-                var repo = new Repository(Environment.CurrentDirectory);
-
-                var newRemotePath = cmdArgs.Get("remote");
-                if (!string.IsNullOrWhiteSpace(newRemotePath))
-                {
-                    repo.ChangeRemote(newRemotePath);
-                    Console.WriteLine($"Succesfully configured remote.");
-                } else
-                {
-                    UserIO.Error("No remote path provided.");
-                }
-            }
-            catch (Exception ex)
-            {
-                UserIO.Error(ex.Message);
-            }            
         }
 
         public static void RunListSyncPoints()

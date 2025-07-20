@@ -134,8 +134,6 @@ namespace SyncToyNext.Core.SyncPoints
                     //local location, push a reference syncpoint.
                     Push("INIT", "Init of a new local/remote pair", true);
                 }
-
-
             }
         }
 
@@ -159,14 +157,14 @@ namespace SyncToyNext.Core.SyncPoints
         /// <param name="remotePath"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public static Repository Initialize(string localPath, string remotePath)
+        public static Repository Initialize(string localPath, string remotePath, bool compressedRemote)
         {
-            if (!Path.Exists(localPath))
+            if (!Directory.Exists(localPath))
             {
                 throw new InvalidOperationException("Local path doesn't exist.");
             }
 
-            if (!RemoteExists(remotePath))
+            if (!Directory.Exists(remotePath))
             {
                 throw new InvalidOperationException("Remote path doesn't exist.");
             }
@@ -174,7 +172,15 @@ namespace SyncToyNext.Core.SyncPoints
             var config = new RemoteConfig(remotePath, localPath);
             config.Save(localPath);
 
-            var repository = new Repository(localPath);
+            Repository repository = new Repository(localPath);
+
+            if (repository._manager.SyncPointRoot == null)
+            {
+                //NOTE: Yes this is hacky/wrong because I'm basically using Exceptions to deal with application logic. This can probably be done
+                //better/reworked at a later point but I'm running out of bright ideas. This situation basically occurs if a local is initialized
+                //and it's remote pair isn't yet. (e.g. missing a syncroot file with the remote repository config).
+                repository._manager = new SyncPointManager(repository.RemotePath, compressedRemote ? CompressionMode.Compressed : CompressionMode.Uncompressed);
+            }
 
             repository.InitializeContent();
 
@@ -191,12 +197,12 @@ namespace SyncToyNext.Core.SyncPoints
         /// <exception cref="InvalidOperationException"></exception>
         public static Repository CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath)
         {
-            if (!Path.Exists(localPath))
+            if (!Directory.Exists(localPath))
             {
                 throw new InvalidOperationException("Local path doesn't exist.");
             }
 
-            if (!RemoteExists(newRemotePath))
+            if (!Directory.Exists(newRemotePath))
             {
                 throw new InvalidOperationException("Remote path doesn't exist.");
             }
@@ -225,7 +231,7 @@ namespace SyncToyNext.Core.SyncPoints
             return repository;
         }
 
-        public void ChangeRemote(string newRemotePath)
+        public void ChangeRemote(string newRemotePath, bool isCompressed)
         {
             if(String.IsNullOrWhiteSpace(newRemotePath) || !Path.Exists(newRemotePath))
             {
@@ -237,7 +243,7 @@ namespace SyncToyNext.Core.SyncPoints
             _remoteConfig.RemotePath = newRemotePath;
             _remoteConfig.Save(LocalPath);
 
-            _manager = new SyncPointManager(newRemotePath);
+            _manager = new SyncPointManager(newRemotePath, isCompressed ? CompressionMode.Compressed : CompressionMode.Uncompressed);
             InitializeContent();
         }
 

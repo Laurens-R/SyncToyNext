@@ -23,7 +23,7 @@ try
     {
         ProfileMode.RunSpecificProfileMode(cmdArgs, strictMode);
     }
-    if(cmdArgs.EnsureValidCombination("init", "remote")
+    if(cmdArgs.EnsureValidCombination("init", "remote", "compressed")
         && cmdArgs.RequiredPresent("init", "remote")) {
         RepositoryMode.Init(cmdArgs);
     }

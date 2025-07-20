@@ -18,7 +18,7 @@ namespace SyncToyNext.Core
     public class SyncPointRoot
     {
         public Guid RootID { get; set; } = Guid.NewGuid();
-        public string SourceLocation { get; set; } = string.Empty;
-        public bool Zipped { get; set; } = false;
+        public bool IsCompressed { get; set; } = false;
+        public string ZipFilename { get; set; } = string.Empty;
     }
 }

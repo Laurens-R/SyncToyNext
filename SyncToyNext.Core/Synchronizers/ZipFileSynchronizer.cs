@@ -74,7 +74,7 @@ namespace SyncToyNext.Core.Synchronizers
                 {
                     entry?.Delete();
                     var newEntry = archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
-                    newEntry.LastWriteTime = File.GetLastWriteTimeUtc(srcFilePath);
+                    newEntry.LastWriteTime = File.GetLastWriteTime(srcFilePath); //get the local time, because it seems to internally convert to the right UTC.
                     using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
                     fileStream.CopyTo(entryStream);
@@ -127,15 +127,12 @@ namespace SyncToyNext.Core.Synchronizers
             var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
             //update zip path according to sync point
-            var zipParentFolder = Path.GetDirectoryName(_zipFilePath);
+            var zipParentFolder = syncPointManager.RemotePath;
 
             if(zipParentFolder == null)
             {
                 throw new InvalidOperationException("Couldn't resolve parent folder of zip file.");
             }
-
-            var syncPointPath = Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, Path.GetFileName(_zipFilePath));
-            _zipFilePath = syncPointPath; //we are updating the zip file path to the sync point specific one
 
             foreach (var srcFilePath in allSourceLocationFiles)
             {
@@ -173,7 +170,7 @@ namespace SyncToyNext.Core.Synchronizers
 
                         //this thing is acting strangely... maybe we need to support both scenarios
                         //with straight UtcTimeDate and the Kind thing.
-                        var entryLastWrite = zipEntry.LastWriteTime.DateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
+                        var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
 
                         srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
@@ -187,7 +184,7 @@ namespace SyncToyNext.Core.Synchronizers
                         }
                     } else
                     {
-                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spZipFile}' for sync point '{newSyncPoint.SyncPointId}'.");
+                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spRelativeZipFile}' for sync point '{newSyncPoint.SyncPointId}'.");
                     }
                 }
                 else

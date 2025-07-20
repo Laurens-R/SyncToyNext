@@ -14,33 +14,56 @@ namespace SyncToyNext.Core
         CreatedNew
     }
 
+    public enum CompressionMode
+    {
+        Unspecified,
+        Compressed,
+        Uncompressed
+    }
+
+    public class SyncPointManagerRootLoadException(string message) : Exception(message) { }
+
     public class SyncPointManager
     {
         private List<SyncPoint> _syncPoints;
-        private string _path;
-        private bool _isZipped = false;
+        private string _remotePath;
+        private bool _isCompressed = false;
         private SyncPointRoot? _syncPointRoot;
 
-        public bool IsZipped => _isZipped;
+        public bool IsZipped => _isCompressed;
 
-        public SyncPointRoot SyncPointRoot => _syncPointRoot ?? throw new InvalidOperationException("SyncPointRoot is not initialized.");
+        public SyncPointRoot? SyncPointRoot => _syncPointRoot;
 
-        public SyncPointManager(string remotePath)
+        public string RemotePath => _remotePath;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="remotePath"></param>
+        /// <param name="compressionMode">If set to unspecified (default) we assume an existing remote will be loaded with an existing config. Otherwise the remote can be initialized with either compression setting.</param>
+        /// <exception cref="InvalidOperationException"></exception>
+        public SyncPointManager(string remotePath, CompressionMode compressionMode = CompressionMode.Unspecified)
         {
-            if(Path.HasExtension(remotePath) && Path.GetExtension(remotePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
-            {
-                _isZipped = true;
-                remotePath = Path.GetDirectoryName(remotePath) ?? throw new InvalidOperationException("Invalid zip file path.");
-            }
+            var originalPath = remotePath;
 
             if (!Directory.Exists(remotePath))
             {
                 throw new InvalidOperationException("Local or remote paths don't exist");
             }
 
-            _path = remotePath;
+            _remotePath = remotePath;
             _syncPoints = new List<SyncPoint>();
-            LoadSyncPointRoot();
+
+            var syncRootLoadResult = LoadSyncPointRoot();
+
+            if (syncRootLoadResult == SyncPointRootLoadResult.Failed && compressionMode != CompressionMode.Unspecified)
+            {
+                //if the existing syncroot cannot be found, create one.
+                CreateNewSyncRoot(originalPath, compressionMode == CompressionMode.Compressed);
+            } else if (syncRootLoadResult == SyncPointRootLoadResult.Failed) {
+                return;
+            }
+
             LoadSyncPoints();
             
         }
@@ -49,13 +72,18 @@ namespace SyncToyNext.Core
 
         private SyncPointRootLoadResult LoadSyncPointRoot()
         {
-            var rootFilePath = Path.Combine(_path, "syncpointroot.json");
+            var rootFilePath = Path.Combine(_remotePath, "syncpointroot.json");
             if (File.Exists(rootFilePath))
             {
                 var json = File.ReadAllText(rootFilePath);
                 _syncPointRoot =  JsonSerializer.Deserialize(json, SyncPointRootJsonContext.Default.SyncPointRoot) ?? new SyncPointRoot();
 
-                if (_syncPointRoot.Zipped != _isZipped)
+                if(_syncPointRoot.IsCompressed)
+                {
+                    _isCompressed = true;
+                }
+
+                if (_syncPointRoot.IsCompressed != _isCompressed)
                 {
                     UserIO.Error($"Cannot mix between zipped and non-zipped destination targets when working with syncpoints.");
                     return SyncPointRootLoadResult.Failed;
@@ -63,19 +91,31 @@ namespace SyncToyNext.Core
                 
                 return SyncPointRootLoadResult.LoadedExisting;
             }
-            else
+
+            _syncPointRoot = null;
+
+            return SyncPointRootLoadResult.Failed;
+        }
+
+        private void CreateNewSyncRoot(string providedRemotePath, bool isCompressed)
+        {
+            _syncPointRoot = new SyncPointRoot();
+            _syncPointRoot.IsCompressed = isCompressed;
+            _isCompressed = isCompressed;
+
+            if (_isCompressed)
             {
-                _syncPointRoot = new SyncPointRoot();
-                _syncPointRoot.Zipped = _isZipped;
-                var json = JsonSerializer.Serialize(_syncPointRoot, SyncPointRootJsonContext.Default.SyncPointRoot);
-                File.WriteAllText(rootFilePath, json);
-                return SyncPointRootLoadResult.CreatedNew;
+                _syncPointRoot.ZipFilename = _syncPointRoot.RootID + ".zip";
             }
+
+            var json = JsonSerializer.Serialize(_syncPointRoot, SyncPointRootJsonContext.Default.SyncPointRoot);
+            var rootFilePath = Path.Combine(_remotePath, "syncpointroot.json");
+            File.WriteAllText(rootFilePath, json);
         }
 
         private void LoadSyncPoints()
         {
-            var childDirectories = Directory.GetDirectories(_path);
+            var childDirectories = Directory.GetDirectories(_remotePath);
 
             foreach (var directory in childDirectories)
             {
@@ -123,7 +163,7 @@ namespace SyncToyNext.Core
                 }
             }
 
-            Directory.CreateDirectory(Path.Combine(_path, syncPointID));
+            Directory.CreateDirectory(Path.Combine(_remotePath, syncPointID));
 
             var newSyncPoint = new SyncPoint
             {
@@ -137,7 +177,7 @@ namespace SyncToyNext.Core
             _syncPoints.Add(newSyncPoint);
             _syncPoints.Sort((sp1, sp2) => sp2.LastSyncTime.CompareTo(sp1.LastSyncTime));
 
-            newSyncPoint.Save(Path.Combine(_path, syncPointID, $"{syncPointID}.syncpoint.json"));
+            newSyncPoint.Save(Path.Combine(_remotePath, syncPointID, $"{syncPointID}.syncpoint.json"));
 
             return newSyncPoint;
         }
