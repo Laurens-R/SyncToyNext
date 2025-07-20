@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace SyncToyNext.Core.SyncPoints
 {
-    public class LocalRepository
+    public class Repository
     {
         private SyncPointManager _manager;
         private RemoteConfig? _remoteConfig;
@@ -72,33 +72,54 @@ namespace SyncToyNext.Core.SyncPoints
             }
         }
 
-        public LocalRepository(string localPath)
+        public Repository(string localPath)
         {
-            if(String.IsNullOrWhiteSpace(localPath) || !Path.Exists(localPath) || !RemoteConfig.RemoteConfigExists(localPath))
+            if (String.IsNullOrWhiteSpace(localPath) || !Path.Exists(localPath) || !RemoteConfig.RemoteConfigExists(localPath))
             {
                 throw new InvalidOperationException("When only specifying a local path, the path must exist and a remote config must be present.");
             }
 
-            LocalPath = localPath;
-
-            _remoteConfig = RemoteConfig.Load(localPath);
+            //we try to load the configuration from the current directory. But we also want to account for the fact
+            //that the user might be working somewhere in a subfolder of the repo, so we will recursively inspect
+            //parent folders for the config if we cannot directly load the RemoteConfig from the current path;
+            var currentDirectory = localPath;
+            _remoteConfig = RemoteConfig.Load(currentDirectory);
             
-            if(_remoteConfig == null)
+            while (_remoteConfig == null)
             {
-                throw new InvalidOperationException("Config should not be null");
-            }
+                var parentDirectoryInfo = Directory.GetParent(currentDirectory);
+                if (parentDirectoryInfo == null)
+                {
+                    throw new InvalidOperationException("Could not find repo root in the path hierarchy. Has a repo been initialized in this location?");
+                }
 
+                currentDirectory = parentDirectoryInfo.FullName;
+                _remoteConfig = RemoteConfig.Load(currentDirectory);
+            }
+                        
+            LocalPath = currentDirectory;
             RemotePath = _remoteConfig.RemotePath;
 
             _manager = new SyncPointManager(RemotePath);
         }
 
-        protected void RestoreLatestToLocal()
+        /// <summary>
+        /// Initializes the content of a local/remote pair. If the remote already has syncpoints
+        /// it is leading: the latest syncpoint gets restored into the local removing all local
+        /// files which are already present. Otherwise we could get potentially in a state where
+        /// we could corrupt the remote if it is not in sync.
+        /// 
+        /// If the remote doesn't contain syncpoints but the local folder does contain files already
+        /// we push it to create an initial syncpoint.
+        /// </summary>
+        protected void InitializeContent()
         {
             if(_manager!= null)
             {
                 if(_manager.SyncPoints.Count > 0)
                 {
+                    //remote syncpoints are always leading. You should never end up in a state
+                    //where you corrupt a remote.
                     var latestSyncPoint = LatestSyncPoint?.SyncPointId ?? String.Empty;
                     if(!String.IsNullOrWhiteSpace(latestSyncPoint))
                     {
@@ -107,7 +128,14 @@ namespace SyncToyNext.Core.SyncPoints
                             Restore(latestSyncPoint);
                         }
                     }
+                } else if(GetLocalFiles().Count() > 0)
+                {
+                    //if no remote syncpoints exist but there are already files present in the
+                    //local location, push a reference syncpoint.
+                    Push("INIT", "Init of a new local/remote pair", true);
                 }
+
+
             }
         }
 
@@ -124,7 +152,14 @@ namespace SyncToyNext.Core.SyncPoints
             }
         }        
 
-        public static LocalRepository Initialize(string localPath, string remotePath)
+        /// <summary>
+        /// Initializes a new local/remote pair.
+        /// </summary>
+        /// <param name="localPath"></param>
+        /// <param name="remotePath"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static Repository Initialize(string localPath, string remotePath)
         {
             if (!Path.Exists(localPath))
             {
@@ -139,14 +174,22 @@ namespace SyncToyNext.Core.SyncPoints
             var config = new RemoteConfig(remotePath, localPath);
             config.Save(localPath);
 
-            var repository = new LocalRepository(localPath);
+            var repository = new Repository(localPath);
 
-            repository.RestoreLatestToLocal();
+            repository.InitializeContent();
 
             return repository;
         }
 
-        public static LocalRepository CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath)
+        /// <summary>
+        /// Creates a new local/remote pair by cloning a different remote.
+        /// </summary>
+        /// <param name="localPath"></param>
+        /// <param name="newRemotePath"></param>
+        /// <param name="otherRemotePath"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static Repository CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath)
         {
             if (!Path.Exists(localPath))
             {
@@ -161,7 +204,7 @@ namespace SyncToyNext.Core.SyncPoints
             var config = new RemoteConfig(newRemotePath, localPath);
             config.Save(localPath);
 
-            var repository = new LocalRepository(localPath);
+            var repository = new Repository(localPath);
             var otherRemoteManager = new SyncPointManager(otherRemotePath);
             var latestSyncPoint = otherRemoteManager.SyncPoints.Count > 0 ? otherRemoteManager.SyncPoints[0] : null;
 
@@ -170,6 +213,8 @@ namespace SyncToyNext.Core.SyncPoints
                 SyncPointRestorer.RestorePath = repository.LocalPath;
                 SyncPointRestorer.Run(latestSyncPoint.SyncPointId, otherRemotePath);
 
+                //we use exactly the same syncpoint id as the latest syncpoint id from the remote which was cloned
+                //so we can refer back to it when merging.
                 repository.Push(latestSyncPoint.SyncPointId, $"Init push after clone from {otherRemotePath}", true);
             } 
             else
@@ -193,7 +238,7 @@ namespace SyncToyNext.Core.SyncPoints
             _remoteConfig.Save(LocalPath);
 
             _manager = new SyncPointManager(newRemotePath);
-            RestoreLatestToLocal();
+            InitializeContent();
         }
 
         public bool HasSyncPointID(string syncPointID)
@@ -339,12 +384,8 @@ namespace SyncToyNext.Core.SyncPoints
 
         public void Push()
         {
-            ManualRunner.Run(LocalPath, RemotePath, true);
-            _manager.RefreshSyncPoints();
-
-            if (_remoteConfig == null || LatestSyncPoint == null) return;
-            _remoteConfig.CurrentSyncPoint = LatestSyncPoint.SyncPointId;
-            _remoteConfig.Save(LocalPath);
+            //fyi: forwarding empty values will cause the actual manualrunner to generate id's itself.
+            Push(string.Empty, string.Empty, false);
         }
 
         public void Push(string newSyncPointID, string newDescription, bool isReferencePoint = false)

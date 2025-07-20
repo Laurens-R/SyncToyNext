@@ -28,8 +28,8 @@ namespace SyncToyNext.Core.SyncPoints
 
             UserIO.Message("Starting merge process");
 
-            var sourceRepo = new LocalRepository(sourceLocalPath);
-            var targetRepo = new LocalRepository(targetLocalPath);
+            var sourceRepo = new Repository(sourceLocalPath);
+            var targetRepo = new Repository(targetLocalPath);
 
             string newSyncPointID = SyncPoint.GenerateSyncpointID();
 
@@ -52,7 +52,7 @@ namespace SyncToyNext.Core.SyncPoints
             PostMergeSynchronization(sourceRepo, targetRepo, newSyncPointID);
         }
 
-        private static bool MergePreparation(LocalRepository sourceRepo, LocalRepository targetRepo, string newSyncPointID)
+        private static bool MergePreparation(Repository sourceRepo, Repository targetRepo, string newSyncPointID)
         {
             newSyncPointID = "PREMERGE-" + newSyncPointID;
             string newSyncPointDesc = "Pre-Merge Syncpoint";
@@ -70,7 +70,7 @@ namespace SyncToyNext.Core.SyncPoints
             return true;
         }
 
-        private static void PostMergeSynchronization(LocalRepository sourceRepo, LocalRepository targetRepo, string newSyncPointID)
+        private static void PostMergeSynchronization(Repository sourceRepo, Repository targetRepo, string newSyncPointID)
         {
             newSyncPointID = "POSTMERGE-" + newSyncPointID;
             string newSyncPointDesc = "Post-Merge Syncpoint";

@@ -14,7 +14,7 @@ namespace SyncToyNext.GuiClient
     {
         private SyncPoint? currentSyncPoint = null;
 
-        private LocalRepository? repository = null;
+        private Repository? repository = null;
 
         public frmMain()
         {
@@ -81,7 +81,7 @@ namespace SyncToyNext.GuiClient
 
                     try
                     {
-                        repository = new LocalRepository(localPath);
+                        repository = new Repository(localPath);
                     } catch
                     {
                         MessageBox.Show("No remote configured for this location. Please select the remote location in the next dialog.");
@@ -100,7 +100,7 @@ namespace SyncToyNext.GuiClient
                             remotePath = Path.Combine(remotePath, Path.GetFileName(localPath) + ".zip");
                         }
 
-                        repository = LocalRepository.Initialize(localPath, remotePath);
+                        repository = Repository.Initialize(localPath, remotePath);
                     }
 
                     RefreshLocalFolderBrowser();

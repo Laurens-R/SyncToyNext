@@ -700,7 +700,7 @@ namespace SyncToyNext.Core.Merging
             return mergeSuccessful;
         }
 
-        public static bool Merge(LocalRepository sourceRepo, LocalRepository targetRepo, string baseReferenceSyncID, Action<string, int, int>? progressCallback = null)
+        public static bool Merge(Repository sourceRepo, Repository targetRepo, string baseReferenceSyncID, Action<string, int, int>? progressCallback = null)
         {
 
             UserIO.Message($"Starting actual file merging between source and target location.");
