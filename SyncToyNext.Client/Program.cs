@@ -23,6 +23,15 @@ try
     {
         ProfileMode.RunSpecificProfileMode(cmdArgs, strictMode);
     }
+    if(cmdArgs.EnsureValidCombination("init", "remote", "compressed")
+        && cmdArgs.RequiredPresent("init", "remote")) {
+        RepositoryMode.Init(cmdArgs);
+    }
+    if (cmdArgs.EnsureValidCombination("clone", "local", "remote")
+        && cmdArgs.RequiredPresent("clone", "local", "remote"))
+    {
+        RepositoryMode.Clone(cmdArgs);
+    }
     else if (cmdArgs.EnsureValidCombination("from", "to", "syncpoint")
         && cmdArgs.RequiredPresent("from", "to"))
     {
@@ -31,22 +40,17 @@ try
     else if (cmdArgs.EnsureValidCombination("restore", "from", "file")
         && cmdArgs.RequiredPresent("restore"))
     {
-        SyncPointMode.RunRestoreSyncPoint(cmdArgs);
-    }
-    else if (cmdArgs.EnsureValidCombination("remote")
-        && cmdArgs.RequiredPresent("remote"))
-    {
-        SyncPointMode.ConfigureRemote(cmdArgs);
+        RepositoryMode.RunRestoreSyncPoint(cmdArgs);
     }
     else if (cmdArgs.EnsureValidCombination("push", "id", "desc")
         && cmdArgs.RequiredPresent("push"))
     {
-        SyncPointMode.RunPushCommand(cmdArgs);
+        RepositoryMode.RunPushCommand(cmdArgs);
     }
     else if (cmdArgs.EnsureValidCombination("list")
         && cmdArgs.RequiredPresent("list"))
     {
-        SyncPointMode.RunListSyncPoints();
+        RepositoryMode.RunListSyncPoints();
     }
     else if (cmdArgs.EnsureValidCombination("help") 
         && cmdArgs.RequiredPresent("help"))

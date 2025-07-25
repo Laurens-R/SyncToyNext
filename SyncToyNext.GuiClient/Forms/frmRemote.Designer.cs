@@ -35,6 +35,7 @@
             checkBoxCompression = new CheckBox();
             lblCompression = new Label();
             btnOK = new Button();
+            lblUseCompressionInfo = new Label();
             SuspendLayout();
             // 
             // txtRemotePath
@@ -94,11 +95,22 @@
             btnOK.UseVisualStyleBackColor = true;
             btnOK.Click += btnOK_Click;
             // 
+            // lblUseCompressionInfo
+            // 
+            lblUseCompressionInfo.AutoSize = true;
+            lblUseCompressionInfo.Font = new Font("Segoe UI", 9F, FontStyle.Italic);
+            lblUseCompressionInfo.Location = new Point(194, 60);
+            lblUseCompressionInfo.Name = "lblUseCompressionInfo";
+            lblUseCompressionInfo.Size = new Size(543, 15);
+            lblUseCompressionInfo.TabIndex = 6;
+            lblUseCompressionInfo.Text = "(If the remote is already initialized, the compression state is automatically determined from the remote)";
+            // 
             // frmRemote
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(797, 203);
+            Controls.Add(lblUseCompressionInfo);
             Controls.Add(btnOK);
             Controls.Add(lblCompression);
             Controls.Add(checkBoxCompression);
@@ -124,5 +136,6 @@
         private CheckBox checkBoxCompression;
         private Label lblCompression;
         private Button btnOK;
+        private Label lblUseCompressionInfo;
     }
 }

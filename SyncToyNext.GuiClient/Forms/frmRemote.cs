@@ -73,7 +73,7 @@ namespace SyncToyNext.GuiClient.Forms
         private void btnOK_Click(object sender, EventArgs e)
         {
             var confirmationResult = MessageBox.Show(
-                "Are you sure you want to change the remote for this location?",
+                "Are you sure you want to proceed with the provided information?",
                 "Are you sure",
                 MessageBoxButtons.YesNo);
 

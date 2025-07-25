@@ -1,3 +1,4 @@
+using SyncToyNext.Core.Helpers;
 using SyncToyNext.Core.Models;
 using SyncToyNext.Core.UX;
 using System;
@@ -61,54 +62,11 @@ namespace SyncToyNext.Core.Synchronizers
                 }
                 else if (entry != null)
                 {
-                    var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
-                    // ZIP entries store time as UTC, but DateTime.Kind is Unspecified - force it to UTC
-                    var entryLastWrite = DateTime.SpecifyKind(entry.LastWriteTime.DateTime, DateTimeKind.Utc);
-                    
-                    // Truncate to whole seconds for both to handle ZIP format precision issues
-                    srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
-                    entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
-                    var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
-                    
-                    if (secondsDifference > 2) // ZIP format is only precise to 2 seconds
+                    shouldCopy = FileHelpers.IsFileDifferent(srcFilePath, entry);
+
+                    if (shouldCopy)
                     {
-                        shouldCopy = true;
                         action = "Update";
-                    }
-                    else
-                    {
-                        long srcSize = new FileInfo(srcFilePath).Length;
-                        long entrySize = entry.Length;
-                        if (srcSize != entrySize)
-                        {
-                            shouldCopy = true;
-                            action = "Update";
-                        }
-                        else
-                        {
-                            using var sourceFileStream = File.OpenRead(srcFilePath);
-                            using var zipEntryStream = entry.Open();
-
-                            bool areDifferent = AreFirst4KDifferent(sourceFileStream, zipEntryStream);
-
-                            if (areDifferent)
-                            {
-                                shouldCopy = true;
-                                action = "Update";
-                            } 
-                            else
-                            {
-                                zipEntryStream.Seek(0, SeekOrigin.Begin);
-                                var srcHash = ComputeSHA256(srcFilePath);
-                                string destHash =  ComputeSHA256(zipEntryStream);
-                                
-                                if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    shouldCopy = true;
-                                    action = "Update";
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -116,7 +74,7 @@ namespace SyncToyNext.Core.Synchronizers
                 {
                     entry?.Delete();
                     var newEntry = archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
-                    newEntry.LastWriteTime = File.GetLastWriteTimeUtc(srcFilePath);
+                    newEntry.LastWriteTime = File.GetLastWriteTime(srcFilePath); //get the local time, because it seems to internally convert to the right UTC.
                     using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
                     fileStream.CopyTo(entryStream);
@@ -152,7 +110,7 @@ namespace SyncToyNext.Core.Synchronizers
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
             // Exclude 'synclogs' subfolder from sync
-            var allFilesInSourcePath = GetFilesInPath(sourcePath);
+            var allFilesInSourcePath = FileHelpers.GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
             {
@@ -169,15 +127,12 @@ namespace SyncToyNext.Core.Synchronizers
             var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
             //update zip path according to sync point
-            var zipParentFolder = Path.GetDirectoryName(_zipFilePath);
+            var zipParentFolder = syncPointManager.RemotePath;
 
             if(zipParentFolder == null)
             {
                 throw new InvalidOperationException("Couldn't resolve parent folder of zip file.");
             }
-
-            var syncPointPath = Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, Path.GetFileName(_zipFilePath));
-            _zipFilePath = syncPointPath; //we are updating the zip file path to the sync point specific one
 
             foreach (var srcFilePath in allSourceLocationFiles)
             {
@@ -215,7 +170,7 @@ namespace SyncToyNext.Core.Synchronizers
 
                         //this thing is acting strangely... maybe we need to support both scenarios
                         //with straight UtcTimeDate and the Kind thing.
-                        var entryLastWrite = zipEntry.LastWriteTime.DateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
+                        var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
 
                         srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
@@ -229,7 +184,7 @@ namespace SyncToyNext.Core.Synchronizers
                         }
                     } else
                     {
-                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spZipFile}' for sync point '{newSyncPoint.SyncPointId}'.");
+                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spRelativeZipFile}' for sync point '{newSyncPoint.SyncPointId}'.");
                     }
                 }
                 else

@@ -1,3 +1,4 @@
+using SyncToyNext.Core.Helpers;
 using SyncToyNext.Core.Models;
 using SyncToyNext.Core.UX;
 using System;
@@ -37,7 +38,7 @@ namespace SyncToyNext.Core.Synchronizers
             if (!Directory.Exists(_destination))
                 Directory.CreateDirectory(_destination);
 
-            var allFilesInSourcePath = GetFilesInPath(sourcePath);
+            var allFilesInSourcePath = FileHelpers.GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
             {
@@ -80,7 +81,7 @@ namespace SyncToyNext.Core.Synchronizers
                     var sourceFileDateTime = sourceFileInfo.LastWriteTimeUtc;
                     var targetFileDateTime = targetFileInfo.LastWriteTimeUtc;
                     var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativeSourcePath);
-                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativeSourcePath);
+                    var destEntryPath = Path.Combine(relativeSourcePath);
 
                     // If the sync point entry is deleted, we need to add it back
                     if (existingEntry.EntryType == SyncPointEntryType.Deleted)
@@ -106,8 +107,7 @@ namespace SyncToyNext.Core.Synchronizers
                 {
                     // replicate file into the new sync point location
                     var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativeSourcePath);
-                    var destEntryPath = Path.Combine(newSyncPoint.SyncPointId, relativeSourcePath);
-                    newSyncPoint.AddEntry(relativeSourcePath, destEntryPath);
+                    newSyncPoint.AddEntry(relativeSourcePath, relativeSourcePath);
                     SynchronizeFile(srcFilePath, destFilePath);
                 }
             }
@@ -151,40 +151,11 @@ namespace SyncToyNext.Core.Synchronizers
             }
             else
             {
-                var srcLastWrite = File.GetLastWriteTimeUtc(srcFilePath);
-                var destLastWrite = File.GetLastWriteTimeUtc(destFilePath);
-                if (srcLastWrite > destLastWrite)
+                shouldCopy = FileHelpers.IsFileDifferent(srcFilePath, destFilePath);
+
+                if (shouldCopy)
                 {
-                    shouldCopy = true;
                     action = "Update";
-                }
-                else
-                {
-                    var srcSize = new FileInfo(srcFilePath).Length;
-                    var destSize = new FileInfo(destFilePath).Length;
-                    if (srcSize != destSize)
-                    {
-                        shouldCopy = true;
-                        action = "Update";
-                    }
-                    else 
-                    {
-                        bool areFirst4KDifferent = AreFirst4KDifferent(srcFilePath, destFilePath);
-                        if (areFirst4KDifferent)
-                        {
-                            shouldCopy = true;
-                            action = "Update";
-                        } else
-                        {
-                            var srcHash = ComputeSHA256(srcFilePath);
-                            var destHash = ComputeSHA256(destFilePath);
-                            if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
-                            {
-                                shouldCopy = true;
-                                action = "Update";
-                            }
-                        }
-                    }
                 }
             }
 

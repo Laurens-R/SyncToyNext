@@ -64,21 +64,8 @@ namespace SyncToyNext.Core.SyncPoints
                 RemotePath = config.RemotePath;
             }
 
-            bool pathIsZipped = Path.HasExtension(RemotePath) && Path.GetExtension(RemotePath).Equals(".zip", StringComparison.OrdinalIgnoreCase);
-
-            if (pathIsZipped)
-            {
-                RemoteDirectory = Path.GetDirectoryName(RemotePath) ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(RemoteDirectory))
-                {
-                    throw new InvalidOperationException("The provided path is a zip file, but no directory could be determined from it.");
-                }
-            }
-            else
-            {
-                RemoteDirectory = RemotePath;
-            }
-
+            RemoteDirectory = RemotePath;
+            
             if (string.IsNullOrWhiteSpace(RemoteDirectory) || string.IsNullOrWhiteSpace(RemotePath))
             {
                 throw new InvalidOperationException("The provided path is invalid or empty.");
@@ -190,7 +177,7 @@ namespace SyncToyNext.Core.SyncPoints
             }
             else
             {
-                var fullSyncPointPath = Path.Combine(RemoteDirectory, fileToRestore.RelativeRemotePath);
+                var fullSyncPointPath = Path.Combine(RemoteDirectory, syncPointID, fileToRestore.RelativeRemotePath);
 
                 if (!File.Exists(fullSyncPointPath))
                 {
@@ -266,8 +253,7 @@ namespace SyncToyNext.Core.SyncPoints
                 }
                 else
                 {
-                    restorePath = Path.Combine(RemotePath, file.RelativeRemotePath);
-                    var syncPointPath = Path.Combine(RemotePath, syncPointID, file.RelativeRemotePath);
+                    var syncPointPath = Path.Combine(RemotePath, file.SyncpointID, file.RelativeRemotePath);
 
                     if (!File.Exists(syncPointPath))
                     {

@@ -1,19 +1,18 @@
 using SyncToyNext.Core;
-using SyncToyNext.Core.Runners;
+using SyncToyNext.Core.Helpers;
+using SyncToyNext.Core.SyncPoints;
 using SyncToyNext.Core.UX;
 using SyncToyNext.GuiClient.Forms;
-using SyncToyNext.GuiClient.Helpers;
-using SyncToyNext.GuiClient.Models;
-using System.IO.Compression;
-using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace SyncToyNext.GuiClient
 {
     public partial class frmMain : Form
     {
-        private SyncPointManager? syncPointManager = null;
         private SyncPoint? currentSyncPoint = null;
-        
+
+        private Repository? repository = null;
+
         public frmMain()
         {
             InitializeComponent();
@@ -40,32 +39,60 @@ namespace SyncToyNext.GuiClient
 
         private void FileBrowserLocal_PathChanged(object? sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(SessionContext.LocalFolderPath)) return;
-            lblLocalPath.Text = $"Local path: {Path.Combine(SessionContext.LocalFolderPath, fileBrowserLocal.CurrentPath)}";
+            if (repository == null || string.IsNullOrEmpty(repository.LocalPath)) return;
+            lblLocalPath.Text = $"Local path: {Path.Combine(repository.LocalPath, fileBrowserLocal.CurrentPath)}";
+        }
+
+        private void fileBrowserRemote_PathChanged(object sender, EventArgs e)
+        {
+            if (repository == null) return;
+            lblRemotePath.Text = $"Remote path: {Path.Combine(repository.RemotePath, fileBrowserRemote.CurrentPath)}";
         }
 
         private void RefreshLocalFolderBrowser()
         {
-            if (String.IsNullOrEmpty(SessionContext.LocalFolderPath))
+            if (repository == null || String.IsNullOrEmpty(repository.LocalPath))
             {
                 UserIO.Error("Local folder path is not set. Please select a local folder first.");
                 return;
             }
 
-            var files = Directory.GetFiles(browserFolders.SelectedPath, "*", SearchOption.AllDirectories);
+            var files = repository.GetLocalFiles();
 
             fileBrowserLocal.AllItemPaths = files;
-            fileBrowserLocal.RootPath = SessionContext.LocalFolderPath;
+            fileBrowserLocal.RootPath = repository.LocalPath;
             fileBrowserLocal.NavigateToPath(".");
             fileBrowserLocal.RefreshItems();
+            txtLocalSyncPoint.Text = repository.LocalSyncPointID;
+        }
+
+        private void RefreshRemoteFolderBrowser()
+        {
+            if (repository == null || String.IsNullOrEmpty(repository.LocalPath))
+            {
+                UserIO.Error("Local folder path is not set. Please select a local folder first.");
+                return;
+            }
+
+            if (repository.LatestSyncPoint == null)
+            {
+                UserIO.Error("No syncpoints present in remote. Either it's not a valid remote or it has not been properly been initialized as such.");
+                return;
+            }
+
+            var files = repository.GetRemoteFiles(repository.LatestSyncPoint.SyncPointId);
+
+            fileBrowserRemote.AllItemPaths = files;
+            fileBrowserRemote.RootPath = string.Empty;
+            fileBrowserRemote.NavigateToPath(".");
+            fileBrowserRemote.RefreshItems();
+            txtLocalSyncPoint.Text = repository.LocalSyncPointID;
         }
 
         private void ResetClientState()
         {
-            syncPointManager = null;
+            repository = null;
             currentSyncPoint = null;
-            SessionContext.LocalFolderPath = string.Empty;
-            SessionContext.RemoteFolderPath = string.Empty;
             comboSyncPoints.Items.Clear();
             fileBrowserLocal.Reset();
             fileBrowserRemote.Reset();
@@ -77,43 +104,35 @@ namespace SyncToyNext.GuiClient
             {
                 if (browserFolders.ShowDialog(this) == DialogResult.OK)
                 {
-                    SessionContext.LocalFolderPath = browserFolders.SelectedPath;
+                    var localPath = browserFolders.SelectedPath;
+
+                    try
+                    {
+                        repository = new Repository(localPath);
+                    }
+                    catch
+                    {
+                        if (MessageBox.Show("Repository has not been initialized. Do you want to proceed to initialize it?", "Init repo?", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        {
+                            var dialogResult = frmRemote.ShowRemoteDialog(this);
+
+                            if (dialogResult == null)
+                            {
+                                throw new InvalidOperationException("Remote must be specified");
+                            }
+
+                            repository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
+                        }
+                        else
+                        {
+                            ResetClientState();
+                            return;
+                        }
+                    }
 
                     RefreshLocalFolderBrowser();
-
-                    if (RemoteConfig.RemoteConfigExists(SessionContext.LocalFolderPath))
-                    {
-                        var remoteConfig = RemoteConfig.Load(SessionContext.LocalFolderPath);
-                        if (remoteConfig == null) throw new InvalidOperationException("Remote configuration is invalid");
-                        SessionContext.RemoteFolderPath = remoteConfig.RemotePath;
-
-                        LoadRemote();
-                    }
-                    else
-                    {
-                        MessageBox.Show("No remote configured for this location. Please select the remote location in the next dialog.");
-
-                        var dialogResult = frmRemote.ShowRemoteDialog(this);
-
-                        if (dialogResult == null)
-                        {
-                            throw new InvalidOperationException("Remote must be specified");
-                        }
-
-                        SessionContext.RemoteFolderPath = dialogResult.RemotePath;
-
-                        if (dialogResult.IsCompressed)
-                        {
-                            SessionContext.RemoteFolderPath = Path.Combine(SessionContext.RemoteFolderPath, Path.GetFileName(SessionContext.LocalFolderPath) + ".zip");
-                        }
-
-                        var remoteConfig = new RemoteConfig(browserFolders.SelectedPath, SessionContext.LocalFolderPath);
-                        remoteConfig.Save(SessionContext.LocalFolderPath);
-                        SessionContext.RemoteFolderPath = browserFolders.SelectedPath;
-
-                        LoadRemote();
-
-                    }
+                    RefreshRemoteFolderBrowser();
+                    RefreshSyncPoints(repository.SyncPoints);
                 }
             }
             catch (Exception ex)
@@ -123,30 +142,12 @@ namespace SyncToyNext.GuiClient
             }
         }
 
-        private void LoadRemote()
-        {
-            try
-            {
-                if (String.IsNullOrWhiteSpace(SessionContext.RemoteFolderPath) || String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
-                {
-                    throw new InvalidOperationException("Remote or Local folder path is not set.");
-                }
-
-                syncPointManager = new SyncPointManager(SessionContext.RemoteFolderPath, SessionContext.LocalFolderPath);
-                var syncPoints = syncPointManager.SyncPoints;
-                RefreshSyncPoints(syncPoints);
-            }
-            catch (Exception ex)
-            {
-                UserIO.Error(ex.Message);
-                throw;
-            }
-        }
-
         private void RefreshSyncPoints(IReadOnlyList<SyncPoint> syncPoints)
         {
             try
             {
+                if (repository == null) throw new InvalidOperationException("A valid repository must be loaded before refreshing syncpoints.");
+
                 comboSyncPoints.Items.Clear();
 
                 foreach (var syncpoint in syncPoints)
@@ -156,20 +157,12 @@ namespace SyncToyNext.GuiClient
 
                 if (syncPoints.Count > 0) comboSyncPoints.SelectedIndex = 0;
 
-                lblRemotePath.Text = "Remote path: " + Path.GetDirectoryName(SessionContext.RemoteFolderPath);
+                txtLocalSyncPoint.Text = repository.LocalSyncPointID;
             }
             catch (Exception ex)
             {
                 UserIO.Error(ex.Message);
                 throw;
-            }
-        }
-
-        private void menuOpenRemoteLocation_Click(object sender, EventArgs e)
-        {
-            if (browserFolders.ShowDialog(this) == DialogResult.OK)
-            {
-                SessionContext.RemoteFolderPath = browserFolders.SelectedPath;
             }
         }
 
@@ -180,11 +173,9 @@ namespace SyncToyNext.GuiClient
                 currentSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
 
                 if (currentSyncPoint == null) throw new InvalidOperationException("Syncpoint could not be loaded.");
-                if (syncPointManager == null) throw new InvalidOperationException("Syncpoint Manager not initialized.");
+                if (repository == null) throw new InvalidOperationException("Local repository is not initialized.");
 
-                var syncPointEntries = syncPointManager
-                                            .GetFileEntriesAtSyncpoint(currentSyncPoint.SyncPointId)
-                                            .Where(x => x.EntryType == SyncPointEntryType.AddOrChanged);
+                var syncPointEntries = repository.GetRemoteFiles(currentSyncPoint.SyncPointId);
 
                 fileBrowserRemote.AllItemPaths = syncPointEntries;
                 fileBrowserRemote.NavigateToPath(".");
@@ -247,7 +238,7 @@ namespace SyncToyNext.GuiClient
             if (File.Exists(filePath))
             {
                 var extension = Path.GetExtension(filePath).ToLowerInvariant();
-                if (ClientHelpers.IsAcceptedTextExtension(extension))
+                if (FileHelpers.IsAcceptedTextExtension(extension))
                 {
                     frmEditor.ShowEditor(filePath);
                     return true;
@@ -267,7 +258,7 @@ namespace SyncToyNext.GuiClient
             {
                 var extension = Path.GetExtension(filePath).ToLowerInvariant();
                 var otherExtension = Path.GetExtension(otherPath).ToLowerInvariant();
-                if (ClientHelpers.IsAcceptedTextExtension(extension) && ClientHelpers.IsAcceptedTextExtension(otherExtension))
+                if (FileHelpers.IsAcceptedTextExtension(extension) && FileHelpers.IsAcceptedTextExtension(otherExtension))
                 {
                     frmEditor.ShowEditor(filePath, otherPath);
                     return true;
@@ -283,36 +274,28 @@ namespace SyncToyNext.GuiClient
 
         private void OpenRemoteItem(SyncPointEntry selectedItem)
         {
-            string remotePath = ClientHelpers.RetrieveRemoteItem(selectedItem);
+            if (repository == null) return;
 
-            if (!TryOpenInBuiltInEditor(remotePath))
+            string tempCopyPath = repository.GetTempCopyOfFile(selectedItem);
+
+            if (!TryOpenInBuiltInEditor(tempCopyPath))
             {
-                OpenFileUsingDefaultHandler(remotePath);
+                OpenFileUsingDefaultHandler(tempCopyPath);
             }
         }
 
         private void btnPush_Click(object sender, EventArgs e)
         {
-            if (syncPointManager != null)
+            if (repository != null)
             {
                 try
                 {
-                    if (SessionContext.LocalFolderPath == null)
-                        throw new InvalidOperationException("No Local Folder Path known. Please load a local folder first.");
-
-                    if (SessionContext.RemoteFolderPath == null)
-                        throw new InvalidOperationException("No remote specified for local path.");
-
                     var result = frmPush.ShowPushDialog(this);
-
                     if (result == null) return;
 
                     UserIO.Message("Starting push to remote location.");
-
-                    ManualRunner.Run(SessionContext.LocalFolderPath, SessionContext.RemoteFolderPath, true, result.ID, result.Description);
-
-                    syncPointManager.RefreshSyncPoints();
-                    RefreshSyncPoints(syncPointManager.SyncPoints);
+                    repository.Push(result.ID, result.Description);
+                    RefreshSyncPoints(repository.SyncPoints);
 
                     UserIO.Message("Completed push to remote location.");
 
@@ -330,21 +313,13 @@ namespace SyncToyNext.GuiClient
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
-                    throw new InvalidOperationException("Cannot load remote config if no local folder path is loaded");
-
-                var existingRemoteConfig = RemoteConfig.Load(SessionContext.LocalFolderPath);
-
-                if (existingRemoteConfig == null)
-                    throw new InvalidOperationException("Could not load remote config.");
-
-                var remoteConfigChanges = frmRemote.ShowRemoteDialog(this, existingRemoteConfig);
+                if (repository == null || repository.Config == null) return;
+                var remoteConfigChanges = frmRemote.ShowRemoteDialog(this, repository.Config);
 
                 if (remoteConfigChanges != null)
                 {
-                    ClientHelpers.ApplyRemoteConfigChanges(existingRemoteConfig, remoteConfigChanges);
+                    repository.ChangeRemote(remoteConfigChanges.RemotePath, remoteConfigChanges.IsCompressed);
 
-                    LoadRemote();
                     UserIO.Message("Completed configuring remote location.");
                 }
             }
@@ -368,7 +343,9 @@ namespace SyncToyNext.GuiClient
                 if (questionResult == DialogResult.Yes)
                 {
                     var selectedSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
-                    ClientHelpers.RestoreSyncPoint(selectedSyncPoint);
+
+                    if (selectedSyncPoint != null && repository != null)
+                        repository.Restore(selectedSyncPoint.SyncPointId);
 
                     RefreshLocalFolderBrowser();
 
@@ -399,30 +376,23 @@ namespace SyncToyNext.GuiClient
             if (fileBrowserRemote.SelectedItems.Count() > 0)
             {
                 var selectedItem = fileBrowserRemote.SelectedItems.FirstOrDefault() as SyncPointEntry;
-                
-                if (selectedItem == null || String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
+
+                if (selectedItem == null || repository == null || String.IsNullOrWhiteSpace(repository.LocalPath))
                 {
                     return;
                 }
 
-                var localPath = Path.Combine(SessionContext.LocalFolderPath, selectedItem.SourcePath);
-                var remoteItem = ClientHelpers.RetrieveRemoteItem(selectedItem);
+                var localPath = Path.Combine(repository.LocalPath, selectedItem.SourcePath);
+                var tempRemotePath = repository.GetTempCopyOfFile(selectedItem);
 
-                TryOpenInBuiltInDiffer(localPath, remoteItem);
+                TryOpenInBuiltInDiffer(localPath, tempRemotePath);
             }
-        }
-
-        private void fileBrowserRemote_PathChanged(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(SessionContext.RemoteFolderPath)) return;
-            lblRemotePath.Text = $"Remote path: {Path.Combine(Path.GetDirectoryName(SessionContext.RemoteFolderPath) ?? SessionContext.RemoteFolderPath, fileBrowserRemote.CurrentPath)}";
         }
 
         private void contextMenuRestoreItems_Click(object sender, EventArgs e)
         {
             try
             {
-
                 if (MessageBox.Show("Are you sure you want to restore the selected items? This will overwrite the files on the local repository.", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 {
                     var remoteSelectedItems = fileBrowserRemote.SelectedItems.Select(x => (SyncPointEntry)x);
@@ -430,24 +400,49 @@ namespace SyncToyNext.GuiClient
 
                     UserIO.Message("Started restoring individual items from syncpoint.");
 
-                    if (String.IsNullOrWhiteSpace(SessionContext.LocalFolderPath))
-                    {
-                        throw new InvalidOperationException("Local folder path should not be empty.");
-                    }
+                    if (repository == null) throw new InvalidOperationException("Local repository should be initialized at this point.");
 
-                    ClientHelpers.RestoreMultipleEntriesFromSyncPoint(
-                        remoteSelectedItems, 
-                        currentSyncPoint, 
-                        SessionContext.LocalFolderPath, 
-                        SessionContext.RemoteFolderPath, 
-                        SessionContext.LocalFolderPath);
+                    repository.RestoreMultipleEntriesFromSyncPoint(
+                        remoteSelectedItems,
+                        currentSyncPoint);
 
                     UserIO.Message("Completed restoring individual items from syncpoint.");
                     ShowLog();
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 UserIO.Error(ex.Message);
+            }
+        }
+
+        private void menuFileManualMerge_Click(object sender, EventArgs e)
+        {
+            if (frmManualMerge.ShowMergeDialog(this) == DialogResult.OK)
+            {
+                ShowLog();
+            }
+        }
+
+        private void menuRemoteClone_Click(object sender, EventArgs e)
+        {
+            var result = frmClone.ShowCloneDialog();
+
+            if(result.Result == Models.CloneResult.Completed)
+            {
+                try
+                {
+                    MessageBox.Show("Succesfully cloned repository.");
+
+                    repository = new Repository(result.NewLocalPath);
+                    RefreshLocalFolderBrowser();
+                    RefreshRemoteFolderBrowser();
+                    RefreshSyncPoints(repository.SyncPoints);
+                }
+                catch
+                {
+                    MessageBox.Show("Something went wrong when opening the newly cloned local repo.");
+                }
             }
         }
     }

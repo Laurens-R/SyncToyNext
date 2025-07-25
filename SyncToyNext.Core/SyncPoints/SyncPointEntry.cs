@@ -7,6 +7,7 @@ namespace SyncToyNext.Core
     {
         public string SourcePath { get; set; } = string.Empty;
         public string RelativeRemotePath { get; set; } = string.Empty;
+        public string SyncpointID { get; set; } = string.Empty;
         
         [JsonConverter(typeof(JsonStringEnumConverter<SyncPointEntryType>))]
         public SyncPointEntryType EntryType { get; set; } = SyncPointEntryType.AddOrChanged;
