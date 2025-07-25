@@ -202,7 +202,11 @@ namespace SyncToyNext.Core
         public List<SyncPointEntry> GetFileEntriesAtSyncpoint(string syncPointID)
         {
             var requestedSyncPoint = GetSyncPoint(syncPointID);
-            
+
+            if (_syncPointRoot == null) return new List<SyncPointEntry>();
+
+            bool isCompressed = _syncPointRoot.IsCompressed;
+
             if (requestedSyncPoint == null)
                 throw new InvalidOperationException($"SyncPoint with ID '{syncPointID}' not found.");
 
@@ -216,6 +220,7 @@ namespace SyncToyNext.Core
 
             // Use a HashSet to track included restore targets
             HashSet<string> includedRestoreTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            
 
             foreach (var syncPoint in allRelevantSyncPoints)
             {
@@ -230,8 +235,10 @@ namespace SyncToyNext.Core
                         {
                             SourcePath = entry.SourcePath,
                             RelativeRemotePath = Path.Combine(entry.RelativeRemotePath),
-                            EntryType = entry.EntryType
+                            EntryType = entry.EntryType,
+                            SyncpointID = syncPoint.SyncPointId
                         });
+
                         includedRestoreTargets.Add(entry.SourcePath);
                     }
                 }

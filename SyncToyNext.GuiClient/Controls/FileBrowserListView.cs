@@ -50,6 +50,8 @@ namespace SyncToyNext.GuiClient
             }
         }
 
+
+
         public IEnumerable<FileBrowserEntry> ItemsAtCurrentPath
         {
             get

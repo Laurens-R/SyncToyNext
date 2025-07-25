@@ -33,10 +33,14 @@
             menuMain = new MenuStrip();
             menuFile = new ToolStripMenuItem();
             menuOpenLocalLocation = new ToolStripMenuItem();
+            menuFileSeperator = new ToolStripSeparator();
+            menuFileManualMerge = new ToolStripMenuItem();
             menuRemote = new ToolStripMenuItem();
             menuChangeRemote = new ToolStripMenuItem();
+            menuRemoteClone = new ToolStripMenuItem();
             menuLog = new ToolStripMenuItem();
             mainSplitContainer = new SplitContainer();
+            txtLocalSyncPoint = new TextBox();
             toolStripLocal = new ToolStrip();
             btnPush = new ToolStripButton();
             lblLocalPath = new Label();
@@ -54,8 +58,6 @@
             statusStrip = new StatusStrip();
             lblStatus = new ToolStripStatusLabel();
             browserFolders = new FolderBrowserDialog();
-            menuFileSeperator = new ToolStripSeparator();
-            menuFileManualMerge = new ToolStripMenuItem();
             menuMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).BeginInit();
             mainSplitContainer.Panel1.SuspendLayout();
@@ -86,13 +88,25 @@
             // menuOpenLocalLocation
             // 
             menuOpenLocalLocation.Name = "menuOpenLocalLocation";
-            menuOpenLocalLocation.Size = new Size(180, 22);
+            menuOpenLocalLocation.Size = new Size(177, 22);
             menuOpenLocalLocation.Text = "Open local location";
             menuOpenLocalLocation.Click += menuOpenLocalLocation_Click;
             // 
+            // menuFileSeperator
+            // 
+            menuFileSeperator.Name = "menuFileSeperator";
+            menuFileSeperator.Size = new Size(174, 6);
+            // 
+            // menuFileManualMerge
+            // 
+            menuFileManualMerge.Name = "menuFileManualMerge";
+            menuFileManualMerge.Size = new Size(177, 22);
+            menuFileManualMerge.Text = "Manual Merge";
+            menuFileManualMerge.Click += menuFileManualMerge_Click;
+            // 
             // menuRemote
             // 
-            menuRemote.DropDownItems.AddRange(new ToolStripItem[] { menuChangeRemote });
+            menuRemote.DropDownItems.AddRange(new ToolStripItem[] { menuChangeRemote, menuRemoteClone });
             menuRemote.Name = "menuRemote";
             menuRemote.Size = new Size(60, 20);
             menuRemote.Text = "&Remote";
@@ -103,6 +117,13 @@
             menuChangeRemote.Size = new Size(115, 22);
             menuChangeRemote.Text = "Change";
             menuChangeRemote.Click += menuChangeRemote_Click;
+            // 
+            // menuRemoteClone
+            // 
+            menuRemoteClone.Name = "menuRemoteClone";
+            menuRemoteClone.Size = new Size(115, 22);
+            menuRemoteClone.Text = "Clone";
+            menuRemoteClone.Click += menuRemoteClone_Click;
             // 
             // menuLog
             // 
@@ -120,6 +141,7 @@
             // 
             // mainSplitContainer.Panel1
             // 
+            mainSplitContainer.Panel1.Controls.Add(txtLocalSyncPoint);
             mainSplitContainer.Panel1.Controls.Add(toolStripLocal);
             mainSplitContainer.Panel1.Controls.Add(lblLocalPath);
             mainSplitContainer.Panel1.Controls.Add(fileBrowserLocal);
@@ -133,6 +155,16 @@
             mainSplitContainer.Size = new Size(1117, 768);
             mainSplitContainer.SplitterDistance = 561;
             mainSplitContainer.TabIndex = 1;
+            // 
+            // txtLocalSyncPoint
+            // 
+            txtLocalSyncPoint.BackColor = Color.FromArgb(64, 64, 64);
+            txtLocalSyncPoint.BorderStyle = BorderStyle.FixedSingle;
+            txtLocalSyncPoint.Location = new Point(12, 64);
+            txtLocalSyncPoint.Name = "txtLocalSyncPoint";
+            txtLocalSyncPoint.ReadOnly = true;
+            txtLocalSyncPoint.Size = new Size(546, 23);
+            txtLocalSyncPoint.TabIndex = 4;
             // 
             // toolStripLocal
             // 
@@ -166,9 +198,9 @@
             // fileBrowserLocal
             // 
             fileBrowserLocal.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            fileBrowserLocal.Location = new Point(12, 64);
+            fileBrowserLocal.Location = new Point(12, 93);
             fileBrowserLocal.Name = "fileBrowserLocal";
-            fileBrowserLocal.Size = new Size(546, 679);
+            fileBrowserLocal.Size = new Size(546, 650);
             fileBrowserLocal.TabIndex = 0;
             fileBrowserLocal.DoubleClickSelectedItem += fileBrowserLocal_DoubleClickSelectedItem;
             // 
@@ -272,18 +304,6 @@
             lblStatus.Size = new Size(60, 17);
             lblStatus.Text = "Status: Ok";
             // 
-            // menuFileSeperator
-            // 
-            menuFileSeperator.Name = "menuFileSeperator";
-            menuFileSeperator.Size = new Size(177, 6);
-            // 
-            // menuFileManualMerge
-            // 
-            menuFileManualMerge.Name = "menuFileManualMerge";
-            menuFileManualMerge.Size = new Size(180, 22);
-            menuFileManualMerge.Text = "Manual Merge";
-            menuFileManualMerge.Click += menuFileManualMerge_Click;
-            // 
             // frmMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -343,5 +363,7 @@
         private ToolStripMenuItem menuContextCompareLocal;
         private ToolStripSeparator menuFileSeperator;
         private ToolStripMenuItem menuFileManualMerge;
+        private ToolStripMenuItem menuRemoteClone;
+        private TextBox txtLocalSyncPoint;
     }
 }

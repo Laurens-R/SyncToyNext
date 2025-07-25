@@ -49,6 +49,15 @@ namespace SyncToyNext.Core.SyncPoints
             }
         }
 
+        public string LocalSyncPointID
+        {
+            get
+            {
+                if (_remoteConfig == null) throw new InvalidOperationException("Remote config cannot be null when repository is opened.");
+                return _remoteConfig.CurrentSyncPoint;
+            }
+        }
+
         public SyncPoint? LatestReferenceSyncPoint
         {
             get
@@ -195,7 +204,7 @@ namespace SyncToyNext.Core.SyncPoints
         /// <param name="otherRemotePath"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public static Repository CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath)
+        public static Repository CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath, bool isCompressed)
         {
             if (!Directory.Exists(localPath))
             {
@@ -207,10 +216,15 @@ namespace SyncToyNext.Core.SyncPoints
                 throw new InvalidOperationException("Remote path doesn't exist.");
             }
 
+            if (!Directory.Exists(otherRemotePath))
+            {
+                throw new InvalidOperationException("Other remote path doesn't exist.");
+            }
+
             var config = new RemoteConfig(newRemotePath, localPath);
             config.Save(localPath);
 
-            var repository = new Repository(localPath);
+            var repository = Repository.Initialize(localPath, newRemotePath, isCompressed);
             var otherRemoteManager = new SyncPointManager(otherRemotePath);
             var latestSyncPoint = otherRemoteManager.SyncPoints.Count > 0 ? otherRemoteManager.SyncPoints[0] : null;
 

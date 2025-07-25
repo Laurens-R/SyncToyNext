@@ -177,7 +177,7 @@ namespace SyncToyNext.Core.SyncPoints
             }
             else
             {
-                var fullSyncPointPath = Path.Combine(RemoteDirectory, fileToRestore.RelativeRemotePath);
+                var fullSyncPointPath = Path.Combine(RemoteDirectory, syncPointID, fileToRestore.RelativeRemotePath);
 
                 if (!File.Exists(fullSyncPointPath))
                 {
@@ -253,8 +253,7 @@ namespace SyncToyNext.Core.SyncPoints
                 }
                 else
                 {
-                    restorePath = Path.Combine(RemotePath, file.RelativeRemotePath);
-                    var syncPointPath = Path.Combine(RemotePath, syncPointID, file.RelativeRemotePath);
+                    var syncPointPath = Path.Combine(RemotePath, file.SyncpointID, file.RelativeRemotePath);
 
                     if (!File.Exists(syncPointPath))
                     {
