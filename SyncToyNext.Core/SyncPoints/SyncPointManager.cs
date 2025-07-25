@@ -155,7 +155,7 @@ namespace SyncToyNext.Core
 
             if (string.IsNullOrWhiteSpace(syncPointID))
             {
-                syncPointID = $"{now:yyyyMMddHHmmss}UTC";
+                syncPointID = SyncPoint.GenerateSyncpointID();
 
                 if (_syncPoints.Any(sp => sp.SyncPointId.Equals(syncPointID, StringComparison.OrdinalIgnoreCase)))
                 {

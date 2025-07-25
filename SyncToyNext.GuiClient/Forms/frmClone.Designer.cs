@@ -32,6 +32,8 @@
             browseDialog = new FolderBrowserDialog();
             btnOK = new Button();
             grpNew = new GroupBox();
+            label1 = new Label();
+            checkboxCompressed = new CheckBox();
             lblNewRemote = new Label();
             btnBrowseNewRemote = new Button();
             txtNewRemote = new TextBox();
@@ -41,8 +43,6 @@
             groupFrom = new GroupBox();
             btnBrowseRemote = new Button();
             txtRemotePath = new TextBox();
-            checkboxCompressed = new CheckBox();
-            label1 = new Label();
             grpNew.SuspendLayout();
             groupFrom.SuspendLayout();
             SuspendLayout();
@@ -50,7 +50,7 @@
             // lblRemotePath
             // 
             lblRemotePath.AutoSize = true;
-            lblRemotePath.Location = new Point(17, 25);
+            lblRemotePath.Location = new Point(17, 29);
             lblRemotePath.Name = "lblRemotePath";
             lblRemotePath.Size = new Size(78, 15);
             lblRemotePath.TabIndex = 5;
@@ -58,7 +58,7 @@
             // 
             // btnOK
             // 
-            btnOK.Location = new Point(618, 225);
+            btnOK.Location = new Point(628, 247);
             btnOK.Name = "btnOK";
             btnOK.Size = new Size(152, 43);
             btnOK.TabIndex = 12;
@@ -76,12 +76,30 @@
             grpNew.Controls.Add(lblNewLocal);
             grpNew.Controls.Add(btnBrowseNewLocal);
             grpNew.Controls.Add(txtNewLocal);
-            grpNew.Location = new Point(19, 79);
+            grpNew.Location = new Point(19, 101);
             grpNew.Name = "grpNew";
-            grpNew.Size = new Size(751, 128);
+            grpNew.Size = new Size(761, 128);
             grpNew.TabIndex = 13;
             grpNew.TabStop = false;
             grpNew.Text = "New repository information";
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(17, 95);
+            label1.Name = "label1";
+            label1.Size = new Size(97, 15);
+            label1.TabIndex = 19;
+            label1.Text = "Use compression";
+            // 
+            // checkboxCompressed
+            // 
+            checkboxCompressed.AutoSize = true;
+            checkboxCompressed.Location = new Point(240, 96);
+            checkboxCompressed.Name = "checkboxCompressed";
+            checkboxCompressed.Size = new Size(15, 14);
+            checkboxCompressed.TabIndex = 18;
+            checkboxCompressed.UseVisualStyleBackColor = true;
             // 
             // lblNewRemote
             // 
@@ -148,14 +166,14 @@
             groupFrom.Controls.Add(lblRemotePath);
             groupFrom.Location = new Point(19, 21);
             groupFrom.Name = "groupFrom";
-            groupFrom.Size = new Size(751, 52);
+            groupFrom.Size = new Size(761, 64);
             groupFrom.TabIndex = 14;
             groupFrom.TabStop = false;
             groupFrom.Text = "From";
             // 
             // btnBrowseRemote
             // 
-            btnBrowseRemote.Location = new Point(159, 21);
+            btnBrowseRemote.Location = new Point(159, 25);
             btnBrowseRemote.Name = "btnBrowseRemote";
             btnBrowseRemote.Size = new Size(75, 23);
             btnBrowseRemote.TabIndex = 6;
@@ -167,38 +185,23 @@
             // 
             txtRemotePath.BackColor = Color.FromArgb(64, 64, 64);
             txtRemotePath.ForeColor = SystemColors.WindowText;
-            txtRemotePath.Location = new Point(240, 22);
+            txtRemotePath.Location = new Point(240, 26);
             txtRemotePath.Name = "txtRemotePath";
             txtRemotePath.ReadOnly = true;
             txtRemotePath.Size = new Size(505, 23);
             txtRemotePath.TabIndex = 5;
             // 
-            // checkboxCompressed
-            // 
-            checkboxCompressed.AutoSize = true;
-            checkboxCompressed.Location = new Point(240, 96);
-            checkboxCompressed.Name = "checkboxCompressed";
-            checkboxCompressed.Size = new Size(15, 14);
-            checkboxCompressed.TabIndex = 18;
-            checkboxCompressed.UseVisualStyleBackColor = true;
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(17, 95);
-            label1.Name = "label1";
-            label1.Size = new Size(97, 15);
-            label1.TabIndex = 19;
-            label1.Text = "Use compression";
-            // 
             // frmClone
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(782, 282);
+            ClientSize = new Size(799, 308);
             Controls.Add(groupFrom);
             Controls.Add(grpNew);
             Controls.Add(btnOK);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
             Name = "frmClone";
             Text = "Clone Remote";
             grpNew.ResumeLayout(false);

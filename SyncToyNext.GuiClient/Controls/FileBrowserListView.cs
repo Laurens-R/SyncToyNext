@@ -214,6 +214,7 @@ namespace SyncToyNext.GuiClient
         {
             listEntries.Items.Clear();
             Array.Empty<object>();
+            CurrentPath = ".";
         }
 
         private void listEntries_DoubleClick(object sender, EventArgs e)

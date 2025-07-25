@@ -1,4 +1,5 @@
-﻿using SyncToyNext.GuiClient.Models;
+﻿using SyncToyNext.Core;
+using SyncToyNext.GuiClient.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -34,6 +35,7 @@ namespace SyncToyNext.GuiClient
         public frmPush()
         {
             InitializeComponent();
+
         }
 
         public static PushChangesDialogResult? ShowPushDialog(Form owner)
@@ -61,7 +63,7 @@ namespace SyncToyNext.GuiClient
 
         private void frmPush_Load(object sender, EventArgs e)
         {
-            var generatedId = $"{DateTime.Now:yyyyMMddHHmmss}UTC";
+            var generatedId = SyncPoint.GenerateSyncpointID();
             txtID.Text = generatedId;
         }
     }
