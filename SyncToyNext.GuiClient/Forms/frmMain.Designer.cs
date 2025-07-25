@@ -47,6 +47,7 @@
             fileBrowserLocal = new FileBrowserListView();
             toolStripRemote = new ToolStrip();
             btnRestore = new ToolStripButton();
+            btnInfo = new ToolStripButton();
             comboSyncPoints = new ComboBox();
             lblRemotePath = new Label();
             fileBrowserRemote = new FileBrowserListView();
@@ -206,11 +207,11 @@
             // 
             // toolStripRemote
             // 
-            toolStripRemote.ImageScalingSize = new Size(48, 48);
-            toolStripRemote.Items.AddRange(new ToolStripItem[] { btnRestore });
+            toolStripRemote.ImageScalingSize = new Size(28, 28);
+            toolStripRemote.Items.AddRange(new ToolStripItem[] { btnRestore, btnInfo });
             toolStripRemote.Location = new Point(0, 0);
             toolStripRemote.Name = "toolStripRemote";
-            toolStripRemote.Size = new Size(552, 31);
+            toolStripRemote.Size = new Size(552, 35);
             toolStripRemote.TabIndex = 4;
             toolStripRemote.Text = "toolStrip1";
             // 
@@ -221,10 +222,20 @@
             btnRestore.ImageScaling = ToolStripItemImageScaling.None;
             btnRestore.ImageTransparentColor = Color.Magenta;
             btnRestore.Name = "btnRestore";
-            btnRestore.Size = new Size(28, 28);
+            btnRestore.Size = new Size(28, 32);
             btnRestore.Text = "Restore current syncpoint";
             btnRestore.TextAlign = ContentAlignment.MiddleRight;
             btnRestore.Click += btnRestore_Click;
+            // 
+            // btnInfo
+            // 
+            btnInfo.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            btnInfo.Image = (Image)resources.GetObject("btnInfo.Image");
+            btnInfo.ImageTransparentColor = Color.Magenta;
+            btnInfo.Name = "btnInfo";
+            btnInfo.Size = new Size(32, 32);
+            btnInfo.Text = "Current Syncpoint Information";
+            btnInfo.Click += btnInfo_Click;
             // 
             // comboSyncPoints
             // 
@@ -365,5 +376,6 @@
         private ToolStripMenuItem menuFileManualMerge;
         private ToolStripMenuItem menuRemoteClone;
         private TextBox txtLocalSyncPoint;
+        private ToolStripButton btnInfo;
     }
 }

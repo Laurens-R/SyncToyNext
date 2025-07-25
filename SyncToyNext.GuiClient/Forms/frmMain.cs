@@ -64,7 +64,7 @@ namespace SyncToyNext.GuiClient
             fileBrowserLocal.NavigateToPath(".");
             fileBrowserLocal.RefreshItems();
 
-            if(repository.LatestSyncPoint != null)
+            if (repository.LatestSyncPoint != null)
                 txtLocalSyncPoint.Text = repository.LatestSyncPoint.ToString();
         }
 
@@ -88,7 +88,7 @@ namespace SyncToyNext.GuiClient
             fileBrowserRemote.RootPath = string.Empty;
             fileBrowserRemote.NavigateToPath(".");
             fileBrowserRemote.RefreshItems();
-            
+
             if (currentSyncPoint != null)
                 txtLocalSyncPoint.Text = repository.LatestSyncPoint.ToString();
         }
@@ -449,7 +449,7 @@ namespace SyncToyNext.GuiClient
         {
             var result = frmClone.ShowCloneDialog();
 
-            if(result.Result == Models.CloneResult.Completed)
+            if (result.Result == Models.CloneResult.Completed)
             {
                 try
                 {
@@ -464,6 +464,14 @@ namespace SyncToyNext.GuiClient
                 {
                     MessageBox.Show("Something went wrong when opening the newly cloned local repo.");
                 }
+            }
+        }
+
+        private void btnInfo_Click(object sender, EventArgs e)
+        {
+            if(currentSyncPoint != null)
+            {
+                frmSyncPointDetails.ShowSyncPointDetailsDialog(currentSyncPoint, this);
             }
         }
     }
