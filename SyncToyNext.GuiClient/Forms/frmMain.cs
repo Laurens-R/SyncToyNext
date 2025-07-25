@@ -64,6 +64,8 @@ namespace SyncToyNext.GuiClient
 
         private void RefreshLocalFolderBrowserControls(IEnumerable<string> files)
         {
+            if (repository == null) return;
+
             fileBrowserLocal.AllItemPaths = files;
             fileBrowserLocal.RootPath = repository.LocalPath;
             fileBrowserLocal.NavigateToPath(".");
@@ -139,6 +141,8 @@ namespace SyncToyNext.GuiClient
                                 repository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
                             })?.ContinueWith((task) => {
                                 this.Invoke(() => {
+                                    if (repository == null) return;
+
                                     RefreshLocalFolderBrowser();
                                     RefreshRemoteFolderBrowserAfterInit();
                                     RefreshSyncPoints(repository.SyncPoints);
