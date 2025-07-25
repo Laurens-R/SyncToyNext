@@ -10,6 +10,8 @@ namespace SyncToyNext.Core.Synchronizers
 {
     public abstract class Synchronizer
     {
+        public Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
+
         /// <summary>
         /// Synchronizes all files and subdirectories from the source path to the destination.
         /// </summary>

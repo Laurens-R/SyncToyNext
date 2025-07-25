@@ -14,6 +14,7 @@ namespace SyncToyNext.Core.SyncPoints
         public static string RestorePath = Environment.CurrentDirectory;
         public static string RemotePath = string.Empty;
         public static string RemoteDirectory = string.Empty;
+        public static Action<int, int, string>? UpdateProgressHandler = null;
 
         public static void EstablishRestorePath()
         {
@@ -287,6 +288,9 @@ namespace SyncToyNext.Core.SyncPoints
 
             UserIO.Message("Cleaning up files not part of the sync point...");
 
+            int progressCounter = 0;
+            int totalFiles = allFilesInRestoreLocation.Count();
+
             // after restoring files to the proper version, we also need to remove any files that were not part of the sync point
             foreach (var file in allFilesInRestoreLocation)
             {
@@ -304,6 +308,12 @@ namespace SyncToyNext.Core.SyncPoints
                     {
                         UserIO.Message($"Error removing file '{file}': {ex.Message}");
                     }
+                }
+
+                progressCounter++;
+                if(UpdateProgressHandler != null)
+                {
+                    UpdateProgressHandler(progressCounter, allFilesInRestoreLocation.Count(), file);
                 }
             }
 

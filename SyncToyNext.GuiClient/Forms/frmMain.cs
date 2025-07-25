@@ -121,7 +121,11 @@ namespace SyncToyNext.GuiClient
                                 throw new InvalidOperationException("Remote must be specified");
                             }
 
+                            var progressForm = frmProgress.ShowProgressDialog(this);
+                            Repository.UpdateProgressHandler = progressForm.UpdateHandler;
                             repository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
+                            Repository.UpdateProgressHandler = null;
+                            progressForm.Close();
                         }
                         else
                         {
@@ -293,9 +297,15 @@ namespace SyncToyNext.GuiClient
                     var result = frmPush.ShowPushDialog(this);
                     if (result == null) return;
 
+                    var progressForm = frmProgress.ShowProgressDialog(this);
+                    Repository.UpdateProgressHandler = progressForm.UpdateHandler;
+
                     UserIO.Message("Starting push to remote location.");
                     repository.Push(result.ID, result.Description);
                     RefreshSyncPoints(repository.SyncPoints);
+
+                    Repository.UpdateProgressHandler = null;
+                    progressForm.Close();
 
                     UserIO.Message("Completed push to remote location.");
 
@@ -345,7 +355,13 @@ namespace SyncToyNext.GuiClient
                     var selectedSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
 
                     if (selectedSyncPoint != null && repository != null)
+                    {
+                        var progressForm = frmProgress.ShowProgressDialog(this);
+                        Repository.UpdateProgressHandler = progressForm.UpdateHandler;
                         repository.Restore(selectedSyncPoint.SyncPointId);
+                        Repository.UpdateProgressHandler = null;
+                        progressForm.Close();
+                    }
 
                     RefreshLocalFolderBrowser();
 

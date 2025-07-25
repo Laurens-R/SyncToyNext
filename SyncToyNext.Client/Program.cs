@@ -27,7 +27,7 @@ try
         && cmdArgs.RequiredPresent("init", "remote")) {
         RepositoryMode.Init(cmdArgs);
     }
-    if (cmdArgs.EnsureValidCombination("clone", "local", "remote")
+    if (cmdArgs.EnsureValidCombination("clone", "local", "remote", "compressed")
         && cmdArgs.RequiredPresent("clone", "local", "remote"))
     {
         RepositoryMode.Clone(cmdArgs);

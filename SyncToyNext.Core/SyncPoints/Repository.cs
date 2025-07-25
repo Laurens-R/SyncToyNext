@@ -23,6 +23,8 @@ namespace SyncToyNext.Core.SyncPoints
         public SyncPointManager Manager => _manager;
         public RemoteConfig? Config => _remoteConfig;
 
+        public static Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
+
         public IReadOnlyList<SyncPoint> SyncPoints
         {
             get
@@ -231,6 +233,7 @@ namespace SyncToyNext.Core.SyncPoints
             if (latestSyncPoint != null)
             {
                 SyncPointRestorer.RestorePath = repository.LocalPath;
+                SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
                 SyncPointRestorer.Run(latestSyncPoint.SyncPointId, otherRemotePath);
 
                 //we use exactly the same syncpoint id as the latest syncpoint id from the remote which was cloned
@@ -279,6 +282,7 @@ namespace SyncToyNext.Core.SyncPoints
         public void Restore(string syncPointID)
         {
             SyncPointRestorer.RestorePath = LocalPath;
+            SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
             SyncPointRestorer.Run(syncPointID, RemotePath);
 
             if (_remoteConfig == null) throw new InvalidOperationException("Trying to work with remote config which is null.");
@@ -289,12 +293,14 @@ namespace SyncToyNext.Core.SyncPoints
         public void RestoreSingleFile(string syncPointID, string relativeFilePath)
         {
             SyncPointRestorer.RestorePath = LocalPath;
+            SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
             SyncPointRestorer.Run(syncPointID, RemotePath, relativeFilePath);
         }
 
         public void RestoreMultipleEntriesFromSyncPoint(IEnumerable<SyncPointEntry> remoteSelectedItems, SyncPoint? currentSyncPoint)
         {
             SyncPointRestorer.RestorePath = LocalPath;
+            SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
 
             bool isZipped = Path.HasExtension(RemotePath) && Path.GetExtension(RemotePath) == ".zip";
 
@@ -410,6 +416,7 @@ namespace SyncToyNext.Core.SyncPoints
 
         public void Push(string newSyncPointID, string newDescription, bool isReferencePoint = false)
         {
+            ManualRunner.UpdateProgressHandler = UpdateProgressHandler;
             ManualRunner.Run(LocalPath, RemotePath, true, newSyncPointID, newDescription, isReferencePoint);
             _manager.RefreshSyncPoints();
 

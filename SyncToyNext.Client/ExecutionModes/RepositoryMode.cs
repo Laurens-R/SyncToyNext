@@ -35,6 +35,7 @@ namespace SyncToyNext.Client.ExecutionModes
                 var clonePath = cmdArgs.Get("clone");
                 var newRemotePath = cmdArgs.Get("remote");
                 var relativeLocalFolderName = cmdArgs.Get("local");
+                var isCompressed = cmdArgs.Has("compressed");
 
                 if (String.IsNullOrWhiteSpace(clonePath) || !Path.Exists(clonePath)) throw new InvalidOperationException("Provided clone source path not valid");
                 if (String.IsNullOrWhiteSpace(newRemotePath) || !Path.Exists(newRemotePath)) throw new InvalidOperationException("Provided remote path not valid");
@@ -49,7 +50,7 @@ namespace SyncToyNext.Client.ExecutionModes
                     Directory.CreateDirectory(localDirectory);
                 }
 
-                Repository.CloneFromOtherRemote(localDirectory, newRemotePath, clonePath);
+                Repository.CloneFromOtherRemote(localDirectory, newRemotePath, clonePath, isCompressed);
             }
             catch (Exception ex)
             {
