@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace SyncToyNext.GuiClient.Forms
 {
@@ -27,11 +28,34 @@ namespace SyncToyNext.GuiClient.Forms
 
         public void UpdateHandler(int current, int max, string message)
         {
-            progressBar.Minimum = 0;
-            progressBar.Maximum = max;
-            progressBar.Value = current;
-            lblStatusText.Text = message;
-            Application.DoEvents();
+            if (progressBar.InvokeRequired)
+            {
+                progressBar.Invoke(new Action(() => {
+                    progressBar.Minimum = 0;
+                    progressBar.Maximum = max;
+                    progressBar.Value = current;
+                }));   
+            }
+            else
+            {
+                progressBar.Minimum = 0;
+                progressBar.Maximum = max;
+                progressBar.Value = current;
+            }
+
+            if (lblStatusText.InvokeRequired)
+            {
+                lblStatusText.Invoke(new Action(() =>
+                {
+                    lblStatusText.Text = message;
+                }));
+            } else
+            {
+                lblStatusText.Text = message;
+            }
+
+
+                Application.DoEvents();
         }
     }
 }
