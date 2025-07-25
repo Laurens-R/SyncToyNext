@@ -52,18 +52,31 @@ namespace SyncToyNext.Core.Synchronizers
 
         private void ProcessStraightSync(string sourcePath, IEnumerable<string> allFilesInSourcePath)
         {
+            int progressCounter = 0;
+            int totalFileCount = allFilesInSourcePath.Count();
+
             foreach (var srcFilePath in allFilesInSourcePath)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
                 var destFilePath = Path.Combine(_destination, relativePath);
 
                 SynchronizeFile(srcFilePath, destFilePath);
+
+                progressCounter++;
+
+                if (UpdateProgressHandler != null)
+                {
+                    UpdateProgressHandler(progressCounter, totalFileCount, srcFilePath);
+                }
             }
         }
 
         private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
         {
             var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
+
+            int progressCounter = 0;
+            int totalFileCount = allSourceLocationFiles.Count();
 
             foreach (var srcFilePath in allSourceLocationFiles)
             {
@@ -109,6 +122,13 @@ namespace SyncToyNext.Core.Synchronizers
                     var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativeSourcePath);
                     newSyncPoint.AddEntry(relativeSourcePath, relativeSourcePath);
                     SynchronizeFile(srcFilePath, destFilePath);
+                }
+
+                progressCounter++;
+
+                if (UpdateProgressHandler != null)
+                {
+                    UpdateProgressHandler(progressCounter, totalFileCount, srcFilePath);
                 }
             }
 

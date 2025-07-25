@@ -45,3 +45,4 @@ SyncToyNext.Client/bin/Release/net9.0/osx-x64/publish/
 *.pdb
 Debugging/
 /.vs
+/.stn

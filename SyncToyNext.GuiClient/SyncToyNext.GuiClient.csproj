@@ -20,6 +20,7 @@
 	<PropertyGroup>
 		<!-- This resolves a reference/versioning warning for WebView2 -->
 		<NoWarn>$(NoWarn);MSB3277</NoWarn>
+		<ApplicationIcon>Assets\folder_match_128dp_FFFFFF_FILL0_wght400_GRAD0_opsz48.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -47,6 +48,10 @@
 	    <Content Include="Controls\Monaco\**">
 		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	    </Content>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="Assets\folder_match_128dp_FFFFFF_FILL0_wght400_GRAD0_opsz48.ico" />
 	</ItemGroup>
 
 	<ItemGroup>

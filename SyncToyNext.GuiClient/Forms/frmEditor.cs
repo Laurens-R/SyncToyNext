@@ -24,6 +24,8 @@ namespace SyncToyNext.GuiClient.Forms
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string OtherFilePath { get; set; } = string.Empty;
 
+        private Dictionary<string, string> extensionLanguageMapping = new Dictionary<string, string>();
+
         public frmEditor()
         {
             InitializeComponent();
@@ -34,6 +36,35 @@ namespace SyncToyNext.GuiClient.Forms
                     isReady = true;
                 }
             };
+
+            extensionLanguageMapping.Add(".cs", "csharp");
+            extensionLanguageMapping.Add(".c", "cpp");
+            extensionLanguageMapping.Add(".cpp", "cpp");
+            extensionLanguageMapping.Add(".h", "cpp");
+            extensionLanguageMapping.Add(".hpp", "cpp");
+            extensionLanguageMapping.Add(".bat", "bat");
+            extensionLanguageMapping.Add(".htm", "html");
+            extensionLanguageMapping.Add(".html", "html");
+            extensionLanguageMapping.Add(".css", "css");
+            extensionLanguageMapping.Add(".scss", "scss");
+            extensionLanguageMapping.Add(".js", "javascript");
+            extensionLanguageMapping.Add(".json", "javascript");
+            extensionLanguageMapping.Add(".ts", "typescript");
+            extensionLanguageMapping.Add(".tsx", "typescript");
+            extensionLanguageMapping.Add(".java", "java");
+            extensionLanguageMapping.Add(".go", "go");
+            extensionLanguageMapping.Add(".rs", "rust");
+            extensionLanguageMapping.Add(".less", "less");
+            extensionLanguageMapping.Add(".php", "php");
+            extensionLanguageMapping.Add(".yaml", "yaml");
+            extensionLanguageMapping.Add(".cshtml", "razor");
+            extensionLanguageMapping.Add(".lua", "lua");
+            extensionLanguageMapping.Add(".ini", "ini");
+            extensionLanguageMapping.Add(".ps1", "powershell");
+            extensionLanguageMapping.Add(".py", "python");
+            extensionLanguageMapping.Add(".r", "r");
+            extensionLanguageMapping.Add(".md", "markdown");
+
         }
 
         public static void ShowEditor(string filePath)
@@ -91,8 +122,10 @@ namespace SyncToyNext.GuiClient.Forms
                     var sourceUri = new Uri(FilePath);
                     var sourceContent = JsonSerializer.Serialize(File.ReadAllText(FilePath));
 
+                    var language = extensionLanguageMapping.ContainsKey(Path.GetExtension(FilePath)) ? $"'{extensionLanguageMapping[Path.GetExtension(FilePath)]}'" : "null";
+
                     string changeContentScript = @$"
-                        var currentModel = monaco.editor.createModel({sourceContent}, null, '{sourceUri}');
+                        var currentModel = monaco.editor.createModel({sourceContent}, {language}, '{sourceUri}');
                         editor.setModel(currentModel);
                     ";
 
@@ -104,9 +137,12 @@ namespace SyncToyNext.GuiClient.Forms
                     var sourceContent = JsonSerializer.Serialize(File.ReadAllText(FilePath));
                     var otherSourceContent = JsonSerializer.Serialize(File.ReadAllText(OtherFilePath));
 
+                    var language = extensionLanguageMapping.ContainsKey(Path.GetExtension(FilePath)) ? $"'{extensionLanguageMapping[Path.GetExtension(FilePath)]}'" : "null";
+                    var otherLanguage = extensionLanguageMapping.ContainsKey(Path.GetExtension(OtherFilePath)) ? $"'{extensionLanguageMapping[Path.GetExtension(OtherFilePath)]}'" : "null";
+
                     string changeContentScript = @$"
-                        var localModel = monaco.editor.createModel({sourceContent}, null, '{sourceUri}');
-                        var remoteModel = monaco.editor.createModel({otherSourceContent}, null, '{otherSourceUri}');
+                        var localModel = monaco.editor.createModel({sourceContent}, {language}, '{sourceUri}');
+                        var remoteModel = monaco.editor.createModel({otherSourceContent}, {otherLanguage}, '{otherSourceUri}');
                         diffEditor.setModel({{
                             original: remoteModel,
                             modified: localModel

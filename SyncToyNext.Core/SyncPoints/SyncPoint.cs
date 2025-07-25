@@ -64,8 +64,10 @@ namespace SyncToyNext.Core
         public override string ToString()
         {
             var descriptionToRender = String.IsNullOrWhiteSpace(Description) ? "(no description provided)" : Description;
-
-            return $"{SyncPointId} - {descriptionToRender}";
+            var localTime = LastSyncTime.ToLocalTime();
+            var localTimeStr = localTime.ToShortTimeString();
+            var localDateStr = localTime.ToShortDateString();
+            return $"{localDateStr} at {localTimeStr} - {descriptionToRender}";
         }
     }
 }

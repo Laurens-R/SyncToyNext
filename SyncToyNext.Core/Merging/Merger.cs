@@ -617,10 +617,10 @@ namespace SyncToyNext.Core.Merging
 
             UserIO.Message($"Starting actual file merging between source and target location.");
 
-            var sourceFiles = FileHelpers.GetFilesInPath(sourcePath).ToList();
+            var sourceFiles = FileHelpers.GetFilesInPath(sourcePath);
             var targetFiles = FileHelpers.GetFilesInPath(targetPath);
             var mergeSuccessful = true;
-            int totalFiles = sourceFiles.Count;
+            int totalFiles = sourceFiles.Count();
             int processedFiles = 0;
 
             foreach (var sourceEntryPath in sourceFiles)

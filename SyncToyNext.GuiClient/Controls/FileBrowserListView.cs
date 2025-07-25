@@ -14,6 +14,7 @@ namespace SyncToyNext.GuiClient
     public partial class FileBrowserListView : UserControl
     {
         private IEnumerable<object> _itemPaths = Array.Empty<object>();
+        private List<string> _actuallyFileEntries = new List<string>();
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string RootPath { get; set; } = string.Empty;
@@ -49,8 +50,6 @@ namespace SyncToyNext.GuiClient
                 return selectedItems;
             }
         }
-
-
 
         public IEnumerable<FileBrowserEntry> ItemsAtCurrentPath
         {
@@ -95,15 +94,16 @@ namespace SyncToyNext.GuiClient
                             results.Add(new FileBrowserEntry
                             {
                                 DisplayValue = pathParts[0],
-                                Value = pathItem
+                                Value = pathItem,
+                                IsFolder = pathParts.Length > 1
                             });
                         }
                     }
                 }
 
                 var comparer = Comparer<FileBrowserEntry>.Create((x, y) => {
-                    bool isXFolder = !Path.HasExtension(x.DisplayValue) || x.DisplayValue.StartsWith(".");
-                    bool isYFolder = !Path.HasExtension(y.DisplayValue) || y.DisplayValue.StartsWith(".");
+                    bool isXFolder = x.IsFolder;
+                    bool isYFolder = y.IsFolder;
 
                     int folderCompare = isYFolder.CompareTo(isXFolder); // folders first (true < false)
                     if(folderCompare != 0)
@@ -191,7 +191,7 @@ namespace SyncToyNext.GuiClient
 
             foreach (var entry in browserEntries)
             {
-                bool isFolder = Path.HasExtension(entry.ToString()) == false || entry.ToString().StartsWith(".");
+                bool isFolder = entry.IsFolder;
 
                 var newItem = new ListViewItem(entry.ToString());
                 newItem.SubItems.Add(isFolder ? "[ FOLDER ]" : Path.GetExtension(entry.ToString()));
@@ -204,12 +204,17 @@ namespace SyncToyNext.GuiClient
         public FileBrowserListView()
         {
             InitializeComponent();
+
+            _actuallyFileEntries.Add(".gitignore");
+            _actuallyFileEntries.Add(".stnignore");
+            _actuallyFileEntries.Add("license");
         }
 
         public void Reset()
         {
             listEntries.Items.Clear();
             Array.Empty<object>();
+            CurrentPath = ".";
         }
 
         private void listEntries_DoubleClick(object sender, EventArgs e)
@@ -217,8 +222,9 @@ namespace SyncToyNext.GuiClient
             if(listEntries.SelectedItems.Count > 0)
             {
                 var selectedItem = listEntries.SelectedItems[0];
-                
-                if (Path.HasExtension(selectedItem.Text) && !selectedItem.Text.StartsWith("."))
+
+                //ok this is bad, but I have no other option right now...
+                if (selectedItem.ImageKey == "fileWhite")
                 {
                     DoubleClickSelectedItem?.Invoke(this, EventArgs.Empty);
                 }

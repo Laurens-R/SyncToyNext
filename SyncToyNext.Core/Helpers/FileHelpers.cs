@@ -92,10 +92,12 @@ namespace SyncToyNext.Core.Helpers
 
         public static IEnumerable<string> GetFilesInPath(string sourcePath)
         {
-            return Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
+            var files = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
+            IgnoreHelper.TryLoadIgnoreFile(sourcePath);
+            return files.Where(file => !IgnoreHelper.IsFileIgnored(file));    
         }
 
         public static bool IsFileDifferent(string srcFilePath, string destFilePath)

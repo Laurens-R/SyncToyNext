@@ -109,7 +109,6 @@ namespace SyncToyNext.Core.Synchronizers
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
-            // Exclude 'synclogs' subfolder from sync
             var allFilesInSourcePath = FileHelpers.GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
@@ -133,6 +132,9 @@ namespace SyncToyNext.Core.Synchronizers
             {
                 throw new InvalidOperationException("Couldn't resolve parent folder of zip file.");
             }
+
+            int progressCounter = 0;
+            int totalFileCount = allSourceLocationFiles.Count();
 
             foreach (var srcFilePath in allSourceLocationFiles)
             {
@@ -192,6 +194,13 @@ namespace SyncToyNext.Core.Synchronizers
                     newSyncPoint.AddEntry(relativeSourcePath, relativeDestinationPath);
                     SynchronizeFile(srcFilePath, relativeSourcePath);
                 }
+
+                progressCounter++;
+
+                if(UpdateProgressHandler != null)
+                {
+                    UpdateProgressHandler(progressCounter, totalFileCount, srcFilePath);
+                }
             }
 
             var updatedFileListOfSyncpoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
@@ -204,10 +213,20 @@ namespace SyncToyNext.Core.Synchronizers
 
         private void ProcessStraightSync(string sourcePath, IEnumerable<string> allFiles)
         {
+            int progressCounter = 0;
+            int totalFileCount = allFiles.Count();
+
             foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
                 SynchronizeFile(srcFilePath, relativePath);
+
+                progressCounter++;
+
+                if (UpdateProgressHandler != null)
+                {
+                    UpdateProgressHandler(progressCounter, totalFileCount, srcFilePath);
+                }
             }
         }
     }

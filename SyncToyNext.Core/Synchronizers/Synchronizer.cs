@@ -10,6 +10,8 @@ namespace SyncToyNext.Core.Synchronizers
 {
     public abstract class Synchronizer
     {
+        public Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
+
         /// <summary>
         /// Synchronizes all files and subdirectories from the source path to the destination.
         /// </summary>
@@ -25,9 +27,14 @@ namespace SyncToyNext.Core.Synchronizers
 
         protected void DetectRemovedFiles(string sourceDirectory, List<SyncPointEntry> syncPointFiles, IEnumerable<string> localFiles, SyncPoint syncPoint)
         {
+            int fileCount = syncPointFiles.Count();
+            int currentFile = 1;
+
             // Now we need to check for files that were deleted since the last sync point
             foreach (var entry in syncPointFiles)
             {
+                if(UpdateProgressHandler != null) UpdateProgressHandler(currentFile, fileCount, $"Check {entry.SourcePath}");
+
                 var relativeSourcePath = entry.SourcePath;
                 var relativePath = entry.RelativeRemotePath;
                 // If the file no longer exists in the source, mark it as deleted
@@ -42,6 +49,8 @@ namespace SyncToyNext.Core.Synchronizers
                         UserIO.Message($"File '{relativeSourcePath}' marked as deleted in sync point '{syncPoint.SyncPointId}'.");
                     }
                 }
+
+                currentFile++;
             }
         }
     }

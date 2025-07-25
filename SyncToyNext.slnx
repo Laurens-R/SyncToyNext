@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />
+    <File Path=".stnignore" />
     <File Path="Directory.Build.props" />
     <File Path="Dockerfile" />
     <File Path="LICENSE" />

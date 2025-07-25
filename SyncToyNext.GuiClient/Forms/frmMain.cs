@@ -58,15 +58,24 @@ namespace SyncToyNext.GuiClient
             }
 
             var files = repository.GetLocalFiles();
+            RefreshLocalFolderBrowserControls(files);
+
+        }
+
+        private void RefreshLocalFolderBrowserControls(IEnumerable<string> files)
+        {
+            if (repository == null) return;
 
             fileBrowserLocal.AllItemPaths = files;
             fileBrowserLocal.RootPath = repository.LocalPath;
             fileBrowserLocal.NavigateToPath(".");
             fileBrowserLocal.RefreshItems();
-            txtLocalSyncPoint.Text = repository.LocalSyncPointID;
+
+            if (repository.LatestSyncPoint != null)
+                txtLocalSyncPoint.Text = repository.LatestSyncPoint.ToString();
         }
 
-        private void RefreshRemoteFolderBrowser()
+        private void RefreshRemoteFolderBrowserAfterInit()
         {
             if (repository == null || String.IsNullOrEmpty(repository.LocalPath))
             {
@@ -86,7 +95,9 @@ namespace SyncToyNext.GuiClient
             fileBrowserRemote.RootPath = string.Empty;
             fileBrowserRemote.NavigateToPath(".");
             fileBrowserRemote.RefreshItems();
-            txtLocalSyncPoint.Text = repository.LocalSyncPointID;
+
+            if (currentSyncPoint != null)
+                txtLocalSyncPoint.Text = repository.LatestSyncPoint.ToString();
         }
 
         private void ResetClientState()
@@ -104,7 +115,9 @@ namespace SyncToyNext.GuiClient
             {
                 if (browserFolders.ShowDialog(this) == DialogResult.OK)
                 {
+                    ResetClientState();
                     var localPath = browserFolders.SelectedPath;
+                    bool neededToCreateNewRepo = false;
 
                     try
                     {
@@ -121,18 +134,39 @@ namespace SyncToyNext.GuiClient
                                 throw new InvalidOperationException("Remote must be specified");
                             }
 
-                            repository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
+                            neededToCreateNewRepo = true;
+
+                            ExecuteAsyncTask(() =>
+                            {
+                                repository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
+                            })?.ContinueWith((task) => {
+                                this.Invoke(() => {
+                                    if (repository == null) return;
+
+                                    RefreshLocalFolderBrowser();
+                                    RefreshRemoteFolderBrowserAfterInit();
+                                    RefreshSyncPoints(repository.SyncPoints);
+                                });
+                            });
                         }
                         else
                         {
                             ResetClientState();
-                            return;
+                        }
+                    } finally
+                    {
+                        if (!neededToCreateNewRepo)
+                        {
+                            if (repository != null)
+                            {
+                                RefreshLocalFolderBrowser();
+                                RefreshRemoteFolderBrowserAfterInit();
+                                RefreshSyncPoints(repository.SyncPoints);
+                            }
                         }
                     }
 
-                    RefreshLocalFolderBrowser();
-                    RefreshRemoteFolderBrowser();
-                    RefreshSyncPoints(repository.SyncPoints);
+                    
                 }
             }
             catch (Exception ex)
@@ -140,6 +174,33 @@ namespace SyncToyNext.GuiClient
                 ResetClientState();
                 UserIO.Error(ex.Message);
             }
+        }
+
+        private Task? ExecuteAsyncTask(Action task)
+        {
+            var progressForm = frmProgress.ShowProgressDialog(this);
+            Repository.UpdateProgressHandler = progressForm.UpdateHandler;
+            var result = Task.Run(task).ContinueWith((task) =>
+            {
+                Repository.UpdateProgressHandler = null;
+                if (progressForm.InvokeRequired)
+                {
+                    progressForm.Invoke(() =>
+                    {
+                        Repository.UpdateProgressHandler = null;
+                        progressForm.Close();
+                        progressForm.Dispose();
+                    });
+                }
+                else
+                {
+                    Repository.UpdateProgressHandler = null;
+                    progressForm.Close();
+                    progressForm.Dispose();
+                }
+            });
+
+            return result;
         }
 
         private void RefreshSyncPoints(IReadOnlyList<SyncPoint> syncPoints)
@@ -157,7 +218,7 @@ namespace SyncToyNext.GuiClient
 
                 if (syncPoints.Count > 0) comboSyncPoints.SelectedIndex = 0;
 
-                txtLocalSyncPoint.Text = repository.LocalSyncPointID;
+                txtLocalSyncPoint.Text = syncPoints.First(sp => sp.SyncPointId == repository.LocalSyncPointID).ToString();
             }
             catch (Exception ex)
             {
@@ -275,8 +336,9 @@ namespace SyncToyNext.GuiClient
         private void OpenRemoteItem(SyncPointEntry selectedItem)
         {
             if (repository == null) return;
+            if (currentSyncPoint == null) return;
 
-            string tempCopyPath = repository.GetTempCopyOfFile(selectedItem);
+            string tempCopyPath = repository.GetTempCopyOfFile(selectedItem, currentSyncPoint);
 
             if (!TryOpenInBuiltInEditor(tempCopyPath))
             {
@@ -294,12 +356,20 @@ namespace SyncToyNext.GuiClient
                     if (result == null) return;
 
                     UserIO.Message("Starting push to remote location.");
-                    repository.Push(result.ID, result.Description);
-                    RefreshSyncPoints(repository.SyncPoints);
 
-                    UserIO.Message("Completed push to remote location.");
-
-                    ShowLog();
+                    ExecuteAsyncTask(() =>
+                    {
+                        repository.Push(result.ID, result.Description);
+                    })?.ContinueWith((task) =>
+                    {
+                        this.Invoke(() =>
+                        {
+                            RefreshSyncPoints(repository.SyncPoints);
+                            Repository.UpdateProgressHandler = null;
+                            UserIO.Message("Completed push to remote location.");
+                            ShowLog();
+                        });
+                    });
 
                 }
                 catch (Exception ex)
@@ -345,11 +415,15 @@ namespace SyncToyNext.GuiClient
                     var selectedSyncPoint = comboSyncPoints.SelectedItem as SyncPoint;
 
                     if (selectedSyncPoint != null && repository != null)
-                        repository.Restore(selectedSyncPoint.SyncPointId);
-
-                    RefreshLocalFolderBrowser();
-
-                    ShowLog();
+                    {
+                        ExecuteAsyncTask(() => { repository.Restore(selectedSyncPoint.SyncPointId); })?.ContinueWith((task) =>
+                        {
+                            this.Invoke(() => {
+                                RefreshLocalFolderBrowser();
+                                ShowLog();
+                            });
+                        });
+                    }
                 }
             }
             catch (Exception ex)
@@ -382,8 +456,10 @@ namespace SyncToyNext.GuiClient
                     return;
                 }
 
+                if (currentSyncPoint == null) return;
+
                 var localPath = Path.Combine(repository.LocalPath, selectedItem.SourcePath);
-                var tempRemotePath = repository.GetTempCopyOfFile(selectedItem);
+                var tempRemotePath = repository.GetTempCopyOfFile(selectedItem, currentSyncPoint);
 
                 TryOpenInBuiltInDiffer(localPath, tempRemotePath);
             }
@@ -428,7 +504,7 @@ namespace SyncToyNext.GuiClient
         {
             var result = frmClone.ShowCloneDialog();
 
-            if(result.Result == Models.CloneResult.Completed)
+            if (result.Result == Models.CloneResult.Completed)
             {
                 try
                 {
@@ -436,13 +512,21 @@ namespace SyncToyNext.GuiClient
 
                     repository = new Repository(result.NewLocalPath);
                     RefreshLocalFolderBrowser();
-                    RefreshRemoteFolderBrowser();
+                    RefreshRemoteFolderBrowserAfterInit();
                     RefreshSyncPoints(repository.SyncPoints);
                 }
                 catch
                 {
                     MessageBox.Show("Something went wrong when opening the newly cloned local repo.");
                 }
+            }
+        }
+
+        private void btnInfo_Click(object sender, EventArgs e)
+        {
+            if(currentSyncPoint != null)
+            {
+                frmSyncPointDetails.ShowSyncPointDetailsDialog(currentSyncPoint, this);
             }
         }
     }

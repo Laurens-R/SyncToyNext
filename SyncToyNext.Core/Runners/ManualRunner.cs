@@ -12,6 +12,8 @@ namespace SyncToyNext.Core.Runners
 {
     public class ManualRunner
     {
+        public static Action<int, int, string>? UpdateProgressHandler = null;
+
         public static void Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "", bool isReferencePoint = false)
         {
             if (string.IsNullOrWhiteSpace(fromPath)
@@ -57,11 +59,13 @@ namespace SyncToyNext.Core.Runners
                 {
                     var zipFilePath = Path.Combine(toPath, syncPoint.SyncPointId, syncPointManager.SyncPointRoot.ZipFilename);
                     var zipFileSynchronizer = new ZipFileSynchronizer(zipFilePath, OverwriteOption.OnlyOverwriteIfNewer, false);
+                    zipFileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
                     zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
                 }
                 else
                 {
                     var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
+                    fileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
                     fileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
                 }
 
@@ -71,10 +75,12 @@ namespace SyncToyNext.Core.Runners
             if(toZip)
             {
                 var zipFileSynchronizer = new ZipFileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
+                zipFileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
                 zipFileSynchronizer.FullSynchronization(fromPath);
             } else
             {
                 var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
+                fileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
                 fileSynchronizer.FullSynchronization(fromPath);
             }
         }
