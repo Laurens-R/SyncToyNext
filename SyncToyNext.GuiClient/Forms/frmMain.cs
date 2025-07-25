@@ -148,19 +148,17 @@ namespace SyncToyNext.GuiClient
                         else
                         {
                             ResetClientState();
-
-                            RefreshLocalFolderBrowser();
-                            RefreshRemoteFolderBrowserAfterInit();
-                            RefreshSyncPoints(repository.SyncPoints);
-                            return;
                         }
                     } finally
                     {
                         if (!neededToCreateNewRepo)
                         {
-                            RefreshLocalFolderBrowser();
-                            RefreshRemoteFolderBrowserAfterInit();
-                            RefreshSyncPoints(repository.SyncPoints);
+                            if (repository != null)
+                            {
+                                RefreshLocalFolderBrowser();
+                                RefreshRemoteFolderBrowserAfterInit();
+                                RefreshSyncPoints(repository.SyncPoints);
+                            }
                         }
                     }
 
