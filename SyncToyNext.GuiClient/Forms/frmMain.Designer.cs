@@ -323,6 +323,7 @@
             Controls.Add(statusStrip);
             Controls.Add(mainSplitContainer);
             Controls.Add(menuMain);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuMain;
             Margin = new Padding(3, 2, 3, 2);
             Name = "frmMain";

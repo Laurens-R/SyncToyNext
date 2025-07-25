@@ -73,6 +73,7 @@
             ClientSize = new Size(866, 515);
             Controls.Add(btnClear);
             Controls.Add(txtLog);
+            FormBorderStyle = FormBorderStyle.SizableToolWindow;
             Name = "frmLog";
             Text = "Log";
             ResumeLayout(false);

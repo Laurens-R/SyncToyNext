@@ -167,6 +167,7 @@
             ClientSize = new Size(1473, 766);
             Controls.Add(listEntries);
             Controls.Add(groupGeneral);
+            FormBorderStyle = FormBorderStyle.SizableToolWindow;
             Name = "frmSyncPointDetails";
             Text = "SyncPoint Details";
             Load += frmSyncPointDetails_Load;
