@@ -325,13 +325,14 @@ namespace SyncToyNext.Core.SyncPoints
         /// <param name="selectedItem"></param>
         /// <returns>The path to the temporary location of the file.</returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public string GetTempCopyOfFile(SyncPointEntry selectedItem)
+        public string GetTempCopyOfFile(SyncPointEntry selectedItem, SyncPoint syncPoint)
         {
             var pathParts = selectedItem.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
             var relativePath = pathParts[0];
 
-            if (pathParts.Length > 0)
+            if (pathParts.Length > 1)
             {
+                //file is compressed
                 var remoteFolderPath = RemotePath;
 
                 if (remoteFolderPath == null) throw new InvalidOperationException("Remote folder path could not be retrieved");
@@ -354,12 +355,13 @@ namespace SyncToyNext.Core.SyncPoints
             }
             else
             {
+                //file is uncompressed
                 if (RemotePath == null)
                 {
                     throw new InvalidOperationException("Remote folder path is not set.");
                 }
 
-                var fullRemotePath = Path.Combine(RemotePath, relativePath);
+                var fullRemotePath = Path.Combine(RemotePath, syncPoint.SyncPointId, relativePath);
                 var tempPath = Path.Combine(TempPath, Path.GetFileName(relativePath));
                 File.Copy(fullRemotePath, tempPath);
                 return fullRemotePath;

@@ -284,8 +284,9 @@ namespace SyncToyNext.GuiClient
         private void OpenRemoteItem(SyncPointEntry selectedItem)
         {
             if (repository == null) return;
+            if (currentSyncPoint == null) return;
 
-            string tempCopyPath = repository.GetTempCopyOfFile(selectedItem);
+            string tempCopyPath = repository.GetTempCopyOfFile(selectedItem, currentSyncPoint);
 
             if (!TryOpenInBuiltInEditor(tempCopyPath))
             {
@@ -403,8 +404,10 @@ namespace SyncToyNext.GuiClient
                     return;
                 }
 
+                if (currentSyncPoint == null) return;
+
                 var localPath = Path.Combine(repository.LocalPath, selectedItem.SourcePath);
-                var tempRemotePath = repository.GetTempCopyOfFile(selectedItem);
+                var tempRemotePath = repository.GetTempCopyOfFile(selectedItem, currentSyncPoint);
 
                 TryOpenInBuiltInDiffer(localPath, tempRemotePath);
             }
