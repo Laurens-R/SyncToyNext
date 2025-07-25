@@ -221,7 +221,6 @@ namespace SyncToyNext.Core
             // Use a HashSet to track included restore targets
             HashSet<string> includedRestoreTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             
-
             foreach (var syncPoint in allRelevantSyncPoints)
             {
                 foreach (var entry in syncPoint.Entries)
@@ -230,15 +229,21 @@ namespace SyncToyNext.Core
                     // we know that this entry represents the most recent state of the file.
                     if (!includedRestoreTargets.Contains(entry.SourcePath))
                     {
-                        //if the entry does not exist in the current sync point, we add it
-                        result.Add(new SyncPointEntry
+                        //only add if the file has not been deleted.
+                        if (entry.EntryType != SyncPointEntryType.Deleted)
                         {
-                            SourcePath = entry.SourcePath,
-                            RelativeRemotePath = Path.Combine(entry.RelativeRemotePath),
-                            EntryType = entry.EntryType,
-                            SyncpointID = syncPoint.SyncPointId
-                        });
+                            //if the entry does not exist in the current sync point, we add it
+                            result.Add(new SyncPointEntry
+                            {
+                                SourcePath = entry.SourcePath,
+                                RelativeRemotePath = Path.Combine(entry.RelativeRemotePath),
+                                EntryType = entry.EntryType,
+                                SyncpointID = syncPoint.SyncPointId
+                            });
+                        }
 
+                        //we do include the file if it is deleted to prevent historical version from the files to appear
+                        //in the result set while it should appear as deleted.
                         includedRestoreTargets.Add(entry.SourcePath);
                     }
                 }
