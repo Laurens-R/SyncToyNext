@@ -109,7 +109,6 @@ namespace SyncToyNext.Core.Synchronizers
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
-            // Exclude 'synclogs' subfolder from sync
             var allFilesInSourcePath = FileHelpers.GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)

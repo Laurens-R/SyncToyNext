@@ -239,7 +239,7 @@ namespace SyncToyNext.Core.SyncPoints
                 //we use exactly the same syncpoint id as the latest syncpoint id from the remote which was cloned
                 //so we can refer back to it when merging.
                 repository.Push(latestSyncPoint.SyncPointId, $"Init push after clone from {otherRemotePath}", true);
-            } 
+            }
             else
             {
                 UserIO.Error("A clone from another remote requires that remote to have at least one syncpoint.");
@@ -332,7 +332,7 @@ namespace SyncToyNext.Core.SyncPoints
 
             if (pathParts.Length > 0)
             {
-                var remoteFolderPath = Path.GetDirectoryName(RemotePath);
+                var remoteFolderPath = RemotePath;
 
                 if (remoteFolderPath == null) throw new InvalidOperationException("Remote folder path could not be retrieved");
 

@@ -10,6 +10,7 @@ namespace SyncToyNext.GuiClient.Models
     {
         public string DisplayValue { get; set; } = string.Empty;
         public object? Value { get; set; } = null;
+        public bool IsFolder { get; set; } = false;
 
         public override string ToString()
         {

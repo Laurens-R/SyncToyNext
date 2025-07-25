@@ -31,6 +31,7 @@ namespace SyncToyNext.GuiClient.Forms
             progressBar.Maximum = max;
             progressBar.Value = current;
             lblStatusText.Text = message;
+            Application.DoEvents();
         }
     }
 }
