@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SyncToyNext.Core\SyncToyNext.Core.csproj" />
+    <ProjectReference Include="..\Stn.Core\Stn.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="SyncToyNext.config.json">
+    <None Update="Stn.config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

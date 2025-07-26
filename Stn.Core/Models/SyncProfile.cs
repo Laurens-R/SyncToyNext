@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace SyncToyNext.Core.Models
+namespace Stn.Core.Models
 {
     /// <summary>
     /// Represents a synchronization profile with a unique ID/Name, source path, and destination path.

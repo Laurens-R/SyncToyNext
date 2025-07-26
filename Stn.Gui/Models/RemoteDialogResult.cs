@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.GuiClient.Models
+namespace Stn.Gui.Models
 {
     public class RemoteDialogResult
     {

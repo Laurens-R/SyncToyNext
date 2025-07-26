@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core
+namespace Stn.Core
 {
     // <summary>
     /// JSON source generator context for trim-safe serialization.

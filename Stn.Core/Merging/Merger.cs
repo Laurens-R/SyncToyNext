@@ -1,15 +1,15 @@
 ﻿using DiffPlex;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using SyncToyNext.Core.Helpers;
-using SyncToyNext.Core.SyncPoints;
-using SyncToyNext.Core.UX;
+using Stn.Core.Helpers;
+using Stn.Core.SyncPoints;
+using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SyncToyNext.Core.Merging
+namespace Stn.Core.Merging
 {
     public enum TwoWayMergePolicy
     {

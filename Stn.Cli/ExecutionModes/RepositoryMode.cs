@@ -1,11 +1,11 @@
-﻿using SyncToyNext.Client.Helpers;
-using SyncToyNext.Core;
-using SyncToyNext.Core.SyncPoints;
-using SyncToyNext.Core.UX;
+﻿using Stn.Cli.Helpers;
+using Stn.Core;
+using Stn.Core.SyncPoints;
+using Stn.Core.UX;
 using System;
 using System.IO;
 
-namespace SyncToyNext.Client.ExecutionModes
+namespace Stn.Cli.ExecutionModes
 {
     internal class RepositoryMode
     {

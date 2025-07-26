@@ -37,9 +37,9 @@ Thumbs.db
 *.vssscc
 
 # Ignore self-contained publish output
-SyncToyNext.Client/bin/Release/net9.0/win-x64/publish/
-SyncToyNext.Client/bin/Release/net9.0/linux-x64/publish/
-SyncToyNext.Client/bin/Release/net9.0/osx-x64/publish/
+Stn.Cli/bin/Release/net9.0/win-x64/publish/
+Stn.Cli/bin/Release/net9.0/linux-x64/publish/
+Stn.Cli/bin/Release/net9.0/osx-x64/publish/
 
 #debugging stuff specific to local machine
 *.pdb

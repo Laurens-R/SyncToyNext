@@ -1,4 +1,4 @@
-namespace SyncToyNext.Core.Models
+namespace Stn.Core.Models
 {
     /// <summary>
     /// Specifies how file overwrites are handled during synchronization.

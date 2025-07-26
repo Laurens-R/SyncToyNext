@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace SyncToyNext.GuiClient.Forms
+namespace Stn.Gui.Forms
 {
     public partial class frmProgress : Form
     {

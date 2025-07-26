@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SyncToyNext.Client.Helpers
+namespace Stn.Cli.Helpers
 {
     /// <summary>
     /// Parses and stores command line arguments as key-value pairs, supporting both flags and string parameters.

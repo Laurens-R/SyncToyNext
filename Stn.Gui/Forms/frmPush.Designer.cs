@@ -1,4 +1,4 @@
-﻿namespace SyncToyNext.GuiClient
+﻿namespace Stn.Gui
 {
     partial class frmPush
     {

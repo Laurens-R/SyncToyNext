@@ -1,6 +1,6 @@
-using SyncToyNext.Core.Helpers;
-using SyncToyNext.Core.Models;
-using SyncToyNext.Core.UX;
+using Stn.Core.Helpers;
+using Stn.Core.Models;
+using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +8,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Xml.Schema;
 
-namespace SyncToyNext.Core.Synchronizers
+namespace Stn.Core.Synchronizers
 {
     /// <summary>
     /// Provides file synchronization logic for writing files into a Zip archive.

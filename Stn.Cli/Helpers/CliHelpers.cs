@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SyncToyNext.Client.Helpers
+namespace Stn.Cli.Helpers
 {
     internal class CliHelpers
     {

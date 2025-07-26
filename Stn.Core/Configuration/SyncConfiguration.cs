@@ -1,11 +1,11 @@
-using SyncToyNext.Core.Models;
+using Stn.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SyncToyNext.Core
+namespace Stn.Core
 {
     /// <summary>
     /// JSON source generator context for trim-safe serialization.
@@ -39,7 +39,7 @@ namespace SyncToyNext.Core
         public static string GetDefaultConfigPath()
         {
             var exeDir = AppContext.BaseDirectory;
-            return Path.Combine(exeDir, "SyncToyNext.config.json");
+            return Path.Combine(exeDir, "Stn.config.json");
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace SyncToyNext.Core
         /// </summary>
         public static void WriteCleanShutdownMarker()
         {
-            var markerPath = Path.Combine(AppContext.BaseDirectory, "SyncToyNext.clean_shutdown");
+            var markerPath = Path.Combine(AppContext.BaseDirectory, "Stn.clean_shutdown");
             File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
         }
 
@@ -78,7 +78,7 @@ namespace SyncToyNext.Core
         /// </summary>
         public static bool WasCleanShutdown()
         {
-            var markerPath = Path.Combine(AppContext.BaseDirectory, "SyncToyNext.clean_shutdown");
+            var markerPath = Path.Combine(AppContext.BaseDirectory, "Stn.clean_shutdown");
             return File.Exists(markerPath);
         }
 
@@ -87,7 +87,7 @@ namespace SyncToyNext.Core
         /// </summary>
         public static void RemoveCleanShutdownMarker()
         {
-            var markerPath = Path.Combine(AppContext.BaseDirectory, "SyncToyNext.clean_shutdown");
+            var markerPath = Path.Combine(AppContext.BaseDirectory, "Stn.clean_shutdown");
             if (File.Exists(markerPath))
                 File.Delete(markerPath);
         }

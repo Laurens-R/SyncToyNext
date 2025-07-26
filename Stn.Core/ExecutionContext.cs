@@ -1,12 +1,12 @@
-using SyncToyNext.Core.Synchronizers;
-using SyncToyNext.Core.Models;
+using Stn.Core.Synchronizers;
+using Stn.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SyncToyNext.Core.UX;
-using SyncToyNext.Core.Runners;
+using Stn.Core.UX;
+using Stn.Core.Runners;
 
-namespace SyncToyNext.Core
+namespace Stn.Core
 {
     /// <summary>
     /// Represents the root context for the sync application, managing configuration, watchers, and manual syncs.

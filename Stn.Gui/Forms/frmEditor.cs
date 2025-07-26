@@ -10,7 +10,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SyncToyNext.GuiClient.Forms
+namespace Stn.Gui.Forms
 {
     public partial class frmEditor : Form
     {

@@ -1,5 +1,5 @@
-﻿using SyncToyNext.Client.ExecutionModes;
-using SyncToyNext.Client.Helpers;
+﻿using Stn.Cli.ExecutionModes;
+using Stn.Cli.Helpers;
 using System;
 
 // Print banner with version

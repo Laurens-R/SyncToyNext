@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core.Helpers
+namespace Stn.Core.Helpers
 {
     public class IgnoreHelper
     {

@@ -1,4 +1,4 @@
-﻿using SyncToyNext.GuiClient.Models;
+﻿using Stn.Gui.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SyncToyNext.GuiClient
+namespace Stn.Gui
 {
     public partial class FileBrowserListView : UserControl
     {

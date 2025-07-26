@@ -1,9 +1,9 @@
-﻿using SyncToyNext.Client.Helpers;
-using SyncToyNext.Core.Runners;
-using SyncToyNext.Core.UX;
+﻿using Stn.Cli.Helpers;
+using Stn.Core.Runners;
+using Stn.Core.UX;
 using System;
 
-namespace SyncToyNext.Client.ExecutionModes
+namespace Stn.Cli.ExecutionModes
 {
     internal class ManualMode
     {

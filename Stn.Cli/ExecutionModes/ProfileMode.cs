@@ -1,4 +1,4 @@
-﻿using SyncToyNext.Client.Helpers;
+﻿using Stn.Cli.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Client.ExecutionModes
+namespace Stn.Cli.ExecutionModes
 {
     internal class ProfileMode
     {
@@ -23,7 +23,7 @@ namespace SyncToyNext.Client.ExecutionModes
             }
 
             var configPath = cmdArgs.Get("config");
-            var syncContext = configPath != null ? new SyncToyNext.Core.ExecutionContext(configPath, strictMode, false) : new SyncToyNext.Core.ExecutionContext(null, strictMode, false);
+            var syncContext = configPath != null ? new Stn.Core.ExecutionContext(configPath, strictMode, false) : new Stn.Core.ExecutionContext(null, strictMode, false);
             syncContext.Start();
             syncContext.ManualSyncProfile(profileName);
             syncContext.Shutdown();
@@ -39,10 +39,10 @@ namespace SyncToyNext.Client.ExecutionModes
 
             if (forceFullSync)
             {
-                SyncToyNext.Core.SyncConfiguration.RemoveCleanShutdownMarker();
+                Stn.Core.SyncConfiguration.RemoveCleanShutdownMarker();
             }
 
-            var syncContext = configPath != null ? new SyncToyNext.Core.ExecutionContext(configPath, strictMode) : new SyncToyNext.Core.ExecutionContext(null, strictMode);
+            var syncContext = configPath != null ? new Stn.Core.ExecutionContext(configPath, strictMode) : new Stn.Core.ExecutionContext(null, strictMode);
             syncContext.Start();
 
             Console.WriteLine("SyncToyNext is running. Press 'q' to quit.");

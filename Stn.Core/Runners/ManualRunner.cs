@@ -1,6 +1,6 @@
-﻿using SyncToyNext.Core.Models;
-using SyncToyNext.Core.Synchronizers;
-using SyncToyNext.Core.UX;
+﻿using Stn.Core.Models;
+using Stn.Core.Synchronizers;
+using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core.Runners
+namespace Stn.Core.Runners
 {
     public class ManualRunner
     {

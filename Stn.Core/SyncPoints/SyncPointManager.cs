@@ -1,11 +1,11 @@
-﻿using SyncToyNext.Core.UX;
+﻿using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace SyncToyNext.Core
+namespace Stn.Core
 {
     public enum SyncPointRootLoadResult
     {

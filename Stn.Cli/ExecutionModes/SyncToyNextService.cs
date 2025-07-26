@@ -1,13 +1,13 @@
 using System;
 using System.ServiceProcess;
 using System.Threading;
-using SyncToyNext.Client.Helpers;
-using SyncToyNext.Core;
+using Stn.Cli.Helpers;
+using Stn.Core;
 
-namespace SyncToyNext.Client.ExecutionModes
+namespace Stn.Cli.ExecutionModes
 {
     /// <summary>
-    /// Windows Service wrapper for SyncToyNext.
+    /// Windows Service wrapper for Stn.
     /// </summary>
     public class SyncToyNextService : ServiceBase
     {

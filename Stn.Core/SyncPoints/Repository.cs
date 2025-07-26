@@ -1,6 +1,6 @@
-﻿using SyncToyNext.Core.Helpers;
-using SyncToyNext.Core.Runners;
-using SyncToyNext.Core.UX;
+﻿using Stn.Core.Helpers;
+using Stn.Core.Runners;
+using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core.SyncPoints
+namespace Stn.Core.SyncPoints
 {
     public class Repository
     {

@@ -1,11 +1,11 @@
-using SyncToyNext.Core;
-using SyncToyNext.Core.Helpers;
-using SyncToyNext.Core.SyncPoints;
-using SyncToyNext.Core.UX;
-using SyncToyNext.GuiClient.Forms;
+using Stn.Core;
+using Stn.Core.Helpers;
+using Stn.Core.SyncPoints;
+using Stn.Core.UX;
+using Stn.Gui.Forms;
 using System.Reflection;
 
-namespace SyncToyNext.GuiClient
+namespace Stn.Gui
 {
     public partial class frmMain : Form
     {

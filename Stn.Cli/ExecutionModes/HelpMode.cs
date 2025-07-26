@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SyncToyNext.Client.ExecutionModes
+namespace Stn.Cli.ExecutionModes
 {
     internal class HelpMode
     {

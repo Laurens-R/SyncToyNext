@@ -1,4 +1,4 @@
-﻿using SyncToyNext.Core.UX;
+﻿using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SyncToyNext.Core.Synchronizers
+namespace Stn.Core.Synchronizers
 {
     public abstract class Synchronizer
     {

@@ -1,6 +1,6 @@
-using SyncToyNext.Core.Models;
-using SyncToyNext.Core.Synchronizers;
-using SyncToyNext.Core.UX;
+using Stn.Core.Models;
+using Stn.Core.Synchronizers;
+using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
 
-namespace SyncToyNext.Core.Runners
+namespace Stn.Core.Runners
 {
     enum SyncTypes
     {

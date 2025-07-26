@@ -1,7 +1,7 @@
-﻿using SyncToyNext.Client.Helpers;
+﻿using Stn.Cli.Helpers;
 using System;
 
-namespace SyncToyNext.Client.ExecutionModes
+namespace Stn.Cli.ExecutionModes
 {
     internal class ServiceMode
     {

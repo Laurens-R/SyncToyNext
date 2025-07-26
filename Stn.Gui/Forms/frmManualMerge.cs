@@ -1,4 +1,4 @@
-﻿using SyncToyNext.Core.Merging;
+﻿using Stn.Core.Merging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SyncToyNext.GuiClient.Forms
+namespace Stn.Gui.Forms
 {
     public partial class frmManualMerge : Form
     {

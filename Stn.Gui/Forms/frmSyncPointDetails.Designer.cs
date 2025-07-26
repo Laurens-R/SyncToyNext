@@ -1,4 +1,4 @@
-﻿namespace SyncToyNext.GuiClient.Forms
+﻿namespace Stn.Gui.Forms
 {
     partial class frmSyncPointDetails
     {

@@ -1,4 +1,4 @@
-﻿namespace SyncToyNext.Core
+﻿namespace Stn.Core
 {
     public enum SyncPointEntryType
     {
