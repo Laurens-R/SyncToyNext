@@ -1,39 +1,30 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
-using System;
 
 namespace Stn.GuiNext;
 
-public partial class PopupControl : UserControl
+public partial class PopupControl : ContentControl
 {
-    public static readonly StyledProperty<bool> IsOpenProperty =
-        AvaloniaProperty.Register<PopupControl, bool>(nameof(IsOpen), true);
+    public static readonly StyledProperty<string> TitleProperty =
+    AvaloniaProperty.Register<PopupControl, string>(nameof(Title), "Modal Dialog");
 
-    public bool IsOpen
+    public string Title
     {
-        get => GetValue(IsOpenProperty);
-        set => SetValue(IsOpenProperty, value);
+        get => GetValue(TitleProperty);
+        set => SetValue(TitleProperty, value);
+    }
+
+    public static readonly StyledProperty<bool> ShowPopupProperty =
+    AvaloniaProperty.Register<PopupControl, bool>(nameof(ShowPopup), true);
+
+    public bool ShowPopup {
+        get => GetValue(ShowPopupProperty);
+        set => SetValue(ShowPopupProperty, value);
     }
 
     public PopupControl()
     {
         InitializeComponent();
-
-        this.GetObservable(IsOpenProperty).Subscribe(new IsOpenObserver(this));
-    }
-
-    private class IsOpenObserver : IObserver<bool>
-    {
-        private readonly PopupControl _parent;
-        public IsOpenObserver(PopupControl parent) => _parent = parent;
-
-        public void OnNext(bool value)
-        {
-            _parent.IsVisible = value ? true : false;
-        }
-
-        public void OnError(Exception error) { }
-        public void OnCompleted() { }
     }
 }

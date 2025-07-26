@@ -1,21 +1,17 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="clr-namespace:Stn.GuiNext.ViewModels"
-			 xmlns:controls="clr-namespace:Stn.GuiNext"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Stn.GuiNext.Views.MainView"
-             x:DataType="vm:MainViewModel">
-  <Design.DataContext>
-    <!-- This only sets the DataContext for the previewer in an IDE,
-         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-    <vm:MainViewModel />
-  </Design.DataContext>
-
+             xmlns:controls="clr-namespace:Stn.GuiNext"
+             x:Class="Stn.GuiNext.Views.MainView">
 	<Grid>
-		<DockPanel>
-			<Menu DockPanel.Dock="Top" Background="#ddd" BorderBrush="#999" BorderThickness="0, 0, 0, 1">
+		
+		<Grid>
+
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="*" />
+			</Grid.RowDefinitions>
+			
+			<Menu Grid.Row="0" Background="#ddd" BorderBrush="#999" BorderThickness="0, 0, 0, 1">
 				<MenuItem Header="_File">
 					<MenuItem Header="_Open local repository"/>
 					<MenuItem Header="_Clone from repository"/>
@@ -23,52 +19,38 @@
 					<MenuItem Header="_Exit"/>
 				</MenuItem>
 			</Menu>
-			<Grid DockPanel.Dock="Top" Margin="10">
+			
+			<Grid Grid.Row="1" Margin="10">
+				
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="1*" />
 					<ColumnDefinition Width="1*" />
 				</Grid.ColumnDefinitions>
-
+				
 				<Grid.RowDefinitions>
 					<RowDefinition Height="Auto" />
 					<RowDefinition Height="Auto" />
 					<RowDefinition Height="*" />
 				</Grid.RowDefinitions>
-
+				
 				<DockPanel Grid.Row="0" Grid.Column="0">
 					<Label FontSize="16" FontWeight="Bold" Margin="4" DockPanel.Dock="Left">Local</Label>
 					<Rectangle Height="1" Fill="DarkGray" VerticalAlignment="Center" Margin="5,0,10,0"/>
 				</DockPanel>
-
+				
 				<DockPanel Grid.Row="0" Grid.Column="1">
 					<Label FontSize="16" FontWeight="Bold" Margin="4" DockPanel.Dock="Left">Remote</Label>
 					<Rectangle Height="1" Fill="DarkGray" VerticalAlignment="Center" Margin="5,0,10,0"/>
 				</DockPanel>
-
-				<Border
-					BorderThickness="1"
-					BorderBrush="Gray"
-					CornerRadius="8"
-					Grid.Row="1"
-					Grid.Column="0"
-					Padding="6"
-					Margin="8"
-					Background="#ddd">
+				
+				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="0" Padding="6" Margin="8" Background="#ddd">
 					<DockPanel>
 						<Label VerticalContentAlignment="Center">SyncPoint</Label>
 						<Label VerticalContentAlignment="Center" Content="2303033898"/>
 					</DockPanel>
 				</Border>
-
-				<Border
-					BorderThickness="1"
-					BorderBrush="Gray"
-					CornerRadius="8"
-					Grid.Row="1"
-					Grid.Column="1"
-					Padding="6"
-					Margin="8"
-					Background="#ddd">
+				
+				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="1" Padding="6" Margin="8" Background="#ddd">
 					<DockPanel >
 						<Label VerticalContentAlignment="Center">SyncPoint</Label>
 						<ComboBox CornerRadius="8" Background="Transparent" SelectedIndex="0" MaxDropDownHeight="100" BorderThickness="0" HorizontalAlignment="Stretch" Margin="10, 4, 0, 0">
@@ -84,17 +66,13 @@
 						</ComboBox>
 					</DockPanel>
 				</Border>
-
+				
 				<controls:FileBrowserControl x:Name="localFileBrowser" Grid.Column="0" Grid.Row="2" VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" Margin="8"/>
 				<controls:FileBrowserControl x:Name="remoteFileBrowser" Grid.Column="1" Grid.Row="2" VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" Margin="8"/>
-			
 			</Grid>
-		
-		</DockPanel>
-		<controls:PopupControl IsOpen="True">
-			
-				<TextBlock Text="This is a popup!" FontSize="18" Margin="0,0,0,12"/>
-
+		</Grid>
+		<controls:PopupControl Title="Testing" ShowPopup="True">
+			<controls:FileBrowserControl VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" Margin="8"/>
 		</controls:PopupControl>
 	</Grid>
 	

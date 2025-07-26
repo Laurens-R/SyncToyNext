@@ -85,6 +85,11 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
         InitializeComponent();
         DataContext = this;
         browserGrid.DoubleTapped += BrowserGrid_DoubleTapped;
+        
+        //just temp: we can use this to do file dialogs etc.
+        var toplevel = TopLevel.GetTopLevel(this);
+        
+
     }
 
     private void BrowserGrid_DoubleTapped(object? sender, TappedEventArgs e)

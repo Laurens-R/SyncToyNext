@@ -1,25 +1,44 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Stn.GuiNext.PopupControl">
+<ContentControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:local="clr-namespace:Stn.GuiNext"
+    x:Class="Stn.GuiNext.PopupControl"
+	x:DataType="local:PopupControl"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch">
+	<ContentControl.Template>
+		<ControlTemplate>
+			<Grid IsVisible="{TemplateBinding ShowPopup}">
+				<Border Background="#000000"
+						Opacity="160"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"/>
+				<Border CornerRadius="8"
+                        BoxShadow="0 4 16 0 #40000000"
+                        Width="800"
+                        Height="400"
+                        Background="White"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+						</Grid.ColumnDefinitions>
 
-	<Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-		<!-- Blocking background -->
-		<Border Background="#80000000"
-				HorizontalAlignment="Stretch"
-				VerticalAlignment="Stretch"/>
-		<!-- Centered popup panel -->
-		<Border Background="White"
-				CornerRadius="8"
-				BoxShadow="0 4 16 0 #40000000"
-				Padding="24"
-				HorizontalAlignment="Center"
-				VerticalAlignment="Center"
-				MinWidth="500"
-				MinHeight="250">
-			<ContentPresenter Content="{Binding Content, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-		</Border>
-	</Grid>
-</UserControl>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto" />
+							<RowDefinition Height="*" />
+						</Grid.RowDefinitions>
+						<Label Content="{TemplateBinding Title}" Margin="12" FontSize="18" FontWeight="Bold" Grid.Row="0"/>
+						<ContentPresenter Grid.Row="1"
+							Content="{TemplateBinding Content}"
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Stretch"
+							Padding="12"/>
+					</Grid>
+					
+				</Border>
+			</Grid>
+		</ControlTemplate>
+	</ContentControl.Template>
+</ContentControl>
