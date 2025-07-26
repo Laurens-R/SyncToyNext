@@ -21,7 +21,7 @@
     <File Path="Documentation/ARCHITECTURE.md" />
     <File Path="Documentation/DEBUGGING.md" />
   </Folder>
-  <Project Path="SyncToyNext.Client/SyncToyNext.Client.csproj" />
-  <Project Path="SyncToyNext.Core/SyncToyNext.Core.csproj" />
-  <Project Path="SyncToyNext.GuiClient/SyncToyNext.GuiClient.csproj" Id="1918028a-8c21-4916-9a7b-55b3b6125b2b" />
+  <Project Path="Stn.Cli/Stn.Cli.csproj" />
+  <Project Path="Stn.Core/Stn.Core.csproj" />
+  <Project Path="Stn.Gui/Stn.Gui.csproj" Id="1918028a-8c21-4916-9a7b-55b3b6125b2b" />
 </Solution>

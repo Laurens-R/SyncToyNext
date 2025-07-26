@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SyncToyNext.Core\SyncToyNext.Core.csproj" />
+    <ProjectReference Include="..\SyncToyNext.Core\Stn.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
