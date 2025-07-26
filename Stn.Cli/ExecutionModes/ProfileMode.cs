@@ -23,7 +23,7 @@ namespace Stn.Cli.ExecutionModes
             }
 
             var configPath = cmdArgs.Get("config");
-            var syncContext = configPath != null ? new Stn.Core.ExecutionContext(configPath, strictMode, false) : new Stn.Core.ExecutionContext(null, strictMode, false);
+            var syncContext = configPath != null ? new Stn.Core.Execution.ExecutionContext(configPath, strictMode, false) : new Stn.Core.Execution.ExecutionContext(null, strictMode, false);
             syncContext.Start();
             syncContext.ManualSyncProfile(profileName);
             syncContext.Shutdown();
@@ -42,7 +42,7 @@ namespace Stn.Cli.ExecutionModes
                 Stn.Core.SyncConfiguration.RemoveCleanShutdownMarker();
             }
 
-            var syncContext = configPath != null ? new Stn.Core.ExecutionContext(configPath, strictMode) : new Stn.Core.ExecutionContext(null, strictMode);
+            var syncContext = configPath != null ? new Stn.Core.Execution.ExecutionContext(configPath, strictMode) : new Stn.Core.Execution.ExecutionContext(null, strictMode);
             syncContext.Start();
 
             Console.WriteLine("SyncToyNext is running. Press 'q' to quit.");

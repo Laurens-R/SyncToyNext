@@ -1,4 +1,4 @@
-﻿using Stn.Core.Models;
+﻿using Stn.Core.Synchronization;
 using Stn.Core.Synchronizers;
 using Stn.Core.UX;
 using System;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Stn.Core.Runners
+namespace Stn.Core.Execution
 {
     public class ManualRunner
     {

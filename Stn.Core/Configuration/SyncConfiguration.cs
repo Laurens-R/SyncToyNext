@@ -1,4 +1,4 @@
-using Stn.Core.Models;
+using Stn.Core.Synchronization;
 using System;
 using System.Collections.Generic;
 using System.IO;

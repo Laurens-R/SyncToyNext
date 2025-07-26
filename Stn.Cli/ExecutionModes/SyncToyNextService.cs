@@ -2,7 +2,6 @@ using System;
 using System.ServiceProcess;
 using System.Threading;
 using Stn.Cli.Helpers;
-using Stn.Core;
 
 namespace Stn.Cli.ExecutionModes
 {
@@ -11,7 +10,7 @@ namespace Stn.Cli.ExecutionModes
     /// </summary>
     public class SyncToyNextService : ServiceBase
     {
-        private Core.ExecutionContext? _syncContext;
+        private Core.Execution.ExecutionContext? _syncContext;
         private string? _configPath;
 
         public SyncToyNextService(string? configPath = null)
@@ -30,7 +29,7 @@ namespace Stn.Cli.ExecutionModes
                 var cmdArgs = new CommandLineArguments(args);
                 _configPath = cmdArgs.Get("config");
             }
-            _syncContext = _configPath != null ? new Core.ExecutionContext(_configPath) : new Core.ExecutionContext();
+            _syncContext = _configPath != null ? new Core.Execution.ExecutionContext(_configPath) : new Core.Execution.ExecutionContext();
             _syncContext.Start();
         }
 

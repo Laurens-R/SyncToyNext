@@ -1,12 +1,11 @@
 using Stn.Core.Synchronizers;
-using Stn.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Stn.Core.UX;
-using Stn.Core.Runners;
+using Stn.Core.Synchronization;
 
-namespace Stn.Core
+namespace Stn.Core.Execution
 {
     /// <summary>
     /// Represents the root context for the sync application, managing configuration, watchers, and manual syncs.

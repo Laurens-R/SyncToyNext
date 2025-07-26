@@ -1,4 +1,4 @@
-namespace Stn.Core.Models
+namespace Stn.Core.Synchronization
 {
     /// <summary>
     /// Specifies how file overwrites are handled during synchronization.

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Stn.Core.Helpers
+namespace Stn.Core.IO
 {
     public class IgnoreHelper
     {

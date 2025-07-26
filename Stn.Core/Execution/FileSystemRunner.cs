@@ -1,4 +1,4 @@
-using Stn.Core.Models;
+using Stn.Core.Synchronization;
 using Stn.Core.Synchronizers;
 using Stn.Core.UX;
 using System;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
 
-namespace Stn.Core.Runners
+namespace Stn.Core.Execution
 {
     enum SyncTypes
     {

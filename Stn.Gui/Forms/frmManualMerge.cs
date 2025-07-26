@@ -1,4 +1,4 @@
-﻿using Stn.Core.Merging;
+﻿using Stn.Core.SyncPoints.Merging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

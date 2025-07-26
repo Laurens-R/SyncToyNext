@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Stn.Core.Helpers
+namespace Stn.Core.IO
 {
     public class FileHelpers
     {
@@ -168,7 +168,7 @@ namespace Stn.Core.Helpers
                     using var sourceFileStream = File.OpenRead(localFilePath);
                     using var zipEntryStream = remoteZipEntry.Open();
 
-                    bool areDifferent = FileHelpers.AreFirst4KDifferent(sourceFileStream, zipEntryStream);
+                    bool areDifferent = AreFirst4KDifferent(sourceFileStream, zipEntryStream);
 
                     if (areDifferent)
                     {
@@ -177,8 +177,8 @@ namespace Stn.Core.Helpers
                     else
                     {
                         zipEntryStream.Seek(0, SeekOrigin.Begin);
-                        var srcHash = FileHelpers.ComputeSHA256(localFilePath);
-                        string destHash = FileHelpers.ComputeSHA256(zipEntryStream);
+                        var srcHash = ComputeSHA256(localFilePath);
+                        string destHash = ComputeSHA256(zipEntryStream);
 
                         if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
                         {

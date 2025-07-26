@@ -24,4 +24,7 @@
   <Project Path="Stn.Cli/Stn.Cli.csproj" />
   <Project Path="Stn.Core/Stn.Core.csproj" />
   <Project Path="Stn.Gui/Stn.Gui.csproj" Id="1918028a-8c21-4916-9a7b-55b3b6125b2b" />
+  <Project Path="Stn.GuiNext.Core/Stn.GuiNext.Core.csproj" Id="41829c8c-5c37-4b89-8314-1a2351d89dee" />
+  <Project Path="Stn.GuiNext.Desktop/Stn.GuiNext.Desktop.csproj" />
+  <Project Path="Stn.GuiNext/Stn.GuiNext.csproj" />
 </Solution>

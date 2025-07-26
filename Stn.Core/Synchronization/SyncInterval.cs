@@ -1,4 +1,4 @@
-namespace Stn.Core.Models
+namespace Stn.Core.Synchronization
 {
     /// <summary>
     /// Specifies how and when a sync profile should be synchronized.

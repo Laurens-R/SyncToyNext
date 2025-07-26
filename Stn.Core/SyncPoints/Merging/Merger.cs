@@ -1,7 +1,7 @@
 ﻿using DiffPlex;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using Stn.Core.Helpers;
+using Stn.Core.IO;
 using Stn.Core.SyncPoints;
 using Stn.Core.UX;
 using System;
@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Stn.Core.Merging
+namespace Stn.Core.SyncPoints.Merging
 {
     public enum TwoWayMergePolicy
     {
