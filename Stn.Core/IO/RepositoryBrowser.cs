@@ -5,6 +5,7 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -96,12 +97,24 @@ namespace Stn.Core.IO
 
         private void PopulateEntriesAtPath(string path)
         {
+            _allEntries.Clear();
+
             if (RepositoryFocus == RepositoryBrowserFocus.Local)
             {
                 _files.Clear();
                 _directories.Clear();
                 _files.AddRange(_localBrowser.Files);
                 _directories.AddRange(_localBrowser.Directories);
+                
+                foreach(var file in _files)
+                {
+                    _allEntries.Add(file);
+                }
+
+                foreach(var directory in _directories)
+                {
+                    _allEntries.Add(directory);
+                }
             }
             else
             {
@@ -157,18 +170,21 @@ namespace Stn.Core.IO
                         }
                     }
 
-                    _files.Add(new FileBrowserFile()
+                    _files.Add(new FileBrowserEntry()
                     {
                         Name = Path.GetFileName(file.SourcePath),
                         Path = file.SourcePath,
-                        Extensionsion = Path.GetExtension(file.SourcePath),
+                        Extension = Path.GetExtension(file.SourcePath),
                         RelativePath = file.SourcePath,
                         Size = size,
                         Created = created,
                         LastModified = modified,
                         IsCompressed = isCompressed,
-                        ArchivePath = archivePath
+                        ArchivePath = archivePath,
+                        IsFile = true
                     });
+
+                    _allEntries.Add(_files.Last());
                 }
 
                 var entriesInSubfolder = entriesInRepository.Where(file =>
@@ -193,12 +209,13 @@ namespace Stn.Core.IO
                     var folderName = pathParts[0];
                     if(!subfolders.Contains(folderName))
                     {
-                        _directories.Add(new FileBrowserDirectory
+                        _directories.Add(new FileBrowserEntry
                         {
                             Name = folderName,
                             Path = _currentPath + '/' + folderName,
                             RelativePath = _currentPath + "/" + folderName
                         });
+                        _allEntries.Add(_directories.Last());
                     }
                 }
             }
@@ -211,8 +228,10 @@ namespace Stn.Core.IO
             _localBrowser = new FileSystemBrowser(_repository.LocalPath);
         }
 
-        public override void NavigateTo(FileBrowserDirectory directory)
+        public override void NavigateTo(FileBrowserEntry directory)
         {
+            if (directory.IsFile) return;
+
             if(RepositoryFocus == RepositoryBrowserFocus.Local)
             {
                 _localBrowser.NavigateTo(directory);

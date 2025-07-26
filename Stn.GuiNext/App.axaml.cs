@@ -1,9 +1,13 @@
 ﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml;
-
+using Avalonia.Media;
+using Avalonia.Styling;
 using Stn.GuiNext.ViewModels;
 using Stn.GuiNext.Views;
+using System.Runtime.InteropServices;
 
 namespace Stn.GuiNext;
 

@@ -9,6 +9,11 @@ namespace Stn.Core.IO
         public string RelativePath { get; set; } = string.Empty;
         public DateTime Created { get; set; } = DateTime.MinValue;
         public DateTime LastModified { get; set; } = DateTime.MinValue;
+        public string Extension { get; set; } = string.Empty;
+        public Int64 Size { get; set; } = 0;
+        public bool IsCompressed { get; set; } = false;
+        public string ArchivePath { get; set; } = string.Empty;
+        public bool IsFile { get; set; } = false;
 
         public bool IsValidCreated
         {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Stn.Core.IO
 {
@@ -13,35 +14,51 @@ namespace Stn.Core.IO
 
         private void Repopulate(string path)
         {
-            var filesInDirectory = Directory.GetFiles(path);
+            var options = new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                RecurseSubdirectories = false
+            };
+
+            var filesInDirectory = Directory.EnumerateFiles(path, "*.*", options);
 
             if (Directory.Exists(path))
             {
+                _allEntries.Clear();
                 _files.Clear();
                 _directories.Clear();
 
                 foreach (var file in filesInDirectory)
                 {
-                    var fileInfo = new FileInfo(file);
-
-                    _files.Add(new FileBrowserFile
+                    try
                     {
-                        Name = Path.GetFileName(file),
-                        Path = file,
-                        Created = fileInfo.CreationTimeUtc,
-                        LastModified = fileInfo.LastWriteTimeUtc,
-                        Extensionsion = fileInfo.Extension,
-                        Size = fileInfo.Length,
-                        RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, file)
-                    });
+                        var fileInfo = new FileInfo(file);
+
+                        _files.Add(new FileBrowserEntry
+                        {
+                            Name = Path.GetFileName(file),
+                            Path = file,
+                            Created = fileInfo.CreationTimeUtc,
+                            LastModified = fileInfo.LastWriteTimeUtc,
+                            Extension = fileInfo.Extension,
+                            Size = fileInfo.Length,
+                            RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, file),
+                            IsFile = true
+                        });
+                    } catch
+                    {
+                        continue;
+                    }
+
+                    _allEntries.Add(_files.Last());
                 }
 
-                var directoriesInDirectory = Directory.GetDirectories(path);
+                var directoriesInDirectory = Directory.EnumerateDirectories(path, "*", options);
                 foreach (var directory in directoriesInDirectory)
                 {
                     var directoryInfo = new DirectoryInfo(directory);
 
-                    _directories.Add(new FileBrowserDirectory
+                    _directories.Add(new FileBrowserEntry
                     {
                         Name = directoryInfo.Name,
                         Path = directoryInfo.FullName,
@@ -49,6 +66,8 @@ namespace Stn.Core.IO
                         LastModified = directoryInfo.LastWriteTimeUtc,
                         RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, directoryInfo.FullName)
                     });
+
+                    _allEntries.Add(_directories.Last());
                 }
             }
         }
@@ -114,8 +133,14 @@ namespace Stn.Core.IO
 
         public FileSystemBrowser(string path)
         {
-            var allFilesInDirectory = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
-            foreach (var file in allFilesInDirectory)
+            var options = new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                RecurseSubdirectories = false
+            };
+
+            var filesInDirectory = Directory.EnumerateFiles(path, "*.*", options);
+            foreach (var file in filesInDirectory)
             {
                 _allFiles.Add(file);
             }
@@ -148,10 +173,10 @@ namespace Stn.Core.IO
             if(_allFiles.Contains(e.FullPath))
             {
                 _allFiles.Remove(e.FullPath);
-                OnFileCreatedHandler?.Invoke(this, e);
+                OnFileRemovedHandler?.Invoke(this, e);
             } else
             {
-                OnDirectoryCreatedHandler?.Invoke(this, e);
+                OnDirectoryRemovedHandler?.Invoke(this, e);
             }
             _filesSystemChanges.Add(e);
         }
@@ -185,8 +210,9 @@ namespace Stn.Core.IO
             _filesSystemChanges.Add(e);
         }
 
-        public override void NavigateTo(FileBrowserDirectory directory)
+        public override void NavigateTo(FileBrowserEntry directory)
         {
+            if (directory.IsFile) return;
             CurrentPath = Path.Combine(CurrentPath, directory.Name);
         }
 

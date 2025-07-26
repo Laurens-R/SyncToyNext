@@ -10,7 +10,7 @@ namespace Stn.Core.IO
     {
         private ZipArchive _archive;
         private FileStream _fileStream;
-        private FileBrowserDirectory? _currentDirectory = null;
+        private FileBrowserEntry? _currentDirectory = null;
 
         //Root path should always be empty for zip archives (as the are always relative).
         public override string RootPath { 
@@ -45,6 +45,8 @@ namespace Stn.Core.IO
 
         private void PopulateEntriesAtPath(string path)
         {
+            _allEntries.Clear();
+
             //first process files
             var filesAtLevel = _archive.Entries.Where(entry =>
             {
@@ -63,16 +65,19 @@ namespace Stn.Core.IO
 
             foreach (var file in filesAtLevel)
             {
-                _files.Add(new FileBrowserFile
+                _files.Add(new FileBrowserEntry
                 {
                     Name = file.Name,
                     Path = file.FullName,
                     Created = file.LastWriteTime.UtcDateTime,
                     LastModified = file.LastWriteTime.UtcDateTime,
-                    Extensionsion = Path.GetExtension(file.FullName),
+                    Extension = Path.GetExtension(file.FullName),
                     RelativePath = file.FullName,
-                    Size = file.Length
+                    Size = file.Length,
+                    IsFile = true
                 });
+
+                _allEntries.Add(_files.Last());
             }
 
             //then process directories.
@@ -100,12 +105,14 @@ namespace Stn.Core.IO
                 {
                     directoriesAtLevel.Add(pathParts[0]);
 
-                    _directories.Add(new FileBrowserDirectory
+                    _directories.Add(new FileBrowserEntry
                     {
                         Name = pathParts[0],
                         Path = Path.Combine(path, pathParts[0]),
                         RelativePath = Path.Combine(path, pathParts[0])
                     });
+
+                    _allEntries.Add(_directories.Last());
                 }
             }
         }
@@ -121,8 +128,9 @@ namespace Stn.Core.IO
             _archive = new ZipArchive(_fileStream, ZipArchiveMode.Update);
         }
 
-        public override void NavigateTo(FileBrowserDirectory directory)
+        public override void NavigateTo(FileBrowserEntry directory)
         {
+            if (directory.IsFile) return;
             var newPath = CurrentPath + '/'+ directory.Name;
             if (!HasEntriesWithBasePath(newPath)) throw new IOException("No entries for subfolder.");
             _currentDirectory = directory;
