@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Stn.Core.IO
 {
-    public enum RepositoryMode
+    public enum RepositoryBrowserFocus
     {
         Local,
         Remote
@@ -21,7 +21,7 @@ namespace Stn.Core.IO
         private FileSystemBrowser _localBrowser;
         private Repository _repository;
         private SyncPoint _currentSyncPoint;
-        private RepositoryMode _repositoryMode;
+        private RepositoryBrowserFocus _repositoryFocus;
 
         public override string RootPath
         {
@@ -32,7 +32,7 @@ namespace Stn.Core.IO
 
             set
             {
-                if (Mode == RepositoryMode.Local)
+                if (RepositoryFocus == RepositoryBrowserFocus.Local)
                 {
                     _localBrowser.RootPath = value;
                 } else
@@ -47,7 +47,7 @@ namespace Stn.Core.IO
             get { return _currentPath; }
             set
             {
-                if (Mode == RepositoryMode.Local)
+                if (RepositoryFocus == RepositoryBrowserFocus.Local)
                 {
                     _localBrowser.CurrentPath = value;
                 }
@@ -67,14 +67,14 @@ namespace Stn.Core.IO
             }
         }
 
-        public RepositoryMode Mode
+        public RepositoryBrowserFocus RepositoryFocus
         {
-            get { return _repositoryMode; }
+            get { return _repositoryFocus; }
             set
             {
-                _repositoryMode = value;
+                _repositoryFocus = value;
 
-                if (_repositoryMode == RepositoryMode.Local)
+                if (_repositoryFocus == RepositoryBrowserFocus.Local)
                 {
                     RootPath = _repository.LocalPath;
                     CurrentPath = _repository.LocalPath;
@@ -86,9 +86,17 @@ namespace Stn.Core.IO
             }
         }
 
+        public IEnumerable<FileSystemEventArgs> LocalChangeHistory
+        {
+            get
+            {
+                return _localBrowser.ChangeHistory;
+            }
+        }
+
         private void PopulateEntriesAtPath(string path)
         {
-            if (Mode == RepositoryMode.Local)
+            if (RepositoryFocus == RepositoryBrowserFocus.Local)
             {
                 _files.Clear();
                 _directories.Clear();
@@ -205,7 +213,7 @@ namespace Stn.Core.IO
 
         public override void NavigateTo(FileBrowserDirectory directory)
         {
-            if(Mode == RepositoryMode.Local)
+            if(RepositoryFocus == RepositoryBrowserFocus.Local)
             {
                 _localBrowser.NavigateTo(directory);
             } else
@@ -216,7 +224,7 @@ namespace Stn.Core.IO
 
         public override void NavigateUp()
         {
-            if(Mode == RepositoryMode.Local)
+            if(RepositoryFocus == RepositoryBrowserFocus.Local)
             {
                 _localBrowser.NavigateUp();
             } else
