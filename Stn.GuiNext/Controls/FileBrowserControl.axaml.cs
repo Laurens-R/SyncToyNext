@@ -8,6 +8,7 @@ using Stn.Core.IO;
 using Stn.Core.SyncPoints;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace Stn.GuiNext;
 
@@ -67,7 +68,30 @@ public partial class FileBrowserControl : UserControl
         InitializeBrowser();
         InitializeComponent();
         DataContext = this;
-        browserGrid.PointerPressed += OnBrowserGridPointerPressed;
+        browserGrid.DoubleTapped += BrowserGrid_DoubleTapped ;
+    }
+
+    private void BrowserGrid_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        var row = browserGrid.SelectedItem;
+        if (row is FileBrowserEntry entry && _browser != null)
+        {
+            if (!entry.IsFile && entry.Name == "..")
+            {
+                _browser.NavigateUp();
+                return;
+            }
+
+            if (!entry.IsFile)
+            {
+                _browser.NavigateTo(entry);
+                return;
+            }
+
+            //at this point the entry is a file... so we can use the default file handler.
+            //TODO:implement file handler.
+
+        }
     }
 
     private void InitializeBrowser()
@@ -84,32 +108,6 @@ public partial class FileBrowserControl : UserControl
         {
             var repository = new Repository(BrowserPath);
             _browser = new RepositoryBrowser(repository);
-        }
-    }
-
-    private void OnBrowserGridPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.ClickCount == 2)
-        {
-            var row = (e.Source as Visual)?.GetVisualParent<DataGridRow>();
-            if (row?.DataContext is FileBrowserEntry entry && _browser != null)
-            {
-                if(!entry.IsFile && entry.Name == "..")
-                {
-                    _browser.NavigateUp();
-                    return;
-                }
-
-                if (!entry.IsFile)
-                {
-                    _browser.NavigateTo(entry);
-                    return;
-                }
-
-                //at this point the entry is a file... so we can use the default file handler.
-                //TODO:implement file handler.
-                
-            }
         }
     }
 
