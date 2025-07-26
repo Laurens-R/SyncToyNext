@@ -14,24 +14,88 @@
   </Design.DataContext>
 
 	<Grid>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="1*" />
-			<ColumnDefinition Width="1*" />
-		</Grid.ColumnDefinitions>
+		<DockPanel>
+			<Menu DockPanel.Dock="Top" Background="#ddd" BorderBrush="#999" BorderThickness="0, 0, 0, 1">
+				<MenuItem Header="_File">
+					<MenuItem Header="_Open local repository"/>
+					<MenuItem Header="_Clone from repository"/>
+					<Separator/>
+					<MenuItem Header="_Exit"/>
+				</MenuItem>
+			</Menu>
+			<Grid DockPanel.Dock="Top" Margin="10">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="1*" />
+					<ColumnDefinition Width="1*" />
+				</Grid.ColumnDefinitions>
 
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto" />
-			<!-- Header -->
-			<RowDefinition Height="*" />
-			<!-- Remaining space -->
-		</Grid.RowDefinitions>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="*" />
+				</Grid.RowDefinitions>
 
-		<StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
-			<Label VerticalContentAlignment="Center" Margin="4">Path</Label>
-			<TextBox Grid.Row="0" Margin="4"/>
-		</StackPanel>
+				<DockPanel Grid.Row="0" Grid.Column="0">
+					<Label FontSize="16" FontWeight="Bold" Margin="4" DockPanel.Dock="Left">Local</Label>
+					<Rectangle Height="1" Fill="DarkGray" VerticalAlignment="Center" Margin="5,0,10,0"/>
+				</DockPanel>
 
-		<controls:FileBrowserControl Grid.Row="1" VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" />
+				<DockPanel Grid.Row="0" Grid.Column="1">
+					<Label FontSize="16" FontWeight="Bold" Margin="4" DockPanel.Dock="Left">Remote</Label>
+					<Rectangle Height="1" Fill="DarkGray" VerticalAlignment="Center" Margin="5,0,10,0"/>
+				</DockPanel>
 
+				<Border
+					BorderThickness="1"
+					BorderBrush="Gray"
+					CornerRadius="8"
+					Grid.Row="1"
+					Grid.Column="0"
+					Padding="6"
+					Margin="8"
+					Background="#ddd">
+					<DockPanel>
+						<Label VerticalContentAlignment="Center">SyncPoint</Label>
+						<Label VerticalContentAlignment="Center" Content="2303033898"/>
+					</DockPanel>
+				</Border>
+
+				<Border
+					BorderThickness="1"
+					BorderBrush="Gray"
+					CornerRadius="8"
+					Grid.Row="1"
+					Grid.Column="1"
+					Padding="6"
+					Margin="8"
+					Background="#ddd">
+					<DockPanel >
+						<Label VerticalContentAlignment="Center">SyncPoint</Label>
+						<ComboBox CornerRadius="8" Background="Transparent" SelectedIndex="0" MaxDropDownHeight="100" BorderThickness="0" HorizontalAlignment="Stretch" Margin="10, 4, 0, 0">
+							<ComboBoxItem>Text Item 1</ComboBoxItem>
+							<ComboBoxItem>Text Item 2</ComboBoxItem>
+							<ComboBoxItem>Text Item 3</ComboBoxItem>
+							<ComboBoxItem>Text Item 4</ComboBoxItem>
+							<ComboBoxItem>Text Item 5</ComboBoxItem>
+							<ComboBoxItem>Text Item 6</ComboBoxItem>
+							<ComboBoxItem>Text Item 7</ComboBoxItem>
+							<ComboBoxItem>Text Item 8</ComboBoxItem>
+							<ComboBoxItem>Text Item 9</ComboBoxItem>
+						</ComboBox>
+					</DockPanel>
+				</Border>
+
+				<controls:FileBrowserControl x:Name="localFileBrowser" Grid.Column="0" Grid.Row="2" VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" Margin="8"/>
+				<controls:FileBrowserControl x:Name="remoteFileBrowser" Grid.Column="1" Grid.Row="2" VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" Margin="8"/>
+			
+			</Grid>
+		
+		</DockPanel>
+		<controls:PopupControl IsOpen="True">
+			
+				<TextBlock Text="This is a popup!" FontSize="18" Margin="0,0,0,12"/>
+
+		</controls:PopupControl>
 	</Grid>
+	
 </UserControl>

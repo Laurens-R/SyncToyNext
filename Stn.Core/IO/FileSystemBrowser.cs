@@ -14,25 +14,53 @@ namespace Stn.Core.IO
 
         private void Repopulate(string path)
         {
-            var options = new EnumerationOptions
-            {
-                IgnoreInaccessible = true,
-                RecurseSubdirectories = false
-            };
-
-            var filesInDirectory = Directory.EnumerateFiles(path, "*.*", options);
-
             if (Directory.Exists(path))
             {
+                IgnoreHelper.TryLoadIgnoreFile(path);
+
                 _allEntries.Clear();
+                AddNavigateUpEntry();
+
                 _files.Clear();
                 _directories.Clear();
 
+                var options = new EnumerationOptions
+                {
+                    IgnoreInaccessible = true,
+                    RecurseSubdirectories = false
+                };
+
+                var directoriesInDirectory = Directory.EnumerateDirectories(path, "*", options).Order();
+                
+                foreach ( var directory in directoriesInDirectory)
+                {
+                    var directoryInfo = new DirectoryInfo(directory);
+                    var relativePath = Path.GetRelativePath(RootPath, directoryInfo.FullName);
+
+                    if (directoryInfo.Name == ".stn" || IgnoreHelper.IsEntryIgnored(relativePath)) continue;
+
+                    _directories.Add(new FileBrowserEntry
+                    {
+                        Name = directoryInfo.Name,
+                        Path = directoryInfo.FullName,
+                        Type = "[ FOLDER ]",
+                        Created = directoryInfo.CreationTimeUtc,
+                        LastModified = directoryInfo.LastWriteTimeUtc,
+                        RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, directoryInfo.FullName)
+                    });
+
+                    _allEntries.Add(_directories.Last());
+                }
+
+                var filesInDirectory = Directory.EnumerateFiles(path, "*.*", options).Order();
                 foreach (var file in filesInDirectory)
                 {
                     try
                     {
                         var fileInfo = new FileInfo(file);
+                        var relativePath = Path.GetRelativePath(RootPath, fileInfo.FullName);
+
+                        if (fileInfo.Name == ".stn" || IgnoreHelper.IsEntryIgnored(relativePath)) continue;
 
                         _files.Add(new FileBrowserEntry
                         {
@@ -40,7 +68,7 @@ namespace Stn.Core.IO
                             Path = file,
                             Created = fileInfo.CreationTimeUtc,
                             LastModified = fileInfo.LastWriteTimeUtc,
-                            Extension = fileInfo.Extension,
+                            Type = fileInfo.Extension,
                             Size = fileInfo.Length,
                             RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, file),
                             IsFile = true
@@ -51,24 +79,7 @@ namespace Stn.Core.IO
                     }
 
                     _allEntries.Add(_files.Last());
-                }
-
-                var directoriesInDirectory = Directory.EnumerateDirectories(path, "*", options);
-                foreach (var directory in directoriesInDirectory)
-                {
-                    var directoryInfo = new DirectoryInfo(directory);
-
-                    _directories.Add(new FileBrowserEntry
-                    {
-                        Name = directoryInfo.Name,
-                        Path = directoryInfo.FullName,
-                        Created = directoryInfo.CreationTimeUtc,
-                        LastModified = directoryInfo.LastWriteTimeUtc,
-                        RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, directoryInfo.FullName)
-                    });
-
-                    _allEntries.Add(_directories.Last());
-                }
+                }              
             }
         }
 
@@ -145,7 +156,9 @@ namespace Stn.Core.IO
                 _allFiles.Add(file);
             }
 
+            RootPath = path;
             CurrentPath = path;
+
             _watcher = new FileSystemWatcher(path);
             _watcher.IncludeSubdirectories = true;
             _watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.DirectoryName;

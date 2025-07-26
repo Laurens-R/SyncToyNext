@@ -9,6 +9,7 @@ using Stn.Core.SyncPoints;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Stn.GuiNext;
 
@@ -19,13 +20,19 @@ public enum FileBrowserControlType
     Repository
 }
 
-public partial class FileBrowserControl : UserControl
+public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
 {
     private FileBrowser? _browser = null;
     private string _browserPath = "C:\\";
 
     public static readonly StyledProperty<FileBrowserControlType> BrowserTypeProperty =
     AvaloniaProperty.Register<FileBrowserControl, FileBrowserControlType>(nameof(BrowserType), FileBrowserControlType.FileSystem);
+
+    public new event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 
     public FileBrowserControlType BrowserType
     {
@@ -50,6 +57,16 @@ public partial class FileBrowserControl : UserControl
         {
             _browserPath = value;
             InitializeBrowser();
+            OnPropertyChanged(nameof(Entries));
+        }
+    }
+
+    public string CurrentPath
+    {
+        get
+        {
+            if (_browser == null) return String.Empty;
+            return _browser.CurrentPath;
         }
     }
 
@@ -62,13 +79,12 @@ public partial class FileBrowserControl : UserControl
         }
     }
 
-    
     public FileBrowserControl()
     {
         InitializeBrowser();
         InitializeComponent();
         DataContext = this;
-        browserGrid.DoubleTapped += BrowserGrid_DoubleTapped ;
+        browserGrid.DoubleTapped += BrowserGrid_DoubleTapped;
     }
 
     private void BrowserGrid_DoubleTapped(object? sender, TappedEventArgs e)
@@ -79,17 +95,29 @@ public partial class FileBrowserControl : UserControl
             if (!entry.IsFile && entry.Name == "..")
             {
                 _browser.NavigateUp();
+                OnPropertyChanged(nameof(Entries));
+                OnPropertyChanged(nameof(CurrentPath));
                 return;
             }
 
             if (!entry.IsFile)
             {
                 _browser.NavigateTo(entry);
+                OnPropertyChanged(nameof(Entries));
+                OnPropertyChanged(nameof(CurrentPath));
                 return;
             }
 
-            //at this point the entry is a file... so we can use the default file handler.
-            //TODO:implement file handler.
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = entry.Path,
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch { }
 
         }
     }
@@ -109,6 +137,6 @@ public partial class FileBrowserControl : UserControl
             var repository = new Repository(BrowserPath);
             _browser = new RepositoryBrowser(repository);
         }
+        OnPropertyChanged(nameof(Entries));
     }
-
 }

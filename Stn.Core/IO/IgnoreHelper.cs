@@ -22,7 +22,7 @@ namespace Stn.Core.IO
             }
         }
 
-        public static bool IsFileIgnored(string relativePath)
+        public static bool IsEntryIgnored(string relativePath)
         {
             if (IgnoreFilters == null)
                 return false;

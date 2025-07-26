@@ -97,7 +97,7 @@ namespace Stn.Core.IO
                         && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
             IgnoreHelper.TryLoadIgnoreFile(sourcePath);
-            return files.Where(file => !IgnoreHelper.IsFileIgnored(file));    
+            return files.Where(file => !IgnoreHelper.IsEntryIgnored(file));    
         }
 
         public static bool IsFileDifferent(string srcFilePath, string destFilePath)

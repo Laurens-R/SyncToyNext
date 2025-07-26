@@ -48,6 +48,19 @@ namespace Stn.Core.IO
             return false;
         }
 
+        protected void AddNavigateUpEntry()
+        {
+            if (_currentPath != _rootPath)
+            {
+                _allEntries.Add(new FileBrowserEntry
+                {
+                    Name = "..",
+                    IsFile = false,
+                    Type = "[ FOLDER ]"
+                });
+            }
+        }
+
         public abstract string RootPath { get; set; }
         public abstract string CurrentPath { get; set; }
 

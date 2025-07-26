@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Stn.GuiNext.PopupControl">
+
+	<Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+		<!-- Blocking background -->
+		<Border Background="#80000000"
+				HorizontalAlignment="Stretch"
+				VerticalAlignment="Stretch"/>
+		<!-- Centered popup panel -->
+		<Border Background="White"
+				CornerRadius="8"
+				BoxShadow="0 4 16 0 #40000000"
+				Padding="24"
+				HorizontalAlignment="Center"
+				VerticalAlignment="Center"
+				MinWidth="500"
+				MinHeight="250">
+			<ContentPresenter Content="{Binding Content, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+		</Border>
+	</Grid>
+</UserControl>

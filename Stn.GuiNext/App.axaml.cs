@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Stn.GuiNext.ViewModels;
 using Stn.GuiNext.Views;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace Stn.GuiNext;
@@ -34,7 +35,6 @@ public partial class App : Application
                 DataContext = new MainViewModel()
             };
         }
-
         base.OnFrameworkInitializationCompleted();
     }
 }

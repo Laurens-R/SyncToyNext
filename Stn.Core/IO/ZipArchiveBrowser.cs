@@ -71,7 +71,7 @@ namespace Stn.Core.IO
                     Path = file.FullName,
                     Created = file.LastWriteTime.UtcDateTime,
                     LastModified = file.LastWriteTime.UtcDateTime,
-                    Extension = Path.GetExtension(file.FullName),
+                    Type = Path.GetExtension(file.FullName),
                     RelativePath = file.FullName,
                     Size = file.Length,
                     IsFile = true

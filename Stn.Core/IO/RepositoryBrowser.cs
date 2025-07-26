@@ -174,7 +174,7 @@ namespace Stn.Core.IO
                     {
                         Name = Path.GetFileName(file.SourcePath),
                         Path = file.SourcePath,
-                        Extension = Path.GetExtension(file.SourcePath),
+                        Type = Path.GetExtension(file.SourcePath),
                         RelativePath = file.SourcePath,
                         Size = size,
                         Created = created,
