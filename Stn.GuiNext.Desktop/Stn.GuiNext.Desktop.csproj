@@ -7,12 +7,11 @@
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<AssemblyName></AssemblyName>
-
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<PublishTrimmed>true</PublishTrimmed>
 		<PublishAot>true</PublishAot>
+		<AssemblyName>stngui</AssemblyName>
 	</PropertyGroup>
 
 
