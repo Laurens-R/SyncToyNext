@@ -9,6 +9,12 @@ using System.Threading.Tasks;
 
 namespace Stn.Core.IO
 {
+    public enum FileBrowserMode
+    {
+        FoldersOnly,
+        FoldersAndFiles
+    }
+
     public abstract class FileBrowser
     {
         protected string _currentPath = string.Empty;
@@ -16,6 +22,8 @@ namespace Stn.Core.IO
         protected List<FileBrowserEntry> _files = new List<FileBrowserEntry>();
         protected List<FileBrowserEntry> _directories = new List<FileBrowserEntry>();
         protected ObservableCollection<FileBrowserEntry> _allEntries = new ObservableCollection<FileBrowserEntry>();
+
+        public FileBrowserMode BrowserMode { get; set; } = FileBrowserMode.FoldersAndFiles;
 
         public ObservableCollection<FileBrowserEntry> AllEntries
         {
@@ -66,5 +74,6 @@ namespace Stn.Core.IO
 
         public abstract void NavigateTo(FileBrowserEntry directory);
         public abstract void NavigateUp();
+        public abstract void Refresh();
     }
 }

@@ -3,9 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:io="clr-namespace:Stn.Core.IO;assembly=Stn.Core"
-             xmlns:local="clr-namespace:Stn.GuiNext"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Stn.GuiNext.FileBrowserControl"
+			 xmlns:local="clr-namespace:Stn.GuiNext"
              x:DataType="local:FileBrowserControl"
              Background="Transparent">
     <UserControl.Styles>

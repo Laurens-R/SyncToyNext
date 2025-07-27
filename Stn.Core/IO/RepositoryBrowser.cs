@@ -105,10 +105,13 @@ namespace Stn.Core.IO
                 _directories.Clear();
                 _files.AddRange(_localBrowser.Files);
                 _directories.AddRange(_localBrowser.Directories);
-                
-                foreach(var file in _files)
+
+                if (BrowserMode == FileBrowserMode.FoldersAndFiles)
                 {
-                    _allEntries.Add(file);
+                    foreach (var file in _files)
+                    {
+                        _allEntries.Add(file);
+                    }
                 }
 
                 foreach(var directory in _directories)
@@ -125,66 +128,73 @@ namespace Stn.Core.IO
 
                 var entriesInRepository = _repository.GetRemoteFiles(_currentSyncPoint.SyncPointId).Where(entry => entry.SourcePath.StartsWith(path));
 
-                var files = entriesInRepository.Where(file =>
+
+                if (BrowserMode == FileBrowserMode.FoldersAndFiles)
                 {
-                    var pathParts = file.SourcePath
-                                        .Replace(path, string.Empty)
-                                        .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-
-                    if (pathParts.Length == 1) return true;
-
-                    return false;
-                });
-
-                foreach (var file in files)
-                {
-                    var remotePathParts = file.RelativeRemotePath.Split(['@'], StringSplitOptions.RemoveEmptyEntries);
-                    var isCompressed = remotePathParts.Length > 1;
-
-                    long size = 0;
-                    string archivePath = string.Empty;
-                    DateTime created = DateTime.MinValue;
-                    DateTime modified = DateTime.MinValue;
-
-                    if(!isCompressed)
+                    var files = entriesInRepository.Where(file =>
                     {
-                        var filePath = Path.Combine(_repository.RemotePath, _currentSyncPoint.SyncPointId, file.SourcePath);
-                        var entryInfo = new FileInfo(filePath);
-                        size = entryInfo.Length;
-                        created = entryInfo.CreationTime;
-                        modified = entryInfo.LastWriteTime;
-                    } else
-                    {
-                        archivePath = Path.Combine(_repository.RemotePath, _currentSyncPoint.SyncPointId, remotePathParts[1]);
-                        using var stream = new FileStream(archivePath, FileMode.Open, FileAccess.Read);
-                        using var zipFile = new ZipArchive(stream, ZipArchiveMode.Read);
-                        ZipArchiveEntry? entry = zipFile.GetEntry(file.SourcePath);
-                        
-                        if (entry != null) {
-                            size = entry.Length;
-                            created = entry.LastWriteTime.UtcDateTime;
-                            modified = entry.LastWriteTime.UtcDateTime;
-                        } else
-                        {
-                            throw new IOException("Could not find syncpoint entry in archive.");
-                        }
-                    }
+                        var pathParts = file.SourcePath
+                                            .Replace(path, string.Empty)
+                                            .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
 
-                    _files.Add(new FileBrowserEntry()
-                    {
-                        Name = Path.GetFileName(file.SourcePath),
-                        Path = file.SourcePath,
-                        Type = Path.GetExtension(file.SourcePath),
-                        RelativePath = file.SourcePath,
-                        Size = size,
-                        Created = created,
-                        LastModified = modified,
-                        IsCompressed = isCompressed,
-                        ArchivePath = archivePath,
-                        IsFile = true
+                        if (pathParts.Length == 1) return true;
+
+                        return false;
                     });
 
-                    _allEntries.Add(_files.Last());
+                    foreach (var file in files)
+                    {
+                        var remotePathParts = file.RelativeRemotePath.Split(['@'], StringSplitOptions.RemoveEmptyEntries);
+                        var isCompressed = remotePathParts.Length > 1;
+
+                        long size = 0;
+                        string archivePath = string.Empty;
+                        DateTime created = DateTime.MinValue;
+                        DateTime modified = DateTime.MinValue;
+
+                        if (!isCompressed)
+                        {
+                            var filePath = Path.Combine(_repository.RemotePath, _currentSyncPoint.SyncPointId, file.SourcePath);
+                            var entryInfo = new FileInfo(filePath);
+                            size = entryInfo.Length;
+                            created = entryInfo.CreationTime;
+                            modified = entryInfo.LastWriteTime;
+                        }
+                        else
+                        {
+                            archivePath = Path.Combine(_repository.RemotePath, _currentSyncPoint.SyncPointId, remotePathParts[1]);
+                            using var stream = new FileStream(archivePath, FileMode.Open, FileAccess.Read);
+                            using var zipFile = new ZipArchive(stream, ZipArchiveMode.Read);
+                            ZipArchiveEntry? entry = zipFile.GetEntry(file.SourcePath);
+
+                            if (entry != null)
+                            {
+                                size = entry.Length;
+                                created = entry.LastWriteTime.UtcDateTime;
+                                modified = entry.LastWriteTime.UtcDateTime;
+                            }
+                            else
+                            {
+                                throw new IOException("Could not find syncpoint entry in archive.");
+                            }
+                        }
+
+                        _files.Add(new FileBrowserEntry()
+                        {
+                            Name = Path.GetFileName(file.SourcePath),
+                            Path = file.SourcePath,
+                            Type = Path.GetExtension(file.SourcePath),
+                            RelativePath = file.SourcePath,
+                            Size = size,
+                            Created = created,
+                            LastModified = modified,
+                            IsCompressed = isCompressed,
+                            ArchivePath = archivePath,
+                            IsFile = true
+                        });
+
+                        _allEntries.Add(_files.Last());
+                    }
                 }
 
                 var entriesInSubfolder = entriesInRepository.Where(file =>
@@ -254,6 +264,11 @@ namespace Stn.Core.IO
                     CurrentPath = string.Concat(pathParts.Take(pathParts.Length - 1).ToArray());
                 }
             }
+        }
+
+        public override void Refresh()
+        {
+            PopulateEntriesAtPath(CurrentPath);
         }
     }
 }

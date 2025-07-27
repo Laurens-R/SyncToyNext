@@ -52,34 +52,38 @@ namespace Stn.Core.IO
                     _allEntries.Add(_directories.Last());
                 }
 
-                var filesInDirectory = Directory.EnumerateFiles(path, "*.*", options).Order();
-                foreach (var file in filesInDirectory)
+                if (BrowserMode == FileBrowserMode.FoldersAndFiles)
                 {
-                    try
+                    var filesInDirectory = Directory.EnumerateFiles(path, "*.*", options).Order();
+                    foreach (var file in filesInDirectory)
                     {
-                        var fileInfo = new FileInfo(file);
-                        var relativePath = Path.GetRelativePath(RootPath, fileInfo.FullName);
-
-                        if (fileInfo.Name == ".stn" || IgnoreHelper.IsEntryIgnored(relativePath)) continue;
-
-                        _files.Add(new FileBrowserEntry
+                        try
                         {
-                            Name = Path.GetFileName(file),
-                            Path = file,
-                            Created = fileInfo.CreationTimeUtc,
-                            LastModified = fileInfo.LastWriteTimeUtc,
-                            Type = fileInfo.Extension,
-                            Size = fileInfo.Length,
-                            RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, file),
-                            IsFile = true
-                        });
-                    } catch
-                    {
-                        continue;
-                    }
+                            var fileInfo = new FileInfo(file);
+                            var relativePath = Path.GetRelativePath(RootPath, fileInfo.FullName);
 
-                    _allEntries.Add(_files.Last());
-                }              
+                            if (fileInfo.Name == ".stn" || IgnoreHelper.IsEntryIgnored(relativePath)) continue;
+
+                            _files.Add(new FileBrowserEntry
+                            {
+                                Name = Path.GetFileName(file),
+                                Path = file,
+                                Created = fileInfo.CreationTimeUtc,
+                                LastModified = fileInfo.LastWriteTimeUtc,
+                                Type = fileInfo.Extension,
+                                Size = fileInfo.Length,
+                                RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, file),
+                                IsFile = true
+                            });
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+
+                        _allEntries.Add(_files.Last());
+                    }
+                }
             }
         }
 
@@ -237,6 +241,11 @@ namespace Stn.Core.IO
 
                 CurrentPath = parent.FullName;
             }
+        }
+
+        public override void Refresh()
+        {
+            Repopulate(CurrentPath);
         }
 
         public void ClearChangeHistory()

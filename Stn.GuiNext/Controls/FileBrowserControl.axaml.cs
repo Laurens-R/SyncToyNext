@@ -25,14 +25,14 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
     private FileBrowser? _browser = null;
     private string _browserPath = "C:\\";
 
-    public static readonly StyledProperty<FileBrowserControlType> BrowserTypeProperty =
-    AvaloniaProperty.Register<FileBrowserControl, FileBrowserControlType>(nameof(BrowserType), FileBrowserControlType.FileSystem);
-
     public new event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
+    public static readonly StyledProperty<FileBrowserControlType> BrowserTypeProperty =
+    AvaloniaProperty.Register<FileBrowserControl, FileBrowserControlType>(nameof(BrowserType), FileBrowserControlType.FileSystem);
 
     public FileBrowserControlType BrowserType
     {
@@ -45,6 +45,29 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
             SetValue(BrowserTypeProperty, value);
         }
     }
+
+    public static readonly StyledProperty<FileBrowserMode> BrowserModeProperty =
+    AvaloniaProperty.Register<FileBrowserControl, FileBrowserMode>(nameof(BrowserMode), FileBrowserMode.FoldersAndFiles);
+
+    public FileBrowserMode BrowserMode
+    {
+        get
+        {
+            return GetValue(BrowserModeProperty);
+        }
+        set
+        {
+            SetValue(BrowserModeProperty, value);
+            if (_browser != null)
+            {
+                _browser.BrowserMode = value;
+                _browser.Refresh();
+            }
+            
+            OnPropertyChanged(nameof(BrowserMode));
+        }
+    }
+
 
     public string BrowserPath 
     { 
@@ -60,6 +83,8 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
             OnPropertyChanged(nameof(Entries));
         }
     }
+
+    public event EventHandler<string>? CurrentPathChanged;
 
     public string CurrentPath
     {
@@ -88,8 +113,6 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
         
         //just temp: we can use this to do file dialogs etc.
         var toplevel = TopLevel.GetTopLevel(this);
-        
-
     }
 
     private void BrowserGrid_DoubleTapped(object? sender, TappedEventArgs e)
@@ -102,6 +125,7 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
                 _browser.NavigateUp();
                 OnPropertyChanged(nameof(Entries));
                 OnPropertyChanged(nameof(CurrentPath));
+                CurrentPathChanged?.Invoke(this, CurrentPath);
                 return;
             }
 
@@ -110,6 +134,7 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
                 _browser.NavigateTo(entry);
                 OnPropertyChanged(nameof(Entries));
                 OnPropertyChanged(nameof(CurrentPath));
+                CurrentPathChanged?.Invoke(this, CurrentPath);
                 return;
             }
 
@@ -142,6 +167,11 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
             var repository = new Repository(BrowserPath);
             _browser = new RepositoryBrowser(repository);
         }
+
+        if (_browser == null) throw new InvalidOperationException("Browser should be set at this point.");
+
+        _browser.BrowserMode = BrowserMode;
+
         OnPropertyChanged(nameof(Entries));
     }
 }

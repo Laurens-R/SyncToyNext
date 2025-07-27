@@ -48,36 +48,39 @@ namespace Stn.Core.IO
             _allEntries.Clear();
 
             //first process files
-            var filesAtLevel = _archive.Entries.Where(entry =>
+            if (BrowserMode == FileBrowserMode.FoldersAndFiles)
             {
-                bool isRootedInPath = entry.FullName.StartsWith(path);
-                if (!isRootedInPath) return false;
-
-                string strippedPath = entry.FullName.Replace(path, string.Empty);
-                var pathParts = strippedPath.Split('/');
-
-                if (pathParts.Length != 1) return false;
-
-                return true;
-            });
-
-            _files.Clear();
-
-            foreach (var file in filesAtLevel)
-            {
-                _files.Add(new FileBrowserEntry
+                var filesAtLevel = _archive.Entries.Where(entry =>
                 {
-                    Name = file.Name,
-                    Path = file.FullName,
-                    Created = file.LastWriteTime.UtcDateTime,
-                    LastModified = file.LastWriteTime.UtcDateTime,
-                    Type = Path.GetExtension(file.FullName),
-                    RelativePath = file.FullName,
-                    Size = file.Length,
-                    IsFile = true
+                    bool isRootedInPath = entry.FullName.StartsWith(path);
+                    if (!isRootedInPath) return false;
+
+                    string strippedPath = entry.FullName.Replace(path, string.Empty);
+                    var pathParts = strippedPath.Split('/');
+
+                    if (pathParts.Length != 1) return false;
+
+                    return true;
                 });
 
-                _allEntries.Add(_files.Last());
+                _files.Clear();
+
+                foreach (var file in filesAtLevel)
+                {
+                    _files.Add(new FileBrowserEntry
+                    {
+                        Name = file.Name,
+                        Path = file.FullName,
+                        Created = file.LastWriteTime.UtcDateTime,
+                        LastModified = file.LastWriteTime.UtcDateTime,
+                        Type = Path.GetExtension(file.FullName),
+                        RelativePath = file.FullName,
+                        Size = file.Length,
+                        IsFile = true
+                    });
+
+                    _allEntries.Add(_files.Last());
+                }
             }
 
             //then process directories.
@@ -149,6 +152,11 @@ namespace Stn.Core.IO
                     CurrentPath = parentPath;
                 }
             }
+        }
+
+        public override void Refresh()
+        {
+            PopulateEntriesAtPath(CurrentPath);
         }
 
         public void Dispose()

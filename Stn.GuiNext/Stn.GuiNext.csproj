@@ -23,4 +23,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Stn.Core\Stn.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\RepositoryView.axaml.cs">
+      <DependentUpon>RepositoryView.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
