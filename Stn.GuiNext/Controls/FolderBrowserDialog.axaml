@@ -2,12 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:controls="clr-namespace:Stn.GuiNext"
-			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="900"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="900"
+			 xmlns:controls="clr-namespace:Stn.GuiNext"
 			 xmlns:local="clr-namespace:Stn.GuiNext"
              x:DataType="local:FolderBrowserDialog"
              x:Class="Stn.GuiNext.FolderBrowserDialog">
-	
+
 	<controls:PopupControl x:Name="popupDialog" Title="Pick folder" HasOK="True" HasCancel="True" PopupWidth="800" PopupHeight="860" ShowPopup="{Binding ShowMessageBox}">
 		<StackPanel Orientation="Vertical">
 			<Border Margin="0 0 0 10">

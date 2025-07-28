@@ -2,5 +2,24 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:controls="clr-namespace:Stn.GuiNext"
              x:Class="Stn.GuiNext.RepositoryLoadView">
-  Welcome to Avalonia!
+	<Grid x:Name="mainRepoLoadGrid">
+		<Grid VerticalAlignment="Center">
+			<Border Background="#ccc" BoxShadow="0 0 30 0 #888888"  BorderBrush="#666" Width="800" BorderThickness="1" CornerRadius="8">
+				<StackPanel Orientation="Vertical" Width="800"  Margin="0 20 0 20">
+					<Border Padding="20 0 20 0">
+						<StackPanel Orientation="Horizontal">
+							<Label FontWeight="Bold" FontSize="24">Open local repository</Label>
+							<Rectangle Width="490" HorizontalAlignment="Stretch"  Height="2" Fill="DarkGray" Margin="5,5,10,0"/>
+						</StackPanel>
+					</Border>
+					<Border Padding="20">
+						<StackPanel Orientation="Vertical">
+							<Label>Open a local repository. If the location is not yet bound to a remote repository it will guide you in setting it up.</Label>
+							<Button x:Name="buttonBrowseLocal" Margin="0 20 0 0">Open local repository</Button>
+						</StackPanel>
+					</Border>
+				</StackPanel>
+			</Border>
+		</Grid>
+	</Grid>
 </UserControl>

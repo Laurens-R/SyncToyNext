@@ -78,6 +78,7 @@ public partial class FolderBrowserDialog : UserControl
 
         folderBrowser.CurrentPathChanged += FolderBrowser_CurrentPathChanged;
         radioLocalDrive.IsCheckedChanged += RadioLocalDrive_IsCheckedChanged;
+        radioLocalDrive.IsChecked = true;
 
         sectionDrives.IsVisible = true;
         sectionNetworkLocation.IsVisible = false;
@@ -141,42 +142,47 @@ public partial class FolderBrowserDialog : UserControl
         folderBrowser.BrowserPath = comboDrives.SelectedItem?.ToString() ?? string.Empty;
     }
 
-    public async Task<FolderBrowserDialogResult> ShowDialogAsync(string title)
+    public static async Task<FolderBrowserDialogResult> ShowDialogAsync(Panel parent, string title)
     {
+        var dialog = new FolderBrowserDialog();
+
         var tcs = new TaskCompletionSource<FolderBrowserDialogResult>();
 
         // Unsubscribe previous handler if it exists
-        if (_currentDialogHandler != null)
+        if (dialog._currentDialogHandler != null)
         {
-            popupDialog.DialogChoice -= _currentDialogHandler;
-            _currentDialogHandler = null;
+            dialog.popupDialog.DialogChoice -= dialog._currentDialogHandler;
+            dialog._currentDialogHandler = null;
         }
 
-        popupDialog.Title = title;
+        dialog.popupDialog.Title = title;
 
         // Store the handler reference so we can unsubscribe later
-        _currentDialogHandler = (sender, result) =>
+        dialog._currentDialogHandler = (sender, result) =>
         {
-            ShowMessageBox = false;
-            OnPropertyChanged(nameof(ShowMessageBox));
+            dialog.ShowMessageBox = false;
+            dialog.OnPropertyChanged(nameof(ShowMessageBox));
 
             // Unsubscribe after handling to prevent leaks
-            popupDialog.DialogChoice -= _currentDialogHandler;
-            _currentDialogHandler = null;
+            dialog.popupDialog.DialogChoice -= dialog._currentDialogHandler;
+            dialog._currentDialogHandler = null;
 
             var folderResult = new FolderBrowserDialogResult
             {
                 Outcome = (result == PopupControlResult.OK) ? FolderBrowserDialogOutcome.OK : FolderBrowserDialogOutcome.Cancelled,
-                SelectedFolder = folderBrowser.CurrentPath
+                SelectedFolder = dialog.folderBrowser.CurrentPath
             };
+
+            parent.Children.Remove(dialog);
 
             tcs.SetResult(folderResult);
         };
 
-        popupDialog.DialogChoice += _currentDialogHandler;
+        dialog.popupDialog.DialogChoice += dialog._currentDialogHandler;
 
-        ShowMessageBox = true;
-        OnPropertyChanged(nameof(ShowMessageBox));
+        dialog.ShowMessageBox = true;
+        dialog.OnPropertyChanged(nameof(ShowMessageBox));
+        parent.Children.Add(dialog);
 
         return await tcs.Task;
     }

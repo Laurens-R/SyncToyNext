@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using ReactiveUI;
+using Stn.Core.SyncPoints;
 using Stn.GuiNext.Views;
 using System.Collections.ObjectModel;
 using System.Reflection.Metadata;
@@ -31,6 +32,11 @@ public class MainViewModel : ViewModelBase
         {
             return Views[RepositoryViewIndex] as RepositoryView;
         }
+    }
+
+    public Repository? Repository
+    {
+        get; set;
     }
 
     private UserControl _currentView;

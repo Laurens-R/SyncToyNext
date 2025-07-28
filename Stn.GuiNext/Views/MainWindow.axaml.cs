@@ -16,20 +16,5 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = new MainViewModel();
-
-        var vm = ViewModel;
-
-        if(vm != null)
-        {
-            
-        }
-
-        buttonRepository.Tapped += ButtonRepository_Tapped;
-    }
-
-    private void ButtonRepository_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
-    {
-        
     }
 }

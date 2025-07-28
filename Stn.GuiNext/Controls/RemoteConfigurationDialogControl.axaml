@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Stn.GuiNext.RemoteConfigurationDialogControl"
+			 xmlns:controls="clr-namespace:Stn.GuiNext"
+			 xmlns:local="clr-namespace:Stn.GuiNext"
+             x:DataType="local:RemoteConfigurationDialogControl">
+	<Grid x:Name="mainRemoteConfigGrid" IsVisible="{Binding ShowDialog}">
+		  <controls:PopupControl x:Name="popupDialog" HasOK="True" HasCancel="True" PopupHeight="260" ShowPopup="{Binding ShowDialog}">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="200" />
+					<ColumnDefinition Width="*" />
+				</Grid.ColumnDefinitions>
+
+				<Grid.RowDefinitions>
+					<RowDefinition Height="48"/>
+					<RowDefinition Height="48"/>
+					<RowDefinition />
+				</Grid.RowDefinitions>
+
+				<!--Remote path row-->
+				<Label FontWeight="Bold" Margin="0 0 20 0 " Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Right">Remote path</Label>
+				<StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="0">
+					<Button x:Name="buttonBrowseRemote" Height="36" VerticalContentAlignment="Center">Browse</Button>		
+					<TextBox x:Name="textboxRemotePath" Margin="10 0 20 0" Height="36" Width="480" HorizontalAlignment="Stretch"/>
+				</StackPanel>
+
+				<!--Is compressed row-->
+				<Label FontWeight="Bold" Margin="0 0 20 0" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Right">Is Compressed</Label>
+				<StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="1">
+					<CheckBox x:Name="checkboxIsCompressed" Margin="50 0 0 0"/>
+					<Label VerticalAlignment="Center">(only applicable if the remote will be newly provisioned)</Label>
+				</StackPanel>
+			</Grid>
+		</controls:PopupControl>
+	</Grid>
+</UserControl>

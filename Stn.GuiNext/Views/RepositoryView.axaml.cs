@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Stn.GuiNext.ViewModels;
 
 namespace Stn.GuiNext.Views;
@@ -30,23 +31,39 @@ public partial class RepositoryView : UserControl
         buttonRestoreSingle.Tapped += ButtonRestoreSingle_Tapped;
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        if (ViewModel != null && ViewModel.Repository != null)
+        {
+            localFileBrowser.BrowserPath = ViewModel.Repository.LocalPath;
+            localSyncPointLabel.Content = ViewModel.Repository.LocalSyncPointID;
+        }
+    }
+
+    public override void Render(DrawingContext context)
+    {
+        base.Render(context);
+    }
+
     private async void ButtonRestoreSingle_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        var result = await messageBox.ShowDialogAsync("Are you sure you want to restore the selected files from this syncpoint? It will undo all your local changes since that syncpoint to the files that you have selected.", "Are you sure?", MessageBoxOptions.YesNo);
+        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to restore the selected files from this syncpoint? It will undo all your local changes since that syncpoint to the files that you have selected.", "Are you sure?", MessageBoxOptions.YesNo);
     }
 
     private async void ButtonRestore_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        var result = await messageBox.ShowDialogAsync("Are you sure you want to restore this syncpoint? It will undo all your local changes since that syncpoint.", "Are you sure?", MessageBoxOptions.YesNo);
+        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to restore this syncpoint? It will undo all your local changes since that syncpoint.", "Are you sure?", MessageBoxOptions.YesNo);
     }
 
     private async void ButtonPush_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        var result = await messageBox.ShowDialogAsync("Are you sure you want to push your changes?", "Are you sure?", MessageBoxOptions.YesNo);
+        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to push your changes?", "Are you sure?", MessageBoxOptions.YesNo);
     }
 
     private async void MenuCloseRepo_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
     {
-        var result = await messageBox.ShowDialogAsync("Are you sure you want to close this repository?", "Are you sure?", MessageBoxOptions.YesNo);
+        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to close this repository?", "Are you sure?", MessageBoxOptions.YesNo);
     }
 }

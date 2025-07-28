@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:Stn.GuiNext"
              x:Class="Stn.GuiNext.Views.RepositoryView">
-	<Grid>
+	<Grid x:Name="mainRepositoryViewGrid">
 		
 		<Grid>
 
@@ -40,7 +40,7 @@
 				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="0" Padding="6" Margin="8" Background="#ddd">
 					<DockPanel>
 						<Label VerticalContentAlignment="Center">SyncPoint</Label>
-						<Label VerticalContentAlignment="Center" Content="2303033898"/>
+						<Label x:Name="localSyncPointLabel" VerticalContentAlignment="Center" Content="2303033898"/>
 					</DockPanel>
 				</Border>
 
@@ -95,7 +95,6 @@
 				
 			</Grid>
 		</Grid>
-		<controls:MessageBoxControl x:Name="messageBox"/>
 	</Grid>
 	
 </UserControl>

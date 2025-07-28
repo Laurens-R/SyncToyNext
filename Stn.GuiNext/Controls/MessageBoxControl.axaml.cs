@@ -48,59 +48,63 @@ public partial class MessageBoxControl : UserControl
         DataContext = this;
     }
 
-    public async Task<PopupControlResult> ShowDialogAsync(string message, string title, MessageBoxOptions options)
+    public static async Task<PopupControlResult> ShowDialogAsync(Panel parent, string message, string title, MessageBoxOptions options)
     {
+        var dialog = new MessageBoxControl();
         var tcs = new TaskCompletionSource<PopupControlResult>();
 
         // Unsubscribe previous handler if it exists
-        if (_currentDialogHandler != null)
+        if (dialog._currentDialogHandler != null)
         {
-            popupDialog.DialogChoice -= _currentDialogHandler;
-            _currentDialogHandler = null;
+            dialog.popupDialog.DialogChoice -= dialog._currentDialogHandler;
+            dialog._currentDialogHandler = null;
         }
 
         switch (options)
         {
             case MessageBoxOptions.YesNo:
-                popupDialog.HasYes = true;
-                popupDialog.HasNo = true;
-                popupDialog.HasOK = false;
-                popupDialog.HasCancel = false ;
+                dialog.popupDialog.HasYes = true;
+                dialog.popupDialog.HasNo = true;
+                dialog.popupDialog.HasOK = false;
+                dialog.popupDialog.HasCancel = false ;
                 break;
             case MessageBoxOptions.OK:
-                popupDialog.HasYes = false;
-                popupDialog.HasNo = false;
-                popupDialog.HasOK = true;
-                popupDialog.HasCancel = false;
+                dialog.popupDialog.HasYes = false;
+                dialog.popupDialog.HasNo = false;
+                dialog.popupDialog.HasOK = true;
+                dialog.popupDialog.HasCancel = false;
                 break;
             case MessageBoxOptions.OKCancel:
-                popupDialog.HasYes = false;
-                popupDialog.HasNo = false;
-                popupDialog.HasOK = true;
-                popupDialog.HasCancel = true;
+                dialog.popupDialog.HasYes = false;
+                dialog.popupDialog.HasNo = false;
+                dialog.popupDialog.HasOK = true;
+                dialog.popupDialog.HasCancel = true;
                 break;
         }
 
-        popupDialog.Title = title;
-        textMessage.Text = message;
+        dialog.popupDialog.Title = title;
+        dialog.textMessage.Text = message;
 
         // Store the handler reference so we can unsubscribe later
-        _currentDialogHandler = (sender, result) =>
+        dialog._currentDialogHandler = (sender, result) =>
         {
-            ShowMessageBox = false;
-            OnPropertyChanged(nameof(ShowMessageBox));
+            dialog.ShowMessageBox = false;
+            dialog.OnPropertyChanged(nameof(ShowMessageBox));
 
             // Unsubscribe after handling to prevent leaks
-            popupDialog.DialogChoice -= _currentDialogHandler;
-            _currentDialogHandler = null;
+            dialog.popupDialog.DialogChoice -= dialog._currentDialogHandler;
+            dialog._currentDialogHandler = null;
 
+            parent.Children.Remove(dialog);
             tcs.SetResult(result);
         };
 
-        popupDialog.DialogChoice += _currentDialogHandler;
+        dialog.popupDialog.DialogChoice += dialog._currentDialogHandler;
 
-        ShowMessageBox = true;
-        OnPropertyChanged(nameof(ShowMessageBox));
+        dialog.ShowMessageBox = true;
+        dialog.OnPropertyChanged(nameof(ShowMessageBox));
+
+        parent.Children.Add(dialog);
 
         return await tcs.Task;
     }

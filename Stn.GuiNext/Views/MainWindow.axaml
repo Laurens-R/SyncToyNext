@@ -19,26 +19,10 @@
 	<Grid>
 		<Grid>
 			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="300" />
 				<ColumnDefinition Width="*" />
 			</Grid.ColumnDefinitions>
-
-			<Border BoxShadow="5 0 10 0 #aaa" BorderBrush="#aaa" BorderThickness="1">
-				<StackPanel Orientation="Vertical" Margin="20" HorizontalAlignment="Stretch" Grid.Column="0">
-					<Border Padding="0 0 0 0" BorderBrush="#666" BorderThickness="1" CornerRadius="4" HorizontalAlignment="Stretch">
-						<Button x:Name="buttonRepository" Background="Transparent" Padding="20" HorizontalContentAlignment="Center"  HorizontalAlignment="Stretch">Repository</Button>
-					</Border>
-				</StackPanel>
-			</Border>
-
 			
-			<ContentControl Content="{Binding CurrentView}" Grid.Column="1"/>
-
-			<!--
-			<views:RepositoryView Grid.Column="1"/>
-			-->
-
-			
+			<ContentControl Content="{Binding CurrentView}" Grid.Column="0"/>
 		</Grid>
 	</Grid>
 </Window>
