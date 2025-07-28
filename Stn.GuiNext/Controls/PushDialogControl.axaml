@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="540"
+             x:Class="Stn.GuiNext.PushDialogControl"
+			 xmlns:controls="clr-namespace:Stn.GuiNext"
+			 xmlns:local="clr-namespace:Stn.GuiNext"
+			 x:DataType="local:PushDialogControl"
+			 >
+	
+	<controls:PopupControl x:Name="popupDialog" Title="Push changes to remote" PopupHeight="540" HasOK="True" HasCancel="True" ShowPopup="{Binding ShowDialog}">
+		<StackPanel Orientation="Vertical" Margin="8">
+			<Label Margin="0 0 0 8" FontWeight="Bold">Change description:</Label>
+			<TextBox x:Name="textboxChangeDescription" AcceptsReturn="True" AcceptsTab="True" MinLines="18" MaxLines="18" TextWrapping="Wrap" Watermark="Enter your changes here.">
+				
+			</TextBox>
+		</StackPanel>
+	</controls:PopupControl>
+	
+</UserControl>

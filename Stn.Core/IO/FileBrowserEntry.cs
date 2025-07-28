@@ -14,6 +14,7 @@ namespace Stn.Core.IO
         public bool IsCompressed { get; set; } = false;
         public string ArchivePath { get; set; } = string.Empty;
         public bool IsFile { get; set; } = false;
+        public object? Tag { get; set; } = false;
 
         public bool IsValidCreated
         {

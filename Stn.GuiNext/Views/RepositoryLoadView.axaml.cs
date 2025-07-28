@@ -1,10 +1,12 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Stn.Core.SyncPoints;
 using Stn.Core.UX;
 using Stn.GuiNext.ViewModels;
 using System;
+using System.Threading.Tasks;
 
 namespace Stn.GuiNext;
 
@@ -30,6 +32,16 @@ public partial class RepositoryLoadView : UserControl
     {
         InitializeComponent();
         buttonBrowseLocal.Tapped += ButtonBrowseLocal_Tapped;
+        
+        Repository.UpdateProgressHandler = async (int current, int max, string message) =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                progressDialog.MaxValue = max;
+                progressDialog.CurrentValue = current;
+                progressDialog.Status = message;
+            });
+        };
     }
 
     private async void ButtonBrowseLocal_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
@@ -45,6 +57,7 @@ public partial class RepositoryLoadView : UserControl
                 try
                 {
                     ViewModel.Repository = new Repository(localPath);
+                    ViewModel.SwitchTo(ViewModel.RepositoryView);
                 }
                 catch
                 {
@@ -56,19 +69,29 @@ public partial class RepositoryLoadView : UserControl
                         {
                             throw new InvalidOperationException("Remote must be specified");
                         }
+                        if (dialogResult.Outcome == RemoteDialogOutcome.Ok)
+                        {
+                            progressDialog.IsVisible = true;
+                            
+                            var task = Task.Run(async () =>
+                            {
+                                var newRepository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
 
-                        ViewModel.Repository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
-
-                        if (ViewModel == null) return;
+                                await Dispatcher.UIThread.InvokeAsync(() =>
+                                {
+                                    ViewModel.Repository = newRepository;
+                                    progressDialog.IsVisible = false;
+                                    ViewModel.SwitchTo(ViewModel.RepositoryView);
+                                });
+                            });
+                        }
                     }
                     else
                     {
                         //User chose to not further configure stuff 
                         return;
                     }
-                } 
-            
-                ViewModel.SwitchTo(ViewModel.RepositoryView);
+                }
             }
             catch (Exception ex)
             {

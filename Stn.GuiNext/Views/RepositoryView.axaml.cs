@@ -1,7 +1,12 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Threading;
+using Stn.Core;
+using Stn.Core.SyncPoints;
 using Stn.GuiNext.ViewModels;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Stn.GuiNext.Views;
 
@@ -29,6 +34,18 @@ public partial class RepositoryView : UserControl
         buttonPush.Tapped += ButtonPush_Tapped;
         buttonRestore.Tapped += ButtonRestore_Tapped;
         buttonRestoreSingle.Tapped += ButtonRestoreSingle_Tapped;
+        comboRemoteSyncpoints.SelectionChanged += ComboRemoteSyncpoints_SelectionChanged;
+    }
+
+    private void ComboRemoteSyncpoints_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        var selectedSyncPoint = comboRemoteSyncpoints.SelectedItem as SyncPoint;
+
+        if(selectedSyncPoint != null && ViewModel != null && ViewModel.Repository != null)
+        {
+            remoteFileBrowser.CurrentSyncPoint = selectedSyncPoint;
+            remoteFileBrowser.Refresh();
+        }
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -37,8 +54,45 @@ public partial class RepositoryView : UserControl
 
         if (ViewModel != null && ViewModel.Repository != null)
         {
+            Repository.UpdateProgressHandler = (int current, int max, string message) =>
+            {
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    progressDialog.MaxValue = max;
+                    progressDialog.CurrentValue = current;
+                    progressDialog.Status = message;
+                });
+            };
+
             localFileBrowser.BrowserPath = ViewModel.Repository.LocalPath;
-            localSyncPointLabel.Content = ViewModel.Repository.LocalSyncPointID;
+            localFileBrowser.WatcherEnabled = true;
+            RefreshLocalSyncPointLabel();
+
+            remoteFileBrowser.BrowserType = FileBrowserControlType.Repository;
+            remoteFileBrowser.AssociatedRepository = ViewModel.Repository;
+            remoteFileBrowser.BrowserPath = ViewModel.Repository.RemotePath;
+            comboRemoteSyncpoints.Items.Clear();
+            RefreshRemoteSyncPoints();
+        }
+    }
+
+    private void RefreshLocalSyncPointLabel()
+    {
+        if (ViewModel != null && ViewModel.Repository != null)
+        {
+            localSyncPointLabel.Content = ViewModel.Repository.SyncPoints.Single(sp => sp.SyncPointId == ViewModel.Repository.LocalSyncPointID);
+        }
+    }
+
+    private void RefreshRemoteSyncPoints()
+    {
+        if (ViewModel != null && ViewModel.Repository != null)
+        {
+            comboRemoteSyncpoints.ItemsSource = ViewModel.Repository.SyncPoints;
+            if (comboRemoteSyncpoints.Items.Count > 0)
+            {
+                comboRemoteSyncpoints.SelectedIndex = 0;
+            }
         }
     }
 
@@ -59,7 +113,26 @@ public partial class RepositoryView : UserControl
 
     private async void ButtonPush_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to push your changes?", "Are you sure?", MessageBoxOptions.YesNo);
+        var result = await PushDialogControl.ShowDialogAsync(mainRepositoryViewGrid);
+
+        if (result.Outcome == PushDialogOutcome.OK && ViewModel != null && ViewModel.Repository != null) {
+            progressDialog.IsVisible = true;
+
+            var repository = ViewModel.Repository; //needed because of threading.
+
+            var task = Task.Run(() =>
+            {
+                repository.Push(string.Empty, result.ChangeDescription);
+
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    RefreshLocalSyncPointLabel();
+                    RefreshRemoteSyncPoints();
+
+                    progressDialog.IsVisible = false;
+                });
+            });
+        }
     }
 
     private async void MenuCloseRepo_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)

@@ -21,5 +21,6 @@
 				</StackPanel>
 			</Border>
 		</Grid>
+		<controls:ProgressDialogControl x:Name="progressDialog" IsVisible="False"/>
 	</Grid>
 </UserControl>

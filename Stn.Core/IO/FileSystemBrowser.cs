@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Stn.Core.IO
 {
-    public class FileSystemBrowser : FileBrowser
+    public class FileSystemBrowser : FileBrowser, IDisposable
     {
         private readonly FileSystemWatcher _watcher;
         private DirectoryInfo? _currentDirectory = null;
@@ -54,7 +54,7 @@ namespace Stn.Core.IO
 
                 if (BrowserMode == FileBrowserMode.FoldersAndFiles)
                 {
-                    var filesInDirectory = Directory.EnumerateFiles(path, "*.*", options).Order();
+                    var filesInDirectory = Directory.EnumerateFiles(path, "*", options).Order();
                     foreach (var file in filesInDirectory)
                     {
                         try
@@ -134,6 +134,19 @@ namespace Stn.Core.IO
             get
             {
                 return _filesSystemChanges;
+            }
+        }
+
+        public bool WatcherEnabled
+        {
+            get
+            {
+                return _watcher.EnableRaisingEvents;
+            }
+
+            set
+            {
+                _watcher.EnableRaisingEvents = value;
             }
         }
 
@@ -251,6 +264,11 @@ namespace Stn.Core.IO
         public void ClearChangeHistory()
         {
             _filesSystemChanges.Clear();
+        }
+
+        public void Dispose()
+        {
+            _watcher.Dispose();
         }
     }
 }

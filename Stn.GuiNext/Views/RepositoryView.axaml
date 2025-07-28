@@ -39,8 +39,8 @@
 				
 				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="0" Padding="6" Margin="8" Background="#ddd">
 					<DockPanel>
-						<Label VerticalContentAlignment="Center">SyncPoint</Label>
-						<Label x:Name="localSyncPointLabel" VerticalContentAlignment="Center" Content="2303033898"/>
+						<Label VerticalContentAlignment="Center">Local syncpoint created on </Label>
+						<Label x:Name="localSyncPointLabel" VerticalContentAlignment="Center"/>
 					</DockPanel>
 				</Border>
 
@@ -76,18 +76,8 @@
 
 				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="2" Padding="6" Margin="8" Background="#ddd">
 					<DockPanel >
-						<Label VerticalContentAlignment="Center">SyncPoint</Label>
-						<ComboBox CornerRadius="8" Background="Transparent" SelectedIndex="0" MaxDropDownHeight="100" BorderThickness="0" HorizontalAlignment="Stretch" Margin="10, 4, 0, 0">
-							<ComboBoxItem>Text Item 1</ComboBoxItem>
-							<ComboBoxItem>Text Item 2</ComboBoxItem>
-							<ComboBoxItem>Text Item 3</ComboBoxItem>
-							<ComboBoxItem>Text Item 4</ComboBoxItem>
-							<ComboBoxItem>Text Item 5</ComboBoxItem>
-							<ComboBoxItem>Text Item 6</ComboBoxItem>
-							<ComboBoxItem>Text Item 7</ComboBoxItem>
-							<ComboBoxItem>Text Item 8</ComboBoxItem>
-							<ComboBoxItem>Text Item 9</ComboBoxItem>
-						</ComboBox>
+						<Label VerticalContentAlignment="Center">Remote syncpoint</Label>
+						<ComboBox x:Name="comboRemoteSyncpoints" CornerRadius="8" Background="Transparent" SelectedIndex="0" MaxDropDownHeight="100" BorderThickness="0" HorizontalAlignment="Stretch" Margin="10, 4, 0, 0"/>
 					</DockPanel>
 				</Border>				
 				
@@ -95,6 +85,7 @@
 				
 			</Grid>
 		</Grid>
+		<controls:ProgressDialogControl x:Name="progressDialog" IsVisible="False"/>
 	</Grid>
 	
 </UserControl>

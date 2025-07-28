@@ -25,7 +25,7 @@
 				<Label FontWeight="Bold" Margin="0 0 20 0 " Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Right">Remote path</Label>
 				<StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="0">
 					<Button x:Name="buttonBrowseRemote" Height="36" VerticalContentAlignment="Center">Browse</Button>		
-					<TextBox x:Name="textboxRemotePath" Margin="10 0 20 0" Height="36" Width="480" HorizontalAlignment="Stretch"/>
+					<TextBox x:Name="textboxRemotePath" Margin="10 0 20 0" Height="36" Width="480" HorizontalAlignment="Stretch" Watermark="e.g. a local path (C:\folder) or remote path (\\server\share)"/>
 				</StackPanel>
 
 				<!--Is compressed row-->
