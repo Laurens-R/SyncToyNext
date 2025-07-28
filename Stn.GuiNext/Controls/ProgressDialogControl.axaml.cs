@@ -57,6 +57,20 @@ public partial class ProgressDialogControl : UserControl
         }
     }
 
+    public static readonly StyledProperty<string> TitleProperty =
+    AvaloniaProperty.Register<ProgressDialogControl, string>(nameof(Title), defaultValue: "Working on it!");
+
+    public string Title
+    {
+        get => GetValue(TitleProperty);
+
+        set
+        {
+            SetValue(TitleProperty, value);
+            OnPropertyChanged(nameof(Title));
+        }
+    }
+
     public ProgressDialogControl()
     {
         InitializeComponent();

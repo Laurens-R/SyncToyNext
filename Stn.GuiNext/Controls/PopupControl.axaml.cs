@@ -19,7 +19,6 @@ public enum PopupControlResult
 
 public partial class PopupControl : ContentControl
 {
-    private Button? _buttonClose;
     private Button? _buttonCancel;
     private Button? _buttonOK;
     private Button? _buttonYes;

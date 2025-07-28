@@ -34,8 +34,6 @@ public partial class MessageBoxControl : UserControl
         }
     }
 
-    public event EventHandler<PopupControlResult>? DialogChoice;
-
     public new event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

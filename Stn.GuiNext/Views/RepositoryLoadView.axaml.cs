@@ -69,8 +69,9 @@ public partial class RepositoryLoadView : UserControl
                         {
                             throw new InvalidOperationException("Remote must be specified");
                         }
-                        if (dialogResult.Outcome == RemoteDialogOutcome.Ok)
+                        if (dialogResult.Outcome == RemoteDialogOutcome.Ok && !String.IsNullOrWhiteSpace(dialogResult.RemotePath))
                         {
+                            progressDialog.Title = "Initializing repository";
                             progressDialog.IsVisible = true;
                             
                             var task = Task.Run(async () =>

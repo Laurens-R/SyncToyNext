@@ -88,6 +88,15 @@ namespace Stn.Core.SyncPoints
             }
         }
 
+        public bool GitPresent
+        {
+            get
+            {
+                var gitPath = Path.Combine(LocalPath, ".git");
+                return Directory.Exists(gitPath);
+            }
+        }
+
         public Repository(string localPath)
         {
             if (String.IsNullOrWhiteSpace(localPath) || !Path.Exists(localPath) || !RemoteConfig.RemoteConfigExists(localPath))

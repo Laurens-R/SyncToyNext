@@ -121,6 +121,7 @@ public partial class RepositoryView : UserControl
 
             if (repository != null && selectedSyncPoint != null && selectedItems != null)
             {
+                progressDialog.Title = "Restoring files to local";
                 progressDialog.IsVisible = true;
 
                 var task = Task.Run(() =>
@@ -151,6 +152,7 @@ public partial class RepositoryView : UserControl
 
             if (repository != null && selectedSyncPoint != null)
             {
+                progressDialog.Title = "Restoring to local";
                 progressDialog.IsVisible = true;
 
                 var task = Task.Run(() =>
@@ -172,6 +174,7 @@ public partial class RepositoryView : UserControl
         var result = await PushDialogControl.ShowDialogAsync(mainRepositoryViewGrid);
 
         if (result.Outcome == PushDialogOutcome.OK && ViewModel != null && ViewModel.Repository != null) {
+            progressDialog.Title = "Pusing to remote";
             progressDialog.IsVisible = true;
 
             var repository = ViewModel.Repository; //needed because of threading.
