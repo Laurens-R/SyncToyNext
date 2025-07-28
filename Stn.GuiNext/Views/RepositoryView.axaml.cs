@@ -30,6 +30,7 @@ public partial class RepositoryView : UserControl
     public RepositoryView()
     {
         InitializeComponent();
+        DataContext = this;
         menuCloseRepo.Tapped += MenuCloseRepo_Tapped;
         buttonPush.Tapped += ButtonPush_Tapped;
         buttonRestore.Tapped += ButtonRestore_Tapped;
@@ -81,6 +82,8 @@ public partial class RepositoryView : UserControl
             remoteFileBrowser.AssociatedRepository = ViewModel.Repository;
             remoteFileBrowser.BrowserPath = ViewModel.Repository.RemotePath;
             RefreshRemoteSyncPoints();
+
+            iconGit.IsVisible = ViewModel.Repository.GitPresent;
         }
     }
 

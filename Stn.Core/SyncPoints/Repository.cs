@@ -27,7 +27,6 @@ namespace Stn.Core.SyncPoints
 
         public static Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
 
-
         public IgnoreFile IgnoreFile => _ignoreFile;
 
         public IReadOnlyList<SyncPoint> SyncPoints
