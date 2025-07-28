@@ -7,7 +7,7 @@ This guide explains how to debug SyncToyNext using both Visual Studio Code and V
 ## 1. Preparing a Debug Configuration
 
 To avoid modifying your production configuration, create a dedicated test config file, for example:
-C:\Code\SyncToyNext\SyncToyNext.test.config.json
+C:\Code\SyncToyNext\Stn.test.config.json
 Example content:
 
 ```json
@@ -45,8 +45,8 @@ Example content:
       "name": "Debug SyncToyNext",
       "type": "coreclr",
       "request": "launch",
-      "program": "${workspaceFolder}/SyncToyNext.Client/bin/Debug/net9.0/win-x64/SyncToyNext.Client.exe",
-      "args": ["--config", "SyncToyNext.test.config.json"],
+      "program": "${workspaceFolder}/Stn.Cli/bin/Debug/net9.0/win-x64/Stn.Cli.exe",
+      "args": ["--config", "Stn.test.config.json"],
       "cwd": "${workspaceFolder}",
       "console": "internalConsole"
     }
@@ -67,15 +67,15 @@ Example content:
 ## 3. Debugging in Visual Studio 2022
 
 1. **Open the Solution**  
-   Open `SyncToyNext.sln` in Visual Studio 2022.
+   Open `Stn.sln` in Visual Studio 2022.
 
 2. **Set Startup Project**  
-   Right-click `SyncToyNext.Client` and select "Set as Startup Project".
+   Right-click `Stn.Cli` and select "Set as Startup Project".
 
 3. **Set Command Line Arguments**  
-   - Right-click the `SyncToyNext.Client` project > Properties.
+   - Right-click the `Stn.Cli` project > Properties.
    - Go to the "Debug" tab.
-   - Set `--config SyncToyNext.test.config.json` as the Application arguments.
+   - Set `--config Stn.test.config.json` as the Application arguments.
    - Ensure the working directory is set to the solution root or where your config file is located.
 
 4. **Set Breakpoints**  

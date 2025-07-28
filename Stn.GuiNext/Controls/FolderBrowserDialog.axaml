@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="900"
+			 xmlns:controls="clr-namespace:Stn.GuiNext"
+			 xmlns:local="clr-namespace:Stn.GuiNext"
+             x:DataType="local:FolderBrowserDialog"
+             x:Class="Stn.GuiNext.FolderBrowserDialog">
+
+	<controls:PopupControl x:Name="popupDialog" Title="Pick folder" HasOK="True" HasCancel="True" PopupWidth="800" PopupHeight="860" ShowPopup="{Binding ShowMessageBox}">
+		<StackPanel Orientation="Vertical">
+			<Border Margin="0 0 0 10">
+				<StackPanel Orientation="Horizontal">
+					<RadioButton x:Name="radioLocalDrive" GroupName="sourceGroup" IsChecked="True" />
+					<Label VerticalContentAlignment="Center" Margin="0 0 10 0">Local Drive</Label>
+					<RadioButton x:Name="networkDrive" GroupName="sourceGroup"/>
+					<Label VerticalContentAlignment="Center">Network location</Label>
+				</StackPanel>
+			</Border>
+			<Border x:Name="sectionDrives" IsVisible="">
+				<ComboBox x:Name="comboDrives" Margin="0 0 0 10" HorizontalAlignment="Stretch"/>
+			</Border>
+			<Border x:Name="sectionNetworkLocation">
+				<Grid >
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
+					<TextBox x:Name="textboxNetworkLocation" Margin="0 0 0 10" HorizontalAlignment="Stretch" Grid.Column="0" Watermark="e.g. \\server\share" />
+					<Button x:Name="btnLoadNetworkLocation" Width="100" VerticalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Grid.Column="1" Margin="10 0 0 8">Open</Button>
+				</Grid>
+			</Border>
+			<controls:FileBrowserControl x:Name="folderBrowser" Height="520" BrowserMode="FoldersOnly"/>
+			<Border Margin="0 10 0 0" BorderBrush="#aaa" BorderThickness="1" Padding="10" CornerRadius="8">
+				<StackPanel Orientation="Horizontal">
+					<Label FontWeight="Bold">Selected path:</Label>
+					<Label FontWeight="Bold" x:Name="labelCurrentPath"/>
+				</StackPanel>
+			</Border>
+		</StackPanel>
+	</controls:PopupControl>
+</UserControl>

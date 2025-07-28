@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path=".stnignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Dockerfile" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="SyncToyNext.test.config.json" />
+  </Folder>
+  <Folder Name="/Solution Items/.github/" />
+  <Folder Name="/Solution Items/.github/workflows/">
+    <File Path=".github/workflows/build-and-publish.yml" />
+  </Folder>
+  <Folder Name="/Solution Items/.vscode/">
+    <File Path=".vscode/launch.json" />
+    <File Path=".vscode/settings.json" />
+    <File Path=".vscode/tasks.json" />
+  </Folder>
+  <Folder Name="/Solution Items/Documentation/">
+    <File Path="Documentation/ARCHITECTURE.md" />
+    <File Path="Documentation/DEBUGGING.md" />
+  </Folder>
+  <Project Path="Stn.Cli/Stn.Cli.csproj" />
+  <Project Path="Stn.Core/Stn.Core.csproj" />
+  <Project Path="Stn.GuiNext.Desktop/Stn.GuiNext.Desktop.csproj" />
+  <Project Path="Stn.GuiNext/Stn.GuiNext.csproj" />
+</Solution>

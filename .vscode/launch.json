@@ -2,11 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug SyncToyNext.Client",
+      "name": "Debug Stn.Cli",
       "type": "coreclr",
       "request": "launch",
-      "program": "${workspaceFolder}/SyncToyNext.Client/bin/Debug/net9.0/win-x64/SyncToyNext.Client.exe",
-      "args": ["--config", "${workspaceFolder}/SyncToyNext.test.config.json"],
+      "program": "${workspaceFolder}/Stn.Cli/bin/Debug/net9.0/win-x64/Stn.Cli.exe",
+      "args": ["--config", "${workspaceFolder}/Stn.test.config.json"],
       "cwd": "${workspaceFolder}",
       "console": "internalConsole",
       "stopAtEntry": false,

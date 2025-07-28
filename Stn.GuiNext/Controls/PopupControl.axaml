@@ -1,0 +1,52 @@
+<ContentControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:local="clr-namespace:Stn.GuiNext"
+    x:Class="Stn.GuiNext.PopupControl"
+	x:DataType="local:PopupControl"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch">
+	<ContentControl.Template>
+		<ControlTemplate>
+			<Grid IsVisible="{TemplateBinding ShowPopup}">
+				<Border Background="#000000"
+						Opacity="160"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"/>
+				<Border CornerRadius="8"
+                        BoxShadow="0 4 16 0 #40000000"
+                        Width="{TemplateBinding PopupWidth}"
+                        Height="{TemplateBinding PopupHeight}"
+                        Background="White"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto" />
+							<RowDefinition Height="*" />
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+						<Label Content="{TemplateBinding Title}" Margin="20" FontSize="18" FontWeight="Bold" Grid.Row="0"/>
+						<ContentPresenter Grid.Row="1" Grid.ColumnSpan="2"
+							Content="{TemplateBinding Content}"
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Stretch"
+							Padding="12"/>
+						<StackPanel Orientation="Horizontal" HorizontalAlignment="Center"  Grid.Row="2" Grid.ColumnSpan="2" Margin="16">
+							<Button x:Name="buttonOK" IsVisible="{TemplateBinding HasOK}"  Margin="8" Width="80" HorizontalContentAlignment="Center">OK</Button>
+							<Button x:Name="buttonCancel" IsVisible="{TemplateBinding HasCancel}" Margin="8" Width="80" HorizontalContentAlignment="Center">Cancel</Button>
+							<Button x:Name="buttonYes" IsVisible="{TemplateBinding HasYes}" Margin="8" Width="80" HorizontalContentAlignment="Center">Yes</Button>
+							<Button x:Name="buttonNo" IsVisible="{TemplateBinding HasNo}" Margin="8" Width="80" HorizontalContentAlignment="Center">No</Button>
+						</StackPanel>
+					</Grid>
+					
+				</Border>
+			</Grid>
+		</ControlTemplate>
+	</ContentControl.Template>
+</ContentControl>

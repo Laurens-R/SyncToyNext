@@ -1,0 +1,32 @@
+{
+  "Profiles": [
+    {
+      "Id": "TestDocumentsBackup",
+      "SourcePath": "C:/TestData/Documents",
+      "DestinationPath": "D:/TestBackups/Documents.zip",
+      "DestinationIsZip": true,
+      "SyncInterval": "Realtime"
+    },
+    {
+      "Id": "TestPhotosSync",
+      "SourcePath": "C:/TestData/Photos",
+      "DestinationPath": "D:/TestBackups/PhotosBackup",
+      "DestinationIsZip": false,
+      "SyncInterval": "Hourly"
+    },
+    {
+      "Id": "TestLinuxToZip",
+      "SourcePath": "/tmp/testsource",
+      "DestinationPath": "/tmp/testbackups/source-backup.zip",
+      "DestinationIsZip": true,
+      "SyncInterval": "Daily"
+    },
+    {
+      "Id": "TestNetworkShareToFolder",
+      "SourcePath": "//NAS/TestShare",
+      "DestinationPath": "D:/TestBackups/NetworkCopy",
+      "DestinationIsZip": false,
+      "SyncInterval": "AtShutdown"
+    }
+  ]
+}

@@ -29,10 +29,10 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore SyncToyNext.Client/SyncToyNext.Client.csproj
+        run: dotnet restore Stn.Cli/Stn.Cli.csproj
 
       - name: Publish self-contained
-        run: dotnet publish SyncToyNext.Client/SyncToyNext.Client.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o ./publish/${{ matrix.rid }} /p:DebugType=None /p:DebugSymbols=false /p:PublishTrimmed=true /p:TrimMode=link
+        run: dotnet publish Stn.Cli/Stn.Cli.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o ./publish/${{ matrix.rid }} /p:DebugType=None /p:DebugSymbols=false /p:PublishTrimmed=true /p:TrimMode=link
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

@@ -7,7 +7,7 @@
       "type": "process",
       "args": [
         "build",
-        "SyncToyNext.Client/SyncToyNext.Client.csproj",
+        "Stn.Cli/Stn.Cli.csproj",
         "-c",
         "Debug"
       ],
@@ -23,7 +23,7 @@
       "type": "process",
       "args": [
         "publish",
-        "SyncToyNext.Client/SyncToyNext.Client.csproj",
+        "Stn.Cli/Stn.Cli.csproj",
         "-c",
         "Release",
         "-r",

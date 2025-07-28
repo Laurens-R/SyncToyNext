@@ -35,22 +35,22 @@ SyncToyNext is structured as a multi-project .NET 9 solution with clear separati
 
 ### Project Structure
 SyncToyNext/
-├── SyncToyNext.Core/          # Core business logic and synchronization engine
-├── SyncToyNext.Client/        # Command-line interface and execution modes
-├── SyncToyNext.GuiClient/     # GUI application (WinForms with WebView2)
+├── Stn.Core/          # Core business logic and synchronization engine
+├── Stn.Cli/        # Command-line interface and execution modes
+├── Stn.Gui/     # GUI application (WinForms with WebView2)
 └── Documentation/             # Architecture and usage documentation
 
 ### Layer Dependencies
 
 graph TD
-    A[SyncToyNext.Client] --> B[SyncToyNext.Core]
-    C[SyncToyNext.GuiClient] --> B[SyncToyNext.Core]
+    A[Stn.Cli] --> B[Stn.Core]
+    C[Stn.Gui] --> B[Stn.Core]
     B --> D[.NET 9 Runtime]
     B --> E[System.IO.Compression]
     B --> F[System.Text.Json]
     C --> G[Microsoft.Web.WebView2]
 
-### Core Layer (`SyncToyNext.Core`)
+### Core Layer (`Stn.Core`)
 
 The core layer contains all business logic and is organized into the following namespaces:
 
@@ -63,14 +63,14 @@ The core layer contains all business logic and is organized into the following n
 - **Helpers**: Utility functions and file operations
 - **Merging**: Conflict resolution and merge operations
 
-### Client Layer (`SyncToyNext.Client`)
+### Client Layer (`Stn.Cli`)
 
 The client layer provides command-line interface and execution coordination:
 
 - **ExecutionModes**: Mode-specific implementations (ProfileMode, RepositoryMode, ManualMode, ServiceMode)
 - **Helpers**: CLI-specific utilities (CommandLineArguments, CliHelpers)
 
-### GUI Layer (`SyncToyNext.GuiClient`)
+### GUI Layer (`Stn.Gui`)
 
 The GUI layer provides a modern web-based interface using WinForms and WebView2:
 

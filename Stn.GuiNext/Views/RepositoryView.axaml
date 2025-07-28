@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Stn.GuiNext"
+             x:Class="Stn.GuiNext.Views.RepositoryView">
+	<Grid x:Name="mainRepositoryViewGrid">
+		
+		<Grid>
+
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="*" />
+			</Grid.RowDefinitions>
+			
+			<Menu Grid.Row="0" Background="#ddd" BorderBrush="#999" BorderThickness="0, 0, 0, 1">
+				<MenuItem x:Name="menuCloseRepo" Header="Close Repository"/>
+			</Menu>
+			
+			<Grid Grid.Row="1" Margin="10">
+				
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="1*" />
+					<ColumnDefinition Width="80" />
+					<ColumnDefinition Width="1*" />
+				</Grid.ColumnDefinitions>
+				
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="*" />
+				</Grid.RowDefinitions>
+
+				<!--Left content-->
+				
+				<DockPanel Grid.Row="0" Grid.Column="0">
+					<Label FontSize="16" FontWeight="Bold" Margin="4" DockPanel.Dock="Left">Local</Label>
+					<Rectangle Height="1" Fill="DarkGray" VerticalAlignment="Center" Margin="5,0,10,0"/>
+				</DockPanel>
+				
+				
+				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="0" Padding="6" Margin="8" Background="#ddd">
+					<DockPanel>
+						<Label VerticalContentAlignment="Center">Local syncpoint created on </Label>
+						<Label x:Name="localSyncPointLabel" VerticalContentAlignment="Center"/>
+					</DockPanel>
+				</Border>
+
+				<controls:FileBrowserControl x:Name="localFileBrowser" Grid.Column="0" Grid.Row="2" VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" Margin="8"/>
+				
+				<!--Middle Content -->
+
+				<StackPanel Width="50" Grid.Column="1" Grid.RowSpan="3" Grid.Row="0" Orientation="Vertical" VerticalAlignment="Center">
+					<Button x:Name="buttonPush" HorizontalAlignment="Center" Width="50" Height="50" Margin="0 8 0 8">
+						<Button.Content>
+							<Image Source="/Assets/action-push.png"/>
+						</Button.Content>
+					</Button>
+					<Button x:Name="buttonRestore" HorizontalAlignment="Center" Width="50" Height="50" Margin="0 8 0 8">
+						<Button.Content>
+							<Image Source="/Assets/action-restore.png"/>
+						</Button.Content>
+					</Button>
+					<Button x:Name="buttonRestoreSingle" HorizontalAlignment="Center" Width="50" Height="50" Margin="0 8 0 8">
+						<Button.Content>
+							<Image Source="/Assets/action-restore-single.png"/>
+						</Button.Content>
+					</Button>
+				</StackPanel>
+
+
+				<!--Right Content-->
+				
+				<DockPanel Grid.Row="0" Grid.Column="2">
+					<Label FontSize="16" FontWeight="Bold" Margin="4" DockPanel.Dock="Left">Remote</Label>
+					<Rectangle Height="1" Fill="DarkGray" VerticalAlignment="Center" Margin="5,0,10,0"/>
+				</DockPanel>
+
+				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="2" Padding="6" Margin="8" Background="#ddd">
+					<DockPanel >
+						<Label VerticalContentAlignment="Center">Remote syncpoint</Label>
+						<ComboBox x:Name="comboRemoteSyncpoints" CornerRadius="8" Background="Transparent" SelectedIndex="0" MaxDropDownHeight="100" BorderThickness="0" HorizontalAlignment="Stretch" Margin="10, 4, 0, 0"/>
+					</DockPanel>
+				</Border>				
+				
+				<controls:FileBrowserControl x:Name="remoteFileBrowser" Grid.Column="2" Grid.Row="2" VerticalAlignment="Stretch" BrowserType="FileSystem" BrowserPath="C:\" Margin="8"/>
+				
+			</Grid>
+		</Grid>
+		<controls:ProgressDialogControl x:Name="progressDialog" IsVisible="False"/>
+	</Grid>
+	
+</UserControl>

@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Stn.GuiNext.ProgressDialogControl"
+			 xmlns:controls="clr-namespace:Stn.GuiNext"
+			 xmlns:local="clr-namespace:Stn.GuiNext"
+			 x:DataType="local:ProgressDialogControl">
+	<controls:PopupControl Title="Working on it!" ShowPopup="{Binding IsVisible}" PopupHeight="280">
+		<Border Padding="10">
+			<StackPanel VerticalAlignment="Center">
+				<Label x:Name="labelStatus" Margin="0 0 0 20">Please wait while the operation is completed...</Label>
+				<ProgressBar Height="20" Minimum="0" Maximum="{Binding MaxValue}" Value="{Binding CurrentValue}" />
+			</StackPanel>
+		</Border>
+	</controls:PopupControl>
+</UserControl>

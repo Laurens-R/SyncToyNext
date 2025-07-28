@@ -43,10 +43,10 @@ Right now only single user scenarios are supported, but in the future multi-user
 
 ### Building the Project
 
-Open a terminal in the project root and run:dotnet build SyncToyNext.slnx
+Open a terminal in the project root and run:dotnet build Stn.slnx
 ### Publishing a Standalone Executable
 
-To create a single-file, self-contained executable (no .NET runtime required):dotnet publish SyncToyNext.Client -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publishThe executable will be in the `./publish/` directory, named `stn.exe`.
+To create a single-file, self-contained executable (no .NET runtime required):dotnet publish Stn.Cli -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publishThe executable will be in the `./publish/` directory, named `stn.exe`.
 
 ## Usage Overview
 
@@ -95,15 +95,15 @@ When running the tool manually from the command line on Windows, SyncToyNext wil
 
 ### Running as a Linux Systemd Service
 
-1. Publish the app as a self-contained executable for Linux:dotnet publish SyncToyNext.Client -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish2. Copy the published files to your target Linux machine, e.g. `/opt/synctoynext/`.
+1. Publish the app as a self-contained executable for Linux:dotnet publish Stn.Cli -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish2. Copy the published files to your target Linux machine, e.g. `/opt/synctoynext/`.
 
-3. Create a systemd service file, e.g. `/etc/systemd/system/synctoynext.service`:[Unit]
+3. Create a systemd service file, e.g. `/etc/systemd/system/Stn.service`:[Unit]
 Description=SyncToyNext File Synchronization Service
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/synctoynext/stn --config /opt/synctoynext/SyncToyNext.config.json
+ExecStart=/opt/synctoynext/stn --config /opt/synctoynext/Stn.config.json
 WorkingDirectory=/opt/synctoynext/
 Restart=on-failure
 User=synctoynext
@@ -116,21 +116,21 @@ sudo systemctl start synctoynext- The service will now run in the background and
 
 ### Running as a macOS Launchd Service
 
-1. Publish the app as a self-contained executable for macOS:dotnet publish SyncToyNext.Client -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish(or use `osx-arm64` for Apple Silicon)
+1. Publish the app as a self-contained executable for macOS:dotnet publish Stn.Cli -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish(or use `osx-arm64` for Apple Silicon)
 
 2. Copy the published files to your target Mac, e.g. `/usr/local/synctoynext/`.
 
-3. Create a launchd plist file, e.g. `/Library/LaunchDaemons/com.synctoynext.service.plist`:<?xml version="1.0" encoding="UTF-8"?>
+3. Create a launchd plist file, e.g. `/Library/LaunchDaemons/com.Stn.service.plist`:<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.synctoynext.service</string>
+    <string>com.Stn.service</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/synctoynext/stn</string>
         <string>--config</string>
-        <string>/usr/local/synctoynext/SyncToyNext.config.json</string>
+        <string>/usr/local/synctoynext/Stn.config.json</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -139,12 +139,12 @@ sudo systemctl start synctoynext- The service will now run in the background and
     <key>WorkingDirectory</key>
     <string>/usr/local/synctoynext/</string>
     <key>StandardOutPath</key>
-    <string>/usr/local/synctoynext/synctoynext.log</string>
+    <string>/usr/local/synctoynext/Stn.log</string>
     <key>StandardErrorPath</key>
-    <string>/usr/local/synctoynext/synctoynext.err.log</string>
+    <string>/usr/local/synctoynext/Stn.err.log</string>
 </dict>
-</plist>4. Load and start the service:sudo launchctl load /Library/LaunchDaemons/com.synctoynext.service.plist
-sudo launchctl start com.synctoynext.service- The service will now run in the background and start automatically on boot.
+</plist>4. Load and start the service:sudo launchctl load /Library/LaunchDaemons/com.Stn.service.plist
+sudo launchctl start com.Stn.service- The service will now run in the background and start automatically on boot.
 - Logs can be viewed in the specified log files.
 
 ### Running with Docker
@@ -156,8 +156,8 @@ You can run SyncToyNext as a Docker container on Linux. This is useful for serve
 Mount a host directory for configuration and data:docker run --rm -v /path/to/config:/data \
   -v /path/to/source:/source \
   -v /path/to/destination:/destination \
-  synctoynext --config /data/SyncToyNext.config.json- Replace `/path/to/config`, `/path/to/source`, and `/path/to/destination` with your actual host paths.
-- The `--config` argument should point to the config file inside the container (e.g., `/data/SyncToyNext.config.json`).
+  synctoynext --config /data/Stn.config.json- Replace `/path/to/config`, `/path/to/source`, and `/path/to/destination` with your actual host paths.
+- The `--config` argument should point to the config file inside the container (e.g., `/data/Stn.config.json`).
 - You can mount as many volumes as needed for your sync profiles.
 
 #### Notes
@@ -167,7 +167,7 @@ Mount a host directory for configuration and data:docker run --rm -v /path/to/co
 
 ## Configuration
 
-The configuration is stored in a JSON file (default: `SyncToyNext.config.json` in the app directory). It contains an array of sync profiles. Example:
+The configuration is stored in a JSON file (default: `Stn.config.json` in the app directory). It contains an array of sync profiles. Example:
 
 {
   "Profiles": [
@@ -265,4 +265,4 @@ Choose the interval that best fits your use case. For example, use `Realtime` fo
 - Check the logs for any error messages or clues.
 - For Windows service issues, use the Event Viewer to check for application errors.
 - For Linux, check the status with `systemctl status synctoynext` and view logs with `journalctl -u synctoynext`.
-- For macOS, check the specified log files or use `log show --predicate 'process == "SyncToyNext.Client"' --info` to view logs.
+- For macOS, check the specified log files or use `log show --predicate 'process == "Stn.Cli"' --info` to view logs.
