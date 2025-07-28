@@ -5,13 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Stn.Core.IO
+namespace Stn.Core.SyncPoints
 {
-    public class IgnoreHelper
+    public class IgnoreFile
     {
-        private static List<string> IgnoreFilters { get; set; } = new List<string>();
+        private List<string> IgnoreFilters { get; set; } = new List<string>();
 
-        public static void TryLoadIgnoreFile(string path)
+        public void TryLoadIgnoreFile(string path)
         {
             IgnoreFilters.Clear();
             var ignoreFilePath = Path.Combine(path, ".stnignore");
@@ -22,7 +22,7 @@ namespace Stn.Core.IO
             }
         }
 
-        public static bool IsEntryIgnored(string relativePath)
+        public bool IsEntryIgnored(string relativePath)
         {
             if (IgnoreFilters == null)
                 return false;
@@ -44,7 +44,7 @@ namespace Stn.Core.IO
         }
 
         // Basic .gitignore-style pattern matcher
-        private static bool FileIgnoredIsMatch(string relPath, string pattern)
+        private bool FileIgnoredIsMatch(string relPath, string pattern)
         {
             // Normalize pattern
             pattern = pattern.Replace('\\', '/');

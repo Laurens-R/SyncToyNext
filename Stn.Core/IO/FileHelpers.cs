@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Stn.Core.SyncPoints;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -90,14 +91,15 @@ namespace Stn.Core.IO
             return acceptedTextExtensions.Contains(extension.ToLowerInvariant());
         }
 
-        public static IEnumerable<string> GetFilesInPath(string sourcePath)
+        public static IEnumerable<string> GetFilesInPath(string sourcePath, IgnoreFile? ignoreFile = null)
         {
             var files = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
-            IgnoreHelper.TryLoadIgnoreFile(sourcePath);
-            return files.Where(file => !IgnoreHelper.IsEntryIgnored(file));    
+            ignoreFile = ignoreFile == null ? new IgnoreFile() : ignoreFile;
+            ignoreFile.TryLoadIgnoreFile(sourcePath);
+            return files.Where(file => !ignoreFile.IsEntryIgnored(file));
         }
 
         public static bool IsFileDifferent(string srcFilePath, string destFilePath)

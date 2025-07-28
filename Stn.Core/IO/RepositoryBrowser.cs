@@ -46,11 +46,20 @@ namespace Stn.Core.IO
             }
         }
 
+        public Repository Repository
+        {
+            get
+            {
+                return _repository;
+            }
+        }
+
         public SyncPoint CurrentSyncPoint
         {
             get {  return _currentSyncPoint; }
             set
             {
+                if (_repository == null) throw new InvalidOperationException("No repository set");
                 if (!_repository.SyncPoints.Any(sp => sp == value)) throw new InvalidOperationException("Syncpoint not part of repository.");
                 _currentSyncPoint = value;
                 CurrentPath = String.Empty;

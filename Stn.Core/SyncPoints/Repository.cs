@@ -12,10 +12,12 @@ using System.Threading.Tasks;
 
 namespace Stn.Core.SyncPoints
 {
-    public class Repository
+    public class Repository : IDisposable
     {
+        private IgnoreFile _ignoreFile;
         private SyncPointManager _manager;
         private RemoteConfig? _remoteConfig;
+        private FileSystemWatcher _localFileSystemWatcher;
 
         public string LocalPath { get; set; }
         public string RemotePath { get; set; }
@@ -24,6 +26,9 @@ namespace Stn.Core.SyncPoints
         public RemoteConfig? Config => _remoteConfig;
 
         public static Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
+
+
+        public IgnoreFile IgnoreFile => _ignoreFile;
 
         public IReadOnlyList<SyncPoint> SyncPoints
         {
@@ -110,8 +115,48 @@ namespace Stn.Core.SyncPoints
                         
             LocalPath = currentDirectory;
             RemotePath = _remoteConfig.RemotePath;
-
+            _ignoreFile = new IgnoreFile();
+            _ignoreFile.TryLoadIgnoreFile(localPath);
             _manager = new SyncPointManager(RemotePath);
+
+            _localFileSystemWatcher = new FileSystemWatcher(localPath);
+            _localFileSystemWatcher.IncludeSubdirectories = true;
+            _localFileSystemWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
+            _localFileSystemWatcher.EnableRaisingEvents = true;
+            _localFileSystemWatcher.Renamed += _watcher_Renamed;
+            _localFileSystemWatcher.Created += _watcher_Created;
+            _localFileSystemWatcher.Deleted += _watcher_Deleted;
+            _localFileSystemWatcher.Changed += _watcher_Changed;
+        }
+
+        private void _watcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            CheckChangesInIgnoreFile(e.FullPath);
+        }
+
+        private void CheckChangesInIgnoreFile(string path)
+        {
+            var directory = Path.GetDirectoryName(path);
+
+            if (Path.GetFileName(path) == ".stnignore" && !(directory?.Equals(LocalPath, StringComparison.InvariantCultureIgnoreCase) ?? false))
+            {
+                _ignoreFile.TryLoadIgnoreFile(path);
+            }
+        }
+
+        private void _watcher_Deleted(object sender, FileSystemEventArgs e)
+        {
+            CheckChangesInIgnoreFile(e.FullPath);
+        }
+
+        private void _watcher_Created(object sender, FileSystemEventArgs e)
+        {
+            CheckChangesInIgnoreFile(e.FullPath);
+        }
+
+        private void _watcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            CheckChangesInIgnoreFile(e.FullPath);
         }
 
         /// <summary>
@@ -271,7 +316,7 @@ namespace Stn.Core.SyncPoints
 
         public IEnumerable<string> GetLocalFiles()
         {
-            return FileHelpers.GetFilesInPath(LocalPath);
+            return FileHelpers.GetFilesInPath(LocalPath, _ignoreFile);
         }
 
         public IEnumerable<SyncPointEntry> GetRemoteFiles(string syncpointId)
@@ -402,11 +447,11 @@ namespace Stn.Core.SyncPoints
                 if (File.Exists(fullRemotePath))
                 {
                     return File.ReadAllText(fullRemotePath);
-                } else
+                }
+                else
                 {
                     return String.Empty;
-                }
-                
+                }   
             }
         }
 
@@ -425,6 +470,11 @@ namespace Stn.Core.SyncPoints
             if (_remoteConfig == null || LatestSyncPoint == null) return;
             _remoteConfig.CurrentSyncPoint = LatestSyncPoint.SyncPointId;
             _remoteConfig.Save(LocalPath);
+        }
+
+        public void Dispose()
+        {
+            _localFileSystemWatcher.Dispose();
         }
     }
 }

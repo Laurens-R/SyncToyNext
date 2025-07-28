@@ -1,15 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
-using Splat.ModeDetection;
 using Stn.Core;
 using Stn.Core.IO;
 using Stn.Core.SyncPoints;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -66,14 +64,14 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
                 _browser.BrowserMode = value;
                 _browser.Refresh();
             }
-            
+
             OnPropertyChanged(nameof(BrowserMode));
         }
     }
 
 
-    public string BrowserPath 
-    { 
+    public string BrowserPath
+    {
         get
         {
             return _browserPath;
@@ -117,6 +115,15 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
         }
     }
 
+    public IEnumerable<FileBrowserEntry>? SelectedItems 
+    {
+        get
+        {
+            var items = browserGrid.SelectedItems.Cast<FileBrowserEntry>();
+            return items;
+        }
+    }
+
     public bool WatcherEnabled
     {
         get
@@ -139,9 +146,6 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
         InitializeComponent();
         DataContext = this;
         browserGrid.DoubleTapped += BrowserGrid_DoubleTapped;
-        
-        //just temp: we can use this to do file dialogs etc.
-        var toplevel = TopLevel.GetTopLevel(this);
     }
 
     public void Refresh()

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Stn.Core.SyncPoints;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,13 +12,11 @@ namespace Stn.Core.IO
         private DirectoryInfo? _currentDirectory = null;
         private HashSet<string> _allFiles = new HashSet<string>();
         private List<FileSystemEventArgs> _filesSystemChanges = new List<FileSystemEventArgs>();
-
+        private IgnoreFile _ignoreFile;
         private void Repopulate(string path)
         {
             if (Directory.Exists(path))
             {
-                IgnoreHelper.TryLoadIgnoreFile(path);
-
                 _allEntries.Clear();
                 AddNavigateUpEntry();
 
@@ -37,7 +36,7 @@ namespace Stn.Core.IO
                     var directoryInfo = new DirectoryInfo(directory);
                     var relativePath = Path.GetRelativePath(RootPath, directoryInfo.FullName);
 
-                    if (directoryInfo.Name == ".stn" || IgnoreHelper.IsEntryIgnored(relativePath)) continue;
+                    if (directoryInfo.Name == ".stn" || (_ignoreFile != null && _ignoreFile.IsEntryIgnored(directoryInfo.Name + Path.DirectorySeparatorChar))) continue;
 
                     _directories.Add(new FileBrowserEntry
                     {
@@ -62,7 +61,7 @@ namespace Stn.Core.IO
                             var fileInfo = new FileInfo(file);
                             var relativePath = Path.GetRelativePath(RootPath, fileInfo.FullName);
 
-                            if (fileInfo.Name == ".stn" || IgnoreHelper.IsEntryIgnored(relativePath)) continue;
+                            if (fileInfo.Name == ".stn" || (_ignoreFile != null && _ignoreFile.IsEntryIgnored(relativePath))) continue;
 
                             _files.Add(new FileBrowserEntry
                             {
@@ -176,6 +175,9 @@ namespace Stn.Core.IO
             RootPath = path;
             CurrentPath = path;
 
+            _ignoreFile = new IgnoreFile();
+            _ignoreFile.TryLoadIgnoreFile(path);
+
             _watcher = new FileSystemWatcher(path);
             _watcher.IncludeSubdirectories = true;
             _watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.DirectoryName;
@@ -186,6 +188,16 @@ namespace Stn.Core.IO
             _watcher.Changed += _watcher_Changed;
         }
 
+        private void CheckChangesInIgnoreFile(string path)
+        {
+            var directory = Path.GetDirectoryName(path);
+
+            if (Path.GetFileName(path) == ".stnignore" && !(directory?.Equals(RootPath, StringComparison.InvariantCultureIgnoreCase) ?? false))
+            {
+                _ignoreFile.TryLoadIgnoreFile(path);
+            }
+        }
+
         private void _watcher_Changed(object sender, FileSystemEventArgs e)
         {
             if(Directory.Exists(e.FullPath))
@@ -193,6 +205,7 @@ namespace Stn.Core.IO
                 OnDirectoryModifiedHandler?.Invoke(this, e);
             } else
             {
+                CheckChangesInIgnoreFile(e.FullPath);
                 OnFileModifiedHandler?.Invoke(this, e);
             }
             _filesSystemChanges.Add(e);
@@ -206,6 +219,7 @@ namespace Stn.Core.IO
                 OnFileRemovedHandler?.Invoke(this, e);
             } else
             {
+                CheckChangesInIgnoreFile(e.FullPath);
                 OnDirectoryRemovedHandler?.Invoke(this, e);
             }
             _filesSystemChanges.Add(e);
@@ -220,6 +234,7 @@ namespace Stn.Core.IO
             else
             {
                 _allFiles.Add(e.FullPath);
+                CheckChangesInIgnoreFile(e.FullPath);
                 OnFileCreatedHandler?.Invoke(this, e);
             }
             _filesSystemChanges.Add(e);
@@ -235,6 +250,7 @@ namespace Stn.Core.IO
             {
                 _allFiles.Add(e.FullPath);
                 _allFiles.Remove(e.OldFullPath);
+                CheckChangesInIgnoreFile(e.FullPath);
                 OnFileRenamedHandler?.Invoke(this, e);
             }
             _filesSystemChanges.Add(e);

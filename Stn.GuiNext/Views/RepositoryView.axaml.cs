@@ -30,11 +30,20 @@ public partial class RepositoryView : UserControl
     public RepositoryView()
     {
         InitializeComponent();
-        menuCloseRepo.PointerReleased += MenuCloseRepo_PointerReleased;
+        menuCloseRepo.Tapped += MenuCloseRepo_Tapped;
         buttonPush.Tapped += ButtonPush_Tapped;
         buttonRestore.Tapped += ButtonRestore_Tapped;
         buttonRestoreSingle.Tapped += ButtonRestoreSingle_Tapped;
         comboRemoteSyncpoints.SelectionChanged += ComboRemoteSyncpoints_SelectionChanged;
+    }
+
+    private async void MenuCloseRepo_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to close this repository?", "Are you sure?", MessageBoxOptions.YesNo);
+        if (ViewModel != null && result == PopupControlResult.Yes)
+        {
+            ViewModel.SwitchTo(ViewModel.RepositoryLoadView);
+        }
     }
 
     private void ComboRemoteSyncpoints_SelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -71,7 +80,6 @@ public partial class RepositoryView : UserControl
             remoteFileBrowser.BrowserType = FileBrowserControlType.Repository;
             remoteFileBrowser.AssociatedRepository = ViewModel.Repository;
             remoteFileBrowser.BrowserPath = ViewModel.Repository.RemotePath;
-            comboRemoteSyncpoints.Items.Clear();
             RefreshRemoteSyncPoints();
         }
     }
@@ -104,11 +112,59 @@ public partial class RepositoryView : UserControl
     private async void ButtonRestoreSingle_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
         var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to restore the selected files from this syncpoint? It will undo all your local changes since that syncpoint to the files that you have selected.", "Are you sure?", MessageBoxOptions.YesNo);
+
+        if (result == PopupControlResult.Yes)
+        {
+            var repository = ViewModel.Repository;
+            var selectedSyncPoint = comboRemoteSyncpoints.SelectedItem as SyncPoint;
+            var selectedItems = remoteFileBrowser.SelectedItems;
+
+            if (repository != null && selectedSyncPoint != null && selectedItems != null)
+            {
+                progressDialog.IsVisible = true;
+
+                var task = Task.Run(() =>
+                {
+                    foreach (var item in selectedItems)
+                    {
+                        repository.RestoreSingleFile(selectedSyncPoint.SyncPointId, item.RelativePath);
+                    }
+                
+                    Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        RefreshLocalSyncPointLabel();
+                        progressDialog.IsVisible = false;
+                    });
+                });
+            }
+        }
     }
 
     private async void ButtonRestore_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
         var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to restore this syncpoint? It will undo all your local changes since that syncpoint.", "Are you sure?", MessageBoxOptions.YesNo);
+        
+        if (result == PopupControlResult.Yes)
+        {
+            var repository = ViewModel.Repository;
+            var selectedSyncPoint = comboRemoteSyncpoints.SelectedItem as SyncPoint;
+
+            if (repository != null && selectedSyncPoint != null)
+            {
+                progressDialog.IsVisible = true;
+
+                var task = Task.Run(() =>
+                {
+                    repository.Restore(selectedSyncPoint.SyncPointId);
+
+                    Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        RefreshLocalSyncPointLabel();
+                        progressDialog.IsVisible = false;
+                    });
+                });
+            }
+        }
     }
 
     private async void ButtonPush_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
@@ -133,10 +189,5 @@ public partial class RepositoryView : UserControl
                 });
             });
         }
-    }
-
-    private async void MenuCloseRepo_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
-    {
-        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to close this repository?", "Are you sure?", MessageBoxOptions.YesNo);
     }
 }
