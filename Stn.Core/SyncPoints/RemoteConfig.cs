@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Stn.Core.Security;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,6 +27,20 @@ namespace Stn.Core
     {
         public string RemotePath { get; set; } = string.Empty;
         public string CurrentSyncPoint { get; set; } = string.Empty;
+        public string GitUsername { get; set; } = string.Empty;
+        public string GitPassword { get; set; } = string.Empty;
+
+        protected void Encrypt()
+        {
+            GitUsername = Security.Encryption.EncryptString(GitUsername);
+            GitPassword = Security.Encryption.EncryptString(GitPassword);
+        }
+
+        protected void Decrypt()
+        {
+            GitUsername = Security.Encryption.DecryptString(GitUsername);
+            GitPassword = Security.Encryption.DecryptString(GitPassword);
+        }
 
         public RemoteConfig() { }
 
@@ -47,6 +62,7 @@ namespace Stn.Core
                 Directory.CreateDirectory(stnInternalsFolder);
             }
 
+            Encrypt();
             var json = JsonSerializer.Serialize(this, RemoteConfigJsonContext.Default.RemoteConfig);
             File.WriteAllText(Path.Combine(rootDirectory, ".stn/stn.remote.json"), json, Encoding.UTF8);
         }
@@ -72,7 +88,9 @@ namespace Stn.Core
             }
 
             var json = File.ReadAllText(configFile, Encoding.UTF8);
-            return JsonSerializer.Deserialize(json, RemoteConfigJsonContext.Default.RemoteConfig) ?? new RemoteConfig(string.Empty, string.Empty);
+            var config = JsonSerializer.Deserialize(json, RemoteConfigJsonContext.Default.RemoteConfig) ?? new RemoteConfig(string.Empty, string.Empty);
+            config.Decrypt();
+            return config;
         }
 
         public static bool RemoteConfigExists(string rootDirectory)

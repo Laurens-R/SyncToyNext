@@ -1,4 +1,5 @@
-﻿using LibGit2Sharp.Handlers;
+﻿using LibGit2Sharp;
+using LibGit2Sharp.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,10 +9,18 @@ using GitLib = LibGit2Sharp;
 
 namespace Stn.Core.SyncPoints.Git
 {
-    internal class GitClient
+    internal class GitClient : IDisposable
     {
         private GitLib.Repository _gitRepository;
         private Stn.Core.SyncPoints.Repository _repository;
+
+        public GitLib.Signature Signature
+        {
+            get
+            {
+                return new GitLib.Signature(Environment.UserName, Environment.UserName, DateTimeOffset.Now);
+            }
+        }
 
 
         public GitClient(string localPath, Repository repository) {
@@ -22,14 +31,22 @@ namespace Stn.Core.SyncPoints.Git
         
         public void Commit(string message, string syncpointID)
         {
-            var user = new GitLib.Identity(Environment.UserName, Environment.UserName + "@repo.stn");
-            var signature = new GitLib.Signature(user, DateTime.Now);
-            var options = new GitLib.CommitOptions();
-            options.PrettifyMessage = false;
+            var status = _gitRepository.RetrieveStatus(new GitLib.StatusOptions
+            {
+                
+            });
 
+            var filteredItems = status.Where(s => s.State != GitLib.FileStatus.Ignored);
+
+            foreach (var item in filteredItems)
+            {
+                _gitRepository.Index.Add(item.FilePath);
+            }
+
+            var signature = Signature;
             var gitMessage = $"STN{syncpointID}\n\n{message}";
 
-            _gitRepository.Commit(message, signature, signature, options);
+            _gitRepository.Commit(message, signature, signature, new GitLib.CommitOptions());
         }
 
         public void Push()
@@ -45,16 +62,55 @@ namespace Stn.Core.SyncPoints.Git
                 return true;
             };
             
-            _gitRepository.Network.Push(branch, options);
+            _gitRepository.Network.Push(_gitRepository.Head, options);
         }
 
-        public void Pull()
+        public string Pull()
         {
             var branch = _gitRepository.Branches.SingleOrDefault(b => b.CanonicalName == _gitRepository.Head.CanonicalName);
-            if (branch == null) return;
+            if (branch == null) return string.Empty;
 
-            
+            // Create a signature for the merge commit
+            var signature = new Signature("Your Name", "your.email@example.com", DateTimeOffset.Now);
+
+            // Configure pull options
+            var pullOptions = new PullOptions
+            {
+                FetchOptions = new FetchOptions
+                {
+                    CredentialsProvider = (_url, _user, _cred) =>
+                        new UsernamePasswordCredentials
+                        {
+                            Username = "your-username",
+                            Password = "your-password-or-token"
+                        }
+                },
+                MergeOptions = new MergeOptions
+                {
+                    FastForwardStrategy = FastForwardStrategy.Default,
+                    FailOnConflict = true
+                }
+            };
+
+            var result = Commands.Pull(_gitRepository, signature, pullOptions);
+
+            switch (result.Status)
+            {
+                case MergeStatus.Conflicts:
+                    return "Merge conflicts detected.";
+                case MergeStatus.UpToDate:
+                    return "Already up to date.";
+                case MergeStatus.FastForward:
+                case MergeStatus.NonFastForward:
+                    return "Pull successful.";
+                default:
+                    return $"Pull result: {result.Status}";
+            }
         }
-    
+
+        public void Dispose()
+        {
+            _gitRepository.Dispose();
+        }
     }
 }
