@@ -28,13 +28,31 @@ namespace Stn.Core.SyncPoints.Git
             _gitRepository = new GitLib.Repository(localPath);
             _repository = repository;
         }
-        
+      
+        public IEnumerable<GitChange> Changes
+        {
+            get
+            {
+                var status = _gitRepository.RetrieveStatus(new GitLib.StatusOptions { });
+                var filteredItems = status.Where(s => s.State != GitLib.FileStatus.Ignored);
+
+                List<GitChange> changes = new List<GitChange>();
+
+                foreach (var item in filteredItems)
+                {
+                    var change = new GitChange
+                    {
+                        Path = item.FilePath
+                    };
+                }
+
+                return changes;
+            }
+        }
+
         public void Commit(string message, string syncpointID)
         {
-            var status = _gitRepository.RetrieveStatus(new GitLib.StatusOptions
-            {
-                
-            });
+            var status = _gitRepository.RetrieveStatus(new GitLib.StatusOptions { });
 
             var filteredItems = status.Where(s => s.State != GitLib.FileStatus.Ignored);
 
