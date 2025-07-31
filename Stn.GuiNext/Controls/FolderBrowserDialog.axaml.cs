@@ -20,6 +20,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using DynamicData;
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -90,8 +91,9 @@ public partial class FolderBrowserDialog : UserControl
         InitializeComponent();
         DataContext = this;
 
+        //todo: this probably only works on Windows, so we need to rewrite this for Mac and Linux.
         comboDrives.ItemsSource = Drives;
-        comboDrives.SelectedIndex = 0;
+        comboDrives.SelectedIndex = Drives.IndexOf(folderBrowser.BrowserPath);
         comboDrives.SelectionChanged += ComboDrives_SelectionChanged;
 
         folderBrowser.CurrentPathChanged += FolderBrowser_CurrentPathChanged;

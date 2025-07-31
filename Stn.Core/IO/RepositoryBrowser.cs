@@ -170,8 +170,12 @@ namespace Stn.Core.IO
 
                     if (!isCompressed)
                     {
-                        var filePath = Path.Combine(_repository.RemotePath, _currentSyncPoint.SyncPointId, file.SourcePath);
+                        var filePath = Path.Combine(_repository.RemotePath, file.SyncpointID, file.SourcePath);
+
                         var entryInfo = new FileInfo(filePath);
+
+                        if(!entryInfo.Exists) continue;
+
                         size = entryInfo.Length;
                         created = entryInfo.CreationTime;
                         modified = entryInfo.LastWriteTime;

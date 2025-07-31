@@ -38,11 +38,11 @@ namespace Stn.Core.Synchronizers
 
                 var relativeSourcePath = entry.SourcePath;
                 var relativePath = entry.RelativeRemotePath;
+
                 // If the file no longer exists in the source, mark it as deleted
+                var fileExistsInSource = File.Exists(Path.Combine(sourceDirectory, relativeSourcePath));
 
-                var sourceFileEntry = localFiles.FirstOrDefault(f => f.Equals(Path.Combine(sourceDirectory, relativeSourcePath), StringComparison.OrdinalIgnoreCase));
-
-                if (string.IsNullOrEmpty(sourceFileEntry))
+                if (!fileExistsInSource)
                 {
                     if (entry.EntryType != SyncPointEntryType.Deleted)
                     {
