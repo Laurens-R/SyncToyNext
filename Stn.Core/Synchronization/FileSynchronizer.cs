@@ -86,7 +86,7 @@ namespace Stn.Core.Synchronizers
                 // If the sync point entry exists, check if the file is newer than the existing sync point
                 if (existingEntry != null)
                 {
-                    var syncPointPath = Path.Combine(_destination, existingEntry.RelativeRemotePath);
+                    var syncPointPath = Path.Combine(_destination, existingEntry.SyncpointID, existingEntry.RelativeRemotePath);
 
                     var sourceFileInfo = new FileInfo(srcFilePath);
                     var targetFileInfo = new FileInfo(syncPointPath);
@@ -104,8 +104,10 @@ namespace Stn.Core.Synchronizers
                         continue;
                     }
 
+                    bool fileExists = File.Exists(syncPointPath);
+
                     //check if the sync point is old compared to the source file.
-                    if (File.Exists(syncPointPath) && sourceFileDateTime > targetFileDateTime)
+                    if (fileExists && sourceFileDateTime > targetFileDateTime)
                     {                       
                         if (sourceFileInfo.Length != targetFileInfo.Length)
                         {
