@@ -57,11 +57,6 @@ namespace Stn.Core.UX
             var formattedMessage = $"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message}";
             messages.Add(formattedMessage);
 
-            if (InConsoleMode)
-            {
-                Console.WriteLine(formattedMessage);
-            }
-
             if (OnMessageReceivedHandler != null)
             {
                 OnMessageReceivedHandler(message);
@@ -74,11 +69,6 @@ namespace Stn.Core.UX
             var formattedMessage = $"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message}";
             messages.Add(formattedMessage);
 
-            if (InConsoleMode)
-            {
-                Console.Error.WriteLine(formattedMessage);
-            } 
-
             OnErrorReceivedHandler?.Invoke(message, null);
         }
 
@@ -86,11 +76,6 @@ namespace Stn.Core.UX
         {
             var formattedMessage = $"{DateTime.Now.ToShortDateString()} - {DateTime.Now.ToShortTimeString()}: {message} - {ex.Message}";
             messages.Add(formattedMessage);
-
-            if (InConsoleMode)
-            {
-                Console.Error.WriteLine(formattedMessage);
-            }
 
             OnErrorReceivedHandler?.Invoke(message, ex.Message);
         }
