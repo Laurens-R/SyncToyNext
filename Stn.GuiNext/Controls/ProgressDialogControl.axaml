@@ -7,7 +7,7 @@
 			 xmlns:controls="clr-namespace:Stn.GuiNext"
 			 xmlns:local="clr-namespace:Stn.GuiNext"
 			 x:DataType="local:ProgressDialogControl">
-	<controls:PopupControl Title="Working on it!" ShowPopup="{Binding IsVisible}" PopupHeight="280">
+	<controls:PopupControl Title="{Binding Title}" ShowPopup="{Binding IsVisible}" PopupHeight="280">
 		<Border Padding="10">
 			<StackPanel VerticalAlignment="Center">
 				<Label x:Name="labelStatus" Margin="0 0 0 20">Please wait while the operation is completed...</Label>

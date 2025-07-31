@@ -1,3 +1,21 @@
+/*
+    STN - A file synchronization and source control solution
+    Copyright (C) 2025  Laurens Ruijtenberg
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
@@ -54,6 +72,20 @@ public partial class ProgressDialogControl : UserControl
             SetValue(StatusProperty, value);
             labelStatus.Content = value;
             OnPropertyChanged(nameof(Status));
+        }
+    }
+
+    public static readonly StyledProperty<string> TitleProperty =
+    AvaloniaProperty.Register<ProgressDialogControl, string>(nameof(Title), defaultValue: "Working on it!");
+
+    public string Title
+    {
+        get => GetValue(TitleProperty);
+
+        set
+        {
+            SetValue(TitleProperty, value);
+            OnPropertyChanged(nameof(Title));
         }
     }
 

@@ -1,4 +1,22 @@
-﻿using Avalonia;
+﻿/*
+    STN - A file synchronization and source control solution
+    Copyright (C) 2025  Laurens Ruijtenberg
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -30,6 +48,7 @@ public partial class RepositoryView : UserControl
     public RepositoryView()
     {
         InitializeComponent();
+        DataContext = this;
         menuCloseRepo.Tapped += MenuCloseRepo_Tapped;
         buttonPush.Tapped += ButtonPush_Tapped;
         buttonRestore.Tapped += ButtonRestore_Tapped;
@@ -81,6 +100,8 @@ public partial class RepositoryView : UserControl
             remoteFileBrowser.AssociatedRepository = ViewModel.Repository;
             remoteFileBrowser.BrowserPath = ViewModel.Repository.RemotePath;
             RefreshRemoteSyncPoints();
+
+            iconGit.IsVisible = ViewModel.Repository.GitPresent;
         }
     }
 
@@ -121,6 +142,7 @@ public partial class RepositoryView : UserControl
 
             if (repository != null && selectedSyncPoint != null && selectedItems != null)
             {
+                progressDialog.Title = "Restoring files to local";
                 progressDialog.IsVisible = true;
 
                 var task = Task.Run(() =>
@@ -151,6 +173,7 @@ public partial class RepositoryView : UserControl
 
             if (repository != null && selectedSyncPoint != null)
             {
+                progressDialog.Title = "Restoring to local";
                 progressDialog.IsVisible = true;
 
                 var task = Task.Run(() =>
@@ -172,6 +195,7 @@ public partial class RepositoryView : UserControl
         var result = await PushDialogControl.ShowDialogAsync(mainRepositoryViewGrid);
 
         if (result.Outcome == PushDialogOutcome.OK && ViewModel != null && ViewModel.Repository != null) {
+            progressDialog.Title = "Pusing to remote";
             progressDialog.IsVisible = true;
 
             var repository = ViewModel.Repository; //needed because of threading.

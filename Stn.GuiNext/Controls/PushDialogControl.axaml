@@ -12,7 +12,7 @@
 	<controls:PopupControl x:Name="popupDialog" Title="Push changes to remote" PopupHeight="540" HasOK="True" HasCancel="True" ShowPopup="{Binding ShowDialog}">
 		<StackPanel Orientation="Vertical" Margin="8">
 			<Label Margin="0 0 0 8" FontWeight="Bold">Change description:</Label>
-			<TextBox x:Name="textboxChangeDescription" AcceptsReturn="True" AcceptsTab="True" MinLines="18" MaxLines="18" TextWrapping="Wrap" Watermark="Enter your changes here.">
+			<TextBox x:Name="textboxChangeDescription" Margin="0 10 0 0" AcceptsReturn="True" AcceptsTab="True" MinLines="18" MaxLines="18" TextWrapping="Wrap" Watermark="Enter your changes here.">
 				
 			</TextBox>
 		</StackPanel>

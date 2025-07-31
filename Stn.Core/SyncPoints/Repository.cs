@@ -27,7 +27,6 @@ namespace Stn.Core.SyncPoints
 
         public static Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
 
-
         public IgnoreFile IgnoreFile => _ignoreFile;
 
         public IReadOnlyList<SyncPoint> SyncPoints
@@ -85,6 +84,15 @@ namespace Stn.Core.SyncPoints
                 var stnTempFolder = Path.Combine(LocalPath, ".stn", "temp");
                 if (!Path.Exists(stnTempFolder)) Directory.CreateDirectory(stnTempFolder);
                 return stnTempFolder;
+            }
+        }
+
+        public bool GitPresent
+        {
+            get
+            {
+                var gitPath = Path.Combine(LocalPath, ".git");
+                return Directory.Exists(gitPath);
             }
         }
 
