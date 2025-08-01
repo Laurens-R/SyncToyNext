@@ -46,9 +46,9 @@ namespace Stn.Core
         {
             var originalPath = remotePath;
 
-            if (!Directory.Exists(remotePath))
+            if (!Path.Exists(remotePath))
             {
-                throw new InvalidOperationException("Local or remote paths don't exist");
+                throw new InvalidOperationException("Remote paths don't exist");
             }
 
             _remotePath = remotePath;
@@ -61,7 +61,7 @@ namespace Stn.Core
                 //if the existing syncroot cannot be found, create one.
                 CreateNewSyncRoot(originalPath, compressionMode == CompressionMode.Compressed);
             } else if (syncRootLoadResult == SyncPointRootLoadResult.Failed) {
-                return;
+                throw new InvalidOperationException("Cannot proceed without remote syncpoint root configuration.");
             }
 
             LoadSyncPoints();
@@ -73,7 +73,26 @@ namespace Stn.Core
         private SyncPointRootLoadResult LoadSyncPointRoot()
         {
             var rootFilePath = Path.Combine(_remotePath, "syncpointroot.json");
-            if (File.Exists(rootFilePath))
+
+            int retryLoadCount = 0;
+
+            //ok don't ask me why, but I observered a MacOS file share that the 
+            //json file sometimes gets identified as not existing, even though it does.
+            //turned out that somehow the file got identified as a directory. Don't ask me how, but it did.
+            //so hopefully, if we just use Path.Exists, we can avoid this issue.
+            var fileExists = Path.Exists(rootFilePath);
+
+            // we need this retry logic for networks shares. Sometimes it seems to
+            // fail and I suspect the readiness of the remote filesystem to be the issue.
+            while (!fileExists && retryLoadCount < 5)
+            {
+                // Retry loading the sync point root file if it doesn't exist yet
+                System.Threading.Thread.Sleep(1000); // Wait for a second before retrying
+                fileExists = Path.Exists(rootFilePath);
+                retryLoadCount++;
+            }
+
+            if (fileExists)
             {
                 var json = File.ReadAllText(rootFilePath);
                 _syncPointRoot =  JsonSerializer.Deserialize(json, SyncPointRootJsonContext.Default.SyncPointRoot) ?? new SyncPointRoot();
@@ -81,12 +100,6 @@ namespace Stn.Core
                 if(_syncPointRoot.IsCompressed)
                 {
                     _isCompressed = true;
-                }
-
-                if (_syncPointRoot.IsCompressed != _isCompressed)
-                {
-                    UserIO.Error($"Cannot mix between zipped and non-zipped destination targets when working with syncpoints.");
-                    return SyncPointRootLoadResult.Failed;
                 }
                 
                 return SyncPointRootLoadResult.LoadedExisting;
@@ -113,34 +126,42 @@ namespace Stn.Core
             File.WriteAllText(rootFilePath, json);
         }
 
-        private void LoadSyncPoints()
+        private bool LoadSyncPoints()
         {
             var childDirectories = Directory.GetDirectories(_remotePath);
 
             foreach (var directory in childDirectories)
             {
-                Directory.GetFiles(directory, "*.syncpoint.json").ToList().ForEach(file =>
+                var configFileName = Path.GetFileName(directory);
+                var configFilePath = Path.Combine(directory, configFileName + ".syncpoint.json");
+                if (Path.Exists(configFilePath))
                 {
                     try
                     {
-                        var syncPoint = SyncPoint.Load(file);
+                        var syncPoint = SyncPoint.Load(configFilePath);
                         _syncPoints.Add(syncPoint);
                     }
                     catch (Exception ex)
                     {
-                        Console.Error.WriteLine($"Error loading sync point from {file}: {ex.Message}");
+                        Console.Error.WriteLine($"Error loading sync point from {configFilePath}: {ex.Message}");
                     }
-                });
+                }
             }
 
             // Sort sync points by LastSyncTime, descending
             _syncPoints.Sort((sp1, sp2) => sp2.LastSyncTime.CompareTo(sp1.LastSyncTime));
+
+            return _syncPoints.Count> 0;
         }
 
-        public void RefreshSyncPoints()
+        /// <summary>
+        /// Refreshes the list of sync points by reloading them from the remote path.
+        /// </summary>
+        /// <returns>True if 1 or more syncpoints were loaded. False if none.</returns>
+        public bool RefreshSyncPoints()
         {
             _syncPoints.Clear();
-            LoadSyncPoints();
+            return LoadSyncPoints();
         }
 
         public SyncPoint AddSyncPoint(string sourcePath, string syncPointID = "", string description = "", bool isReferencePoint = false)

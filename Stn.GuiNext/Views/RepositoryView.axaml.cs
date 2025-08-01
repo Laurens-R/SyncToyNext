@@ -23,6 +23,7 @@ using Avalonia.Threading;
 using Stn.Core;
 using Stn.Core.SyncPoints;
 using Stn.GuiNext.ViewModels;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -109,6 +110,11 @@ public partial class RepositoryView : UserControl
     {
         if (ViewModel != null && ViewModel.Repository != null)
         {
+            if(!ViewModel.Repository.Manager.RefreshSyncPoints())
+            {
+                throw new InvalidOperationException("Failed to refresh sync points.");
+            }
+
             localSyncPointLabel.Content = ViewModel.Repository.SyncPoints.Single(sp => sp.SyncPointId == ViewModel.Repository.LocalSyncPointID);
         }
     }

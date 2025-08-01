@@ -10,6 +10,22 @@ using System.Xml.Schema;
 
 namespace Stn.Core.Synchronizers
 {
+
+    public class SourceInformation
+    {
+        public string RelativeSourcePath { get; set; } = string.Empty;
+        public string SourceFile { get; set; } = string.Empty;
+        public string ZipFile { get; set; } = string.Empty;
+        public SyncPointEntry? SyncPointFileEntry { get; set; } = null;
+
+        public bool IsExistingEntry  { 
+            get
+            {
+                return !string.IsNullOrEmpty(ZipFile) && SyncPointFileEntry != null;
+            }
+        }
+    }
+
     /// <summary>
     /// Provides file synchronization logic for writing files into a Zip archive.
     /// </summary>
@@ -147,70 +163,110 @@ namespace Stn.Core.Synchronizers
             int progressCounter = 0;
             int totalFileCount = allSourceLocationFiles.Count();
 
-            foreach (var srcFilePath in allSourceLocationFiles)
+            //To avoid most of the IO and GC overhead that comes with opening zip files, we 
+            //are going to group entries together to belong to the same zip files.
+            var sortedSyncPointFiles = allFilesPartOfSyncPoint.OrderBy(spFile =>
             {
-                var relativeSourcePath = Path.GetRelativePath(sourceDirectory, srcFilePath);
+                var zipFile = spFile.RelativeRemotePath.Split("@")[1];
+                return zipFile;
+            });
 
-                var existingEntry = allFilesPartOfSyncPoint.FirstOrDefault(e => e.SourcePath.Equals(relativeSourcePath, StringComparison.OrdinalIgnoreCase));
+            if(UpdateProgressHandler != null)
+            {
+                UpdateProgressHandler(progressCounter, totalFileCount, "Preparing synchronization index...");
+            }
 
-                var relativeDestinationPath = $"{relativeSourcePath}@{newSyncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
+            //now sort the source files locations to their according to the sorted sync point files.
+            var preparedEntries = allSourceLocationFiles.AsParallel().Select(srcFile =>
+            {
+                var relevantSyncEntry = allFilesPartOfSyncPoint.FirstOrDefault(spFile => spFile.SourcePath.Equals(Path.GetRelativePath(sourceDirectory, srcFile), StringComparison.OrdinalIgnoreCase));
 
-                if (existingEntry != null)
+                var entry = new SourceInformation
+                {
+                    RelativeSourcePath = Path.GetRelativePath(sourceDirectory, srcFile),
+                    SourceFile = srcFile,
+                    ZipFile = relevantSyncEntry?.RelativeRemotePath.Split("@")[1] ?? string.Empty,
+                    SyncPointFileEntry = relevantSyncEntry
+                };
+
+               return entry;
+            }).OrderBy(entry => entry.ZipFile);
+
+            FileStream? spArchiveStream = null;
+            ZipArchive? spArchive = null;
+            string currentZipFilePath = string.Empty;
+
+            foreach (var entry in preparedEntries)
+            {
+                var relativeDestinationPath = $"{entry.RelativeSourcePath}@{newSyncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
+
+                if(entry.SyncPointFileEntry != null && entry.SyncPointFileEntry.EntryType == SyncPointEntryType.Deleted)
+                {
+                    // If the entry was marked as deleted, we need to re-add it
+                    newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
+                    SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                    continue;
+                }
+
+                if (entry.SyncPointFileEntry != null)
                 {
                     //determine the path of the file in the zip archive.
-                    var spRelativeZipFile = existingEntry.RelativeRemotePath.Split("@")[1];
-                    var relativePathInZip = existingEntry.RelativeRemotePath.Split("@")[0];
-                    var spZipFile = Path.Combine(zipParentFolder, spRelativeZipFile);
+                    var relativePathInZip = entry.RelativeSourcePath;
+                    var syncPointZipFile = Path.Combine(zipParentFolder, entry.ZipFile);
 
-                    var entryPath = relativePathInZip.Replace("\\", "/");
-                    var zipEntry = _archive.GetEntry(entryPath);
-
-                    if(existingEntry.EntryType == SyncPointEntryType.Deleted)
+                    if(entry.ZipFile != currentZipFilePath && !String.IsNullOrWhiteSpace(entry.ZipFile))
                     {
-                        // If the entry was marked as deleted, we need to re-add it
-                        newSyncPoint.AddEntry(relativeSourcePath, relativeDestinationPath);
-                        SynchronizeFile(srcFilePath, relativeSourcePath);
-                        continue;
+                        // If we are switching to a new zip file, close the previous one
+                        spArchive?.Dispose();
+                        spArchiveStream?.Dispose();
+                        currentZipFilePath = entry.ZipFile;
+                        spArchiveStream = new FileStream(syncPointZipFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                        spArchive = new ZipArchive(spArchiveStream, ZipArchiveMode.Update, leaveOpen: false);
                     }
+
+                    var entryPath = entry.RelativeSourcePath.Replace("\\", "/");
+                    var zipEntry = spArchive != null ? spArchive.GetEntry(entryPath) : null;
 
                     if (zipEntry != null)
                     {
-                        var sourceFileInfo = new FileInfo(srcFilePath);
+                        var sourceFileInfo = new FileInfo(entry.SourceFile);
 
                         var srcLastWrite = sourceFileInfo.LastWriteTimeUtc;
 
                         //this thing is acting strangely... maybe we need to support both scenarios
                         //with straight UtcTimeDate and the Kind thing.
                         var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
-
                         srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
 
                         if (secondsDifference > 2 || zipEntry.Length != sourceFileInfo.Length) // ZIP format is only precise to 2 seconds
                         {
-                            newSyncPoint.AddEntry(relativeSourcePath, relativeDestinationPath);
-                            SynchronizeFile(srcFilePath, relativeSourcePath);
+                            newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
+                            SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
                             continue;
                         }
                     } else
                     {
-                        throw new Exception($"Entry '{entryPath}' not found in zip file '{spRelativeZipFile}' for sync point '{newSyncPoint.SyncPointId}'.");
+                        throw new Exception($"Entry '{entryPath}' not found in zip file '{entry.ZipFile}' for sync point '{newSyncPoint.SyncPointId}'.");
                     }
                 }
                 else
                 {
-                    newSyncPoint.AddEntry(relativeSourcePath, relativeDestinationPath);
-                    SynchronizeFile(srcFilePath, relativeSourcePath);
+                    newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
+                    SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
                 }
 
                 progressCounter++;
 
                 if(UpdateProgressHandler != null)
                 {
-                    UpdateProgressHandler(progressCounter, totalFileCount, srcFilePath);
+                    UpdateProgressHandler(progressCounter, totalFileCount, entry.RelativeSourcePath);
                 }
             }
+
+            spArchive?.Dispose();
+            spArchiveStream?.Dispose();
 
             var updatedFileListOfSyncpoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 

@@ -37,7 +37,7 @@ namespace Stn.Core
 
         public static SyncPoint Load(string filePath)
         {
-            if (!File.Exists(filePath))
+            if (!Path.Exists(filePath))
                 throw new FileNotFoundException($"SyncPoint file not found: {filePath}");
             
             var json = File.ReadAllText(filePath);
