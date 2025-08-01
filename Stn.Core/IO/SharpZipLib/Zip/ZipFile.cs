@@ -1794,7 +1794,7 @@ namespace ICSharpCode.SharpZipLib.Zip
 		/// <param name="compressionMethod">The compression method to use.</param>
 		/// <exception cref="ArgumentNullException">ZipFile has been closed.</exception>
 		/// <exception cref="NotImplementedException">Compression method is not supported for creating entries.</exception>
-		public void Add(string fileName, CompressionMethod compressionMethod)
+		public void Add(string fileName, string entryName, CompressionMethod compressionMethod)
 		{
 			if (fileName == null)
 			{
@@ -1805,9 +1805,12 @@ namespace ICSharpCode.SharpZipLib.Zip
 			CheckUpdating();
 			contentsEdited_ = true;
 
-			ZipEntry entry = EntryFactory.MakeFileEntry(fileName);
+			ZipEntry entry = EntryFactory.MakeFileEntry(fileName, entryName, true);
 			entry.CompressionMethod = compressionMethod;
-			AddUpdate(new ZipUpdate(fileName, entry));
+
+			var fileInfo = new FileInfo(fileName);
+			entry.DateTime = fileInfo.LastWriteTimeUtc;
+            AddUpdate(new ZipUpdate(fileName, entry));
 		}
 
 		/// <summary>

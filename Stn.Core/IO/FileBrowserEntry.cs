@@ -31,5 +31,19 @@ namespace Stn.Core.IO
                 return LastModified != DateTime.MinValue;
             }
         }
+
+        public string DisplayValueForDate
+        {
+            get
+            {
+                if(IsFile) 
+                { 
+                    return LastModified.ToString();
+                } else
+                {
+                    return string.Empty;
+                }
+            }
+        }
     }
 }

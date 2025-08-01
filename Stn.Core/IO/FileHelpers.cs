@@ -281,7 +281,7 @@ namespace Stn.Core.IO
 
             var srcLastWrite = File.GetLastWriteTimeUtc(localFilePath);
             // ZIP entries store time as UTC, but DateTime.Kind is Unspecified - force it to UTC
-            var entryLastWrite = DateTime.SpecifyKind(remoteZipEntry.DateTime, DateTimeKind.Utc);
+            var entryLastWrite = remoteZipEntry.DateTime;
 
             // Truncate to whole seconds for both to handle ZIP format precision issues
             srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));

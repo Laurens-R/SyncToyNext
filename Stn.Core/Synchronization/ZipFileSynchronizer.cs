@@ -99,15 +99,9 @@ namespace Stn.Core.Synchronizers
                     if(entry != null) _archive.Delete(entry);
                     _archive.BeginUpdate();
                     bool knownCompressedFormat = FileHelpers.IsCompressedExtension(Path.GetExtension(srcFilePath));
-                    _archive.Add(srcFilePath, knownCompressedFormat ? ZipLib.CompressionMethod.Stored : ZipLib.CompressionMethod.Deflated); //_archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
+                    _archive.Add(srcFilePath, entryPath, knownCompressedFormat ? ZipLib.CompressionMethod.Stored : ZipLib.CompressionMethod.Deflated); //_archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
                     _archive.CommitUpdate();
-                    var newEntry = _archive.GetEntry(entryPath);
-                    //newEntry.DateTime = File.GetLastWriteTime(srcFilePath); //get the local time, because it seems to internally convert to the right UTC.
                     
-                    
-                    /*using var entryStream = newEntry.Open();
-                    using var fileStream = File.OpenRead(srcFilePath);
-                    fileStream.CopyTo(entryStream);*/
                     UserIO.Message($"{action} (zip): {relativePath}");
                 }
                 
@@ -201,12 +195,19 @@ namespace Stn.Core.Synchronizers
             }).OrderBy(entry => entry.ZipFile);
 
             FileStream? spArchiveStream = null;
-            ZipArchive? spArchive = null;
+            ZipLib.ZipFile? spArchive = null;
             string currentZipFilePath = string.Empty;
 
             foreach (var entry in preparedEntries)
             {
                 var relativeDestinationPath = $"{entry.RelativeSourcePath}@{newSyncPoint.SyncPointId}\\{Path.GetFileName(_zipFilePath)}";
+
+                progressCounter++;
+
+                if(UpdateProgressHandler != null)
+                {
+                    UpdateProgressHandler(progressCounter, totalFileCount, entry.RelativeSourcePath);
+                }
 
                 if(entry.SyncPointFileEntry != null && entry.SyncPointFileEntry.EntryType == SyncPointEntryType.Deleted)
                 {
@@ -225,11 +226,10 @@ namespace Stn.Core.Synchronizers
                     if(entry.ZipFile != currentZipFilePath && !String.IsNullOrWhiteSpace(entry.ZipFile))
                     {
                         // If we are switching to a new zip file, close the previous one
-                        spArchive?.Dispose();
-                        spArchiveStream?.Dispose();
+                        spArchive?.Close();
                         currentZipFilePath = entry.ZipFile;
                         spArchiveStream = new FileStream(syncPointZipFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                        spArchive = new ZipArchive(spArchiveStream, ZipArchiveMode.Update, leaveOpen: false);
+                        spArchive = new ZipLib.ZipFile(spArchiveStream, false);
                     }
 
                     var entryPath = entry.RelativeSourcePath.Replace("\\", "/");
@@ -243,16 +243,15 @@ namespace Stn.Core.Synchronizers
 
                         //this thing is acting strangely... maybe we need to support both scenarios
                         //with straight UtcTimeDate and the Kind thing.
-                        var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
+                        var entryLastWrite = zipEntry.DateTime; //DateTime.SpecifyKind(zipEntry.LastWriteTime.UtcDateTime, DateTimeKind.Utc);//zipEntry.LastWriteTime.UtcDateTime;
                         srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
                         var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
 
-                        if (secondsDifference > 2 || zipEntry.Length != sourceFileInfo.Length) // ZIP format is only precise to 2 seconds
+                        if (secondsDifference > 2 || zipEntry.Size != sourceFileInfo.Length) // ZIP format is only precise to 2 seconds
                         {
                             newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
                             SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
-                            _archiveStream?.Flush();
                             continue;
                         }
                     } else
@@ -267,18 +266,13 @@ namespace Stn.Core.Synchronizers
                     
                     _archiveStream?.Flush();
                 }
-
-                progressCounter++;
-
-                if(UpdateProgressHandler != null)
-                {
-                    UpdateProgressHandler(progressCounter, totalFileCount, entry.RelativeSourcePath);
-                }
             }
 
-            spArchive?.Dispose();
-            spArchiveStream?.Dispose();
-
+            if(spArchive != null)
+            {
+                spArchive.Close();
+            }
+            
             var updatedFileListOfSyncpoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
 
             // Now we need to check for files that were deleted since the last sync point

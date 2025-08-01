@@ -40,7 +40,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Name" x:DataType="io:FileBrowserEntry" Binding="{CompiledBinding Name}" Width="400" />
                 <DataGridTextColumn Header="Type" x:DataType="io:FileBrowserEntry" Binding="{CompiledBinding Type}" Width="120" />
-                <DataGridTextColumn Header="Last Modified" x:DataType="io:FileBrowserEntry" Binding="{CompiledBinding LastModified}" Width="200"  />
+                <DataGridTextColumn Header="Last Modified" x:DataType="io:FileBrowserEntry" Binding="{CompiledBinding DisplayValueForDate}" Width="200"  />
             </DataGrid.Columns>
         </DataGrid>
     </Border>

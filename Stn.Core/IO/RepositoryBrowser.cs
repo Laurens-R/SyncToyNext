@@ -190,8 +190,8 @@ namespace Stn.Core.IO
                         if (entry != null)
                         {
                             size = entry.Length;
-                            created = entry.LastWriteTime.UtcDateTime;
-                            modified = entry.LastWriteTime.UtcDateTime;
+                            created = entry.LastWriteTime.DateTime;
+                            modified = entry.LastWriteTime.DateTime;
                         }
                         else
                         {

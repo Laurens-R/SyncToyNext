@@ -1,4 +1,5 @@
-﻿using Stn.Core.UX;
+﻿using ICSharpCode.SharpZipLib.Core;
+using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,6 +7,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.SyncPoints
 {
@@ -168,7 +171,7 @@ namespace Stn.Core.SyncPoints
                 var relativeEntry = fileToRestore.RelativeRemotePath.Split("@")[0];
 
                 using var zip = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
+                using var archive = new ZipLib.ZipFile(zip, false);
                 var entryPath = relativeEntry.Replace("\\", "/");
                 var zipEntry = archive.GetEntry(entryPath);
 
@@ -184,7 +187,15 @@ namespace Stn.Core.SyncPoints
                     Directory.CreateDirectory(restoreDirectory);
                 }
 
-                zipEntry.ExtractToFile(fullTargetPath, true);
+                var fileStream = archive.GetInputStream(zipEntry);
+                var fileWriter = new FileStream(fullTargetPath, FileMode.Create, FileAccess.Write);
+                fileWriter.Write(fileStream.ReadBytes((int)zipEntry.Size));
+                fileWriter.Flush();
+                fileStream.Dispose();
+                fileWriter.Dispose();
+
+                File.SetLastWriteTimeUtc(fullTargetPath, zipEntry.DateTime);
+                                
                 UserIO.Message($"Restored single file '{requestedFile}' from sync point '{syncPointID}' to '{fullTargetPath}' from zip.");
             }
             else
@@ -213,7 +224,7 @@ namespace Stn.Core.SyncPoints
                 
             var currentZipFile = string.Empty;
             FileStream? currentZipStream = null;
-            ZipArchive? currentZipArchive = null;
+            ZipLib.ZipFile? currentZipArchive = null;
 
             int totalFiles = allSyncPointFiles.Count;
             int currentFileIndex = 0;
@@ -236,11 +247,10 @@ namespace Stn.Core.SyncPoints
                         //we need to open a new zip file
                         currentZipFile = zipFile;
 
-                        currentZipArchive?.Dispose();
-                        currentZipStream?.Dispose();
+                        currentZipArchive?.Close();
 
                         currentZipStream = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                        currentZipArchive = new ZipArchive(currentZipStream, ZipArchiveMode.Read, leaveOpen: false);
+                        currentZipArchive = new ZipLib.ZipFile(currentZipStream, false);
                     }
                     
                     if(currentZipArchive != null) {
@@ -275,19 +285,27 @@ namespace Stn.Core.SyncPoints
                             var existingFileInfo = new FileInfo(restorePath);
 
                             var srcLastWrite = File.GetLastWriteTimeUtc(restorePath);
-                            var entryLastWrite = zipEntry.LastWriteTime.UtcDateTime;
+                            var entryLastWrite = zipEntry.DateTime;
                             srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
                             entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
                             var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
 
-                            bool sameSize = existingFileInfo.Length == zipEntry.Length;
+                            bool sameSize = existingFileInfo.Length == zipEntry.Size;
                             if (secondsDifference < 2 && sameSize)
                             {
                                 continue;
                             }
                         }
 
-                        zipEntry.ExtractToFile(restorePath, true);
+                        var fileStream = currentZipArchive.GetInputStream(zipEntry);
+                        var fileWriter = new FileStream(restorePath, FileMode.Create, FileAccess.Write);
+                        fileWriter.Write(fileStream.ReadBytes((int)zipEntry.Size));
+                        fileWriter.Flush();
+                        fileStream.Dispose();
+                        fileWriter.Dispose();
+
+                        File.SetLastWriteTimeUtc(restorePath, zipEntry.DateTime);
+
                     }
                 }
                 else
@@ -323,8 +341,8 @@ namespace Stn.Core.SyncPoints
                 }
             }
 
-            currentZipArchive?.Dispose();
-            currentZipStream?.Dispose();
+            currentZipArchive?.Close();
+
 
             UserIO.Message("Cleaning up files not part of the sync point...");
 
