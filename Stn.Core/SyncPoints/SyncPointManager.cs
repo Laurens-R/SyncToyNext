@@ -31,9 +31,7 @@ namespace Stn.Core
         private SyncPointRoot? _syncPointRoot;
 
         public bool IsZipped => _isCompressed;
-
         public SyncPointRoot? SyncPointRoot => _syncPointRoot;
-
         public string RemotePath => _remotePath;
 
         /// <summary>

@@ -65,6 +65,7 @@ namespace Stn.Core
             Encrypt();
             var json = JsonSerializer.Serialize(this, RemoteConfigJsonContext.Default.RemoteConfig);
             File.WriteAllText(Path.Combine(rootDirectory, ".stn/stn.remote.json"), json, Encoding.UTF8);
+            Decrypt();
         }
 
         public static RemoteConfig? Load(string rootDirectory)

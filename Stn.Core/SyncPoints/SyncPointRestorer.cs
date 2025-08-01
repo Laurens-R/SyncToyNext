@@ -118,8 +118,13 @@ namespace Stn.Core.SyncPoints
             var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncpointId);
             var allFilesInRestoreLocation = Directory.GetFiles(RestorePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
 
+            var ignoreFile = new IgnoreFile();
+            ignoreFile.TryLoadIgnoreFile(RestorePath);
+
+            allFilesInRestoreLocation = allFilesInRestoreLocation.Where(x => ignoreFile.IsEntryIgnored(x));
 
             if (!string.IsNullOrWhiteSpace(singleFile))
             {

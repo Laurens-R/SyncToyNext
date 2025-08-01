@@ -92,9 +92,9 @@ public partial class PushDialogControl : UserControl
 
             var pushResult = new PushDialogResult();
 
-            if (result == PopupControlResult.OK && !String.IsNullOrEmpty(dialog.textboxChangeDescription.Text))
+            if (result == PopupControlResult.OK)
             {
-                pushResult.ChangeDescription = dialog.textboxChangeDescription.Text;
+                pushResult.ChangeDescription = !String.IsNullOrWhiteSpace(dialog.textboxChangeDescription.Text) ? dialog.textboxChangeDescription.Text : string.Empty;
                 pushResult.Outcome = PushDialogOutcome.OK;
             }
 

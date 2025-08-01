@@ -109,7 +109,7 @@ namespace Stn.Core.Security
             {
                 // If decryption fails, return the original string
                 // we need to improve this.
-                return input;
+                return string.Empty;
             }
         }   
     }
