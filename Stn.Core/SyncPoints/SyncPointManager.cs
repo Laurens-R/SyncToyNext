@@ -59,7 +59,7 @@ namespace Stn.Core
                 //if the existing syncroot cannot be found, create one.
                 CreateNewSyncRoot(originalPath, compressionMode == CompressionMode.Compressed);
             } else if (syncRootLoadResult == SyncPointRootLoadResult.Failed) {
-                throw new InvalidOperationException("Cannot proceed without remote syncpoint root configuration.");
+                return;
             }
 
             LoadSyncPoints();

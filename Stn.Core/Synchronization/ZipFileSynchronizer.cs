@@ -6,7 +6,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml.Schema;
+
+using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.Synchronizers
 {
@@ -35,7 +38,7 @@ namespace Stn.Core.Synchronizers
         private OverwriteOption _overwriteOption;
         private bool _strictMode;
         private FileStream? _archiveStream;
-        private ZipArchive? _archive;
+        private ZipLib.ZipFile? _archive;
         private bool _isArchiveOpen = false;
 
         public ZipFileSynchronizer(string zipFilePath, OverwriteOption overwriteOption, bool strictMode = false)
@@ -68,8 +71,7 @@ namespace Stn.Core.Synchronizers
                 if (oldDestFilePath != null )
                 {
                     // If an old destination file was provided, delete it first
-                    var oldEntry = _archive.GetEntry(oldDestFilePath.Replace("\\", "/"));
-                    oldEntry?.Delete();
+                    _archive.Delete(oldDestFilePath.Replace("\\", "/"));
                 }
 
                 if (_overwriteOption == OverwriteOption.AlwaysOverwrite)
@@ -84,7 +86,7 @@ namespace Stn.Core.Synchronizers
                 }
                 else if (entry != null)
                 {
-                    shouldCopy = FileHelpers.IsFileDifferent(srcFilePath, entry);
+                    shouldCopy = FileHelpers.IsFileDifferent(srcFilePath, entry, _archive);
 
                     if (shouldCopy)
                     {
@@ -94,12 +96,18 @@ namespace Stn.Core.Synchronizers
 
                 if (shouldCopy)
                 {
-                    entry?.Delete();
-                    var newEntry = _archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
-                    newEntry.LastWriteTime = File.GetLastWriteTime(srcFilePath); //get the local time, because it seems to internally convert to the right UTC.
-                    using var entryStream = newEntry.Open();
+                    if(entry != null) _archive.Delete(entry);
+                    _archive.BeginUpdate();
+                    bool knownCompressedFormat = FileHelpers.IsCompressedExtension(Path.GetExtension(srcFilePath));
+                    _archive.Add(srcFilePath, knownCompressedFormat ? ZipLib.CompressionMethod.Stored : ZipLib.CompressionMethod.Deflated); //_archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
+                    _archive.CommitUpdate();
+                    var newEntry = _archive.GetEntry(entryPath);
+                    //newEntry.DateTime = File.GetLastWriteTime(srcFilePath); //get the local time, because it seems to internally convert to the right UTC.
+                    
+                    
+                    /*using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
-                    fileStream.CopyTo(entryStream);
+                    fileStream.CopyTo(entryStream);*/
                     UserIO.Message($"{action} (zip): {relativePath}");
                 }
                 
@@ -244,6 +252,7 @@ namespace Stn.Core.Synchronizers
                         {
                             newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
                             SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                            _archiveStream?.Flush();
                             continue;
                         }
                     } else
@@ -255,6 +264,8 @@ namespace Stn.Core.Synchronizers
                 {
                     newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
                     SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                    
+                    _archiveStream?.Flush();
                 }
 
                 progressCounter++;
@@ -297,16 +308,24 @@ namespace Stn.Core.Synchronizers
 
         public override void OpenTarget()
         {
-            _archiveStream = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            _archive = new ZipArchive(_archiveStream, ZipArchiveMode.Update, leaveOpen: false);
+            if (Path.Exists(_zipFilePath))
+            {
+                _archiveStream = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                _archive = new ZipLib.ZipFile(_archiveStream, false);
+            } else
+            {
+                _archiveStream = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                _archive = ZipLib.ZipFile.Create(_archiveStream);
+                _archive.IsStreamOwner = true;
+            }
+                
             _isArchiveOpen = true;
         }
 
         public override void CloseTarget()
         {
             _isArchiveOpen = false;
-            _archive?.Dispose();
-            _archiveStream?.Dispose();
+            _archive?.Close();
         }
     }
 }
