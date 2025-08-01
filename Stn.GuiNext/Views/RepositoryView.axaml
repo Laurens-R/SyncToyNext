@@ -82,7 +82,7 @@
 				<Border BorderThickness="1" BorderBrush="Gray" CornerRadius="8" Grid.Row="1" Grid.Column="2" Padding="6" Margin="8" Background="#ddd">
 					<DockPanel >
 						<Label VerticalContentAlignment="Center">Remote syncpoint</Label>
-						<ComboBox x:Name="comboRemoteSyncpoints" CornerRadius="8" Background="Transparent" SelectedIndex="0" MaxDropDownHeight="100" BorderThickness="0" HorizontalAlignment="Stretch" Margin="10, 4, 0, 0"/>
+						<ComboBox x:Name="comboRemoteSyncpoints" CornerRadius="8" Background="Transparent" SelectedIndex="0" MaxDropDownHeight="400" BorderThickness="0" HorizontalAlignment="Stretch" Margin="10, 4, 0, 0"/>
 					</DockPanel>
 				</Border>				
 				

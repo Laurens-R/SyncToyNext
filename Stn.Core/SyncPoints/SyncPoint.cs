@@ -64,6 +64,12 @@ namespace Stn.Core
         public override string ToString()
         {
             var descriptionToRender = String.IsNullOrWhiteSpace(Description) ? "(no description provided)" : Description;
+
+            if(descriptionToRender.Length > 50)
+            {
+                descriptionToRender = descriptionToRender.Substring(0, 50) + "...";
+            }
+
             var localTime = LastSyncTime.ToLocalTime();
             var localTimeStr = localTime.ToShortTimeString();
             var localDateStr = localTime.ToShortDateString();
