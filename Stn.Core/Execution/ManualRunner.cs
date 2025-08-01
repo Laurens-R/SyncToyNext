@@ -60,7 +60,9 @@ namespace Stn.Core.Execution
                     var zipFilePath = Path.Combine(toPath, syncPoint.SyncPointId, syncPointManager.SyncPointRoot.ZipFilename);
                     var zipFileSynchronizer = new ZipFileSynchronizer(zipFilePath, OverwriteOption.OnlyOverwriteIfNewer, false);
                     zipFileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
+                    zipFileSynchronizer.OpenTarget();
                     zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
+                    zipFileSynchronizer.CloseTarget();
                 }
                 else
                 {
@@ -76,7 +78,9 @@ namespace Stn.Core.Execution
             {
                 var zipFileSynchronizer = new ZipFileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
                 zipFileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
+                zipFileSynchronizer.OpenTarget();
                 zipFileSynchronizer.FullSynchronization(fromPath);
+                zipFileSynchronizer.CloseTarget();
             } else
             {
                 var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);

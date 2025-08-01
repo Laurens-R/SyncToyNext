@@ -219,5 +219,15 @@ namespace Stn.Core.Synchronizers
                 UserIO.Error($"Failed to sync file '{srcFilePath}' to '{destFilePath}'", ex);
             }
         }
+
+        public override void OpenTarget()
+        {
+            //do nothing because this is a file system synchronizer.
+        }
+
+        public override void CloseTarget()
+        {
+            //DO nothing because this is a filesystem synchronizer.
+        }
     }
 }

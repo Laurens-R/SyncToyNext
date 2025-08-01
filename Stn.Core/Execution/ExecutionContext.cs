@@ -67,7 +67,9 @@ namespace Stn.Core.Execution
             if (profile.DestinationIsZip)
             {
                 var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, strictMode);
+                zipSync.OpenTarget();
                 zipSync.FullSynchronization(profile.SourcePath);
+                zipSync.CloseTarget();
             }
             else
             {
@@ -181,7 +183,9 @@ namespace Stn.Core.Execution
             if (useZip)
             {
                 var zipSync = new ZipFileSynchronizer(profile.DestinationPath, profile.OverwriteOption);
+                zipSync.OpenTarget();
                 zipSync.FullSynchronization(profile.SourcePath);
+                zipSync.CloseTarget();
             }
             else
             {

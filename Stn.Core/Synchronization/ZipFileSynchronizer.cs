@@ -18,6 +18,9 @@ namespace Stn.Core.Synchronizers
         private string _zipFilePath;
         private OverwriteOption _overwriteOption;
         private bool _strictMode;
+        private FileStream? _archiveStream;
+        private ZipArchive? _archive;
+        private bool _isArchiveOpen = false;
 
         public ZipFileSynchronizer(string zipFilePath, OverwriteOption overwriteOption, bool strictMode = false)
         {
@@ -35,10 +38,13 @@ namespace Stn.Core.Synchronizers
         {
             try
             {
-                using var zip = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                using var archive = new ZipArchive(zip, ZipArchiveMode.Update, leaveOpen: false);
+                if (!_isArchiveOpen || _archive == null)
+                {
+                    throw new InvalidOperationException("Zip archive is not open. Call OpenTarget() before synchronizing files.");
+                }
+
                 var entryPath = relativePath.Replace("\\", "/");
-                var entry = archive.GetEntry(entryPath);
+                var entry = _archive.GetEntry(entryPath);
                 bool entryExists = entry != null;
                 bool shouldCopy = false;
                 string action = "None";
@@ -46,7 +52,7 @@ namespace Stn.Core.Synchronizers
                 if (oldDestFilePath != null )
                 {
                     // If an old destination file was provided, delete it first
-                    var oldEntry = archive.GetEntry(oldDestFilePath.Replace("\\", "/"));
+                    var oldEntry = _archive.GetEntry(oldDestFilePath.Replace("\\", "/"));
                     oldEntry?.Delete();
                 }
 
@@ -73,7 +79,7 @@ namespace Stn.Core.Synchronizers
                 if (shouldCopy)
                 {
                     entry?.Delete();
-                    var newEntry = archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
+                    var newEntry = _archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
                     newEntry.LastWriteTime = File.GetLastWriteTime(srcFilePath); //get the local time, because it seems to internally convert to the right UTC.
                     using var entryStream = newEntry.Open();
                     using var fileStream = File.OpenRead(srcFilePath);
@@ -128,6 +134,11 @@ namespace Stn.Core.Synchronizers
             //update zip path according to sync point
             var zipParentFolder = syncPointManager.RemotePath;
 
+            if(!_isArchiveOpen || _archive == null)
+            {
+                throw new InvalidOperationException("Zip archive is not open. Call OpenTarget() before synchronizing files.");
+            }
+
             if(zipParentFolder == null)
             {
                 throw new InvalidOperationException("Couldn't resolve parent folder of zip file.");
@@ -151,10 +162,8 @@ namespace Stn.Core.Synchronizers
                     var relativePathInZip = existingEntry.RelativeRemotePath.Split("@")[0];
                     var spZipFile = Path.Combine(zipParentFolder, spRelativeZipFile);
 
-                    using var zip = new FileStream(spZipFile, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                    using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
                     var entryPath = relativePathInZip.Replace("\\", "/");
-                    var zipEntry = archive.GetEntry(entryPath);
+                    var zipEntry = _archive.GetEntry(entryPath);
 
                     if(existingEntry.EntryType == SyncPointEntryType.Deleted)
                     {
@@ -228,6 +237,20 @@ namespace Stn.Core.Synchronizers
                     UpdateProgressHandler(progressCounter, totalFileCount, srcFilePath);
                 }
             }
+        }
+
+        public override void OpenTarget()
+        {
+            _archiveStream = new FileStream(_zipFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            _archive = new ZipArchive(_archiveStream, ZipArchiveMode.Update, leaveOpen: false);
+            _isArchiveOpen = true;
+        }
+
+        public override void CloseTarget()
+        {
+            _isArchiveOpen = false;
+            _archive?.Dispose();
+            _archiveStream?.Dispose();
         }
     }
 }

@@ -118,7 +118,9 @@ namespace Stn.Core.Execution
                     } else if (_syncMode == SyncMode.FullSync)
                     {
                         // Perform a full synchronization
+                        _synchronizer.OpenTarget();
                         FullSynchronization();
+                        _synchronizer.CloseTarget();
                     }   
                 }
                 // Wait for either the shutdown event or a minute to pass
@@ -347,7 +349,9 @@ namespace Stn.Core.Execution
             }
             else if (_syncMode == SyncMode.FullSync)
             {
+                _synchronizer.OpenTarget();
                 FullSynchronization();
+                _synchronizer.CloseTarget();
             }
 
             _watcher.Dispose();

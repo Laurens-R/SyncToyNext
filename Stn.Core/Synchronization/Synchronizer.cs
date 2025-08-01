@@ -13,6 +13,9 @@ namespace Stn.Core.Synchronizers
     {
         public Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
 
+        public abstract void OpenTarget();
+        public abstract void CloseTarget();
+
         /// <summary>
         /// Synchronizes all files and subdirectories from the source path to the destination.
         /// </summary>
