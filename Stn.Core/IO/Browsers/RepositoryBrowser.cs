@@ -6,7 +6,7 @@ using System.Linq;
 
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
-namespace Stn.Core.IO
+namespace Stn.Core.IO.Browsers
 {
     public enum RepositoryBrowserFocus
     {
@@ -59,7 +59,7 @@ namespace Stn.Core.IO
                 if (_repository == null) throw new InvalidOperationException("No repository set");
                 if (!_repository.SyncPoints.Any(sp => sp == value)) throw new InvalidOperationException("Syncpoint not part of repository.");
                 _currentSyncPoint = value;
-                CurrentPath = String.Empty;
+                CurrentPath = string.Empty;
             }
         }
 

@@ -5,7 +5,7 @@ using System.Linq;
 
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
-namespace Stn.Core.IO
+namespace Stn.Core.IO.Browsers
 {
     public class ZipArchiveBrowser : FileBrowser, IDisposable
     {

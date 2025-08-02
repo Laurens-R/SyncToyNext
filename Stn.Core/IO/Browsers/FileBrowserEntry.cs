@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Stn.Core.IO
+namespace Stn.Core.IO.Browsers
 {
     public class FileBrowserEntry
     {
@@ -10,7 +10,7 @@ namespace Stn.Core.IO
         public DateTime Created { get; set; } = DateTime.MinValue;
         public DateTime LastModified { get; set; } = DateTime.MinValue;
         public string Type { get; set; } = string.Empty;
-        public Int64 Size { get; set; } = 0;
+        public long Size { get; set; } = 0;
         public bool IsCompressed { get; set; } = false;
         public string ArchivePath { get; set; } = string.Empty;
         public bool IsFile { get; set; } = false;

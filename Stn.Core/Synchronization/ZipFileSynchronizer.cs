@@ -50,7 +50,7 @@ namespace Stn.Core.Synchronizers
         /// </summary>
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="relativePath">The relative path inside the zip archive.</param>
-        public override void SynchronizeFile(string srcFilePath, string relativePath, string? oldDestFilePath = null)
+        public override bool SynchronizeFile(string srcFilePath, string relativePath, string? oldDestFilePath = null)
         {
             try
             {
@@ -93,32 +93,22 @@ namespace Stn.Core.Synchronizers
 
                 if (shouldCopy)
                 {
-                    if(entry != null) _archive.Delete(entry);
+                    if (entry != null) _archive.Delete(entry);
                     _archive.BeginUpdate();
                     bool knownCompressedFormat = FileHelpers.IsCompressedExtension(Path.GetExtension(srcFilePath));
                     _archive.Add(srcFilePath, entryPath, knownCompressedFormat ? ZipLib.CompressionMethod.Stored : ZipLib.CompressionMethod.Deflated); //_archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
                     _archive.CommitUpdate();
-                    
+
                     UserIO.Message($"{action} (zip): {relativePath}");
-                }
-                
-            }
-            catch (IOException ioEx)
-            {
-                UserIO.Error($"IO error syncing '{srcFilePath}' to zip '{_zipFilePath}'", ioEx);
-            }
-            catch (UnauthorizedAccessException uaEx)
-            {
-                UserIO.Error($"Access denied syncing '{srcFilePath}' to zip '{_zipFilePath}'", uaEx);
-            }
-            catch (InvalidDataException dataEx)
-            {
-                UserIO.Error($"Invalid data in zip '{_zipFilePath}'", dataEx);
+                }   
             }
             catch (Exception ex)
             {
                 UserIO.Error($"Unexpected error syncing '{srcFilePath}' to zip '{_zipFilePath}'", ex);
+                return false;
             }
+
+            return true;
         }
 
         /// <summary>
@@ -210,7 +200,8 @@ namespace Stn.Core.Synchronizers
                 {
                     // If the entry was marked as deleted, we need to re-add it
                     newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
-                    SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                    var succes = SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                    if (!succes) throw new IOException($"Could not transfer file from {entry.SourceFile} to {entry.RelativeSourcePath}.");
                     continue;
                 }
 
@@ -248,7 +239,8 @@ namespace Stn.Core.Synchronizers
                         if (secondsDifference > 2 || zipEntry.Size != sourceFileInfo.Length) // ZIP format is only precise to 2 seconds
                         {
                             newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
-                            SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                            var succes = SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                            if (!succes) throw new IOException($"Could not transfer file from {entry.SourceFile} to {entry.RelativeSourcePath}.");
                             continue;
                         }
                     } else
@@ -259,8 +251,9 @@ namespace Stn.Core.Synchronizers
                 else
                 {
                     newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
-                    SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
-                    
+                    var succes = SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                    if (!succes) throw new IOException($"Could not transfer file from {entry.SourceFile} to {entry.RelativeSourcePath}.");
+
                     _archiveStream?.Flush();
                 }
             }

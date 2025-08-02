@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Stn.Core.IO
+namespace Stn.Core.IO.Browsers
 {
     public class FileSystemBrowser : FileBrowser, IDisposable
     {
@@ -36,7 +36,7 @@ namespace Stn.Core.IO
                     var directoryInfo = new DirectoryInfo(directory);
                     var relativePath = Path.GetRelativePath(RootPath, directoryInfo.FullName);
 
-                    if (directoryInfo.Name == ".stn" || (_ignoreFile != null && _ignoreFile.IsEntryIgnored(directoryInfo.Name + Path.DirectorySeparatorChar))) continue;
+                    if (directoryInfo.Name == ".stn" || _ignoreFile != null && _ignoreFile.IsEntryIgnored(directoryInfo.Name + Path.DirectorySeparatorChar)) continue;
 
                     _directories.Add(new FileBrowserEntry
                     {
@@ -45,7 +45,7 @@ namespace Stn.Core.IO
                         Type = "[ FOLDER ]",
                         Created = directoryInfo.CreationTimeUtc,
                         LastModified = directoryInfo.LastWriteTimeUtc,
-                        RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, directoryInfo.FullName)
+                        RelativePath = string.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, directoryInfo.FullName)
                     });
 
                     _allEntries.Add(_directories.Last());
@@ -61,7 +61,7 @@ namespace Stn.Core.IO
                             var fileInfo = new FileInfo(file);
                             var relativePath = Path.GetRelativePath(RootPath, fileInfo.FullName);
 
-                            if (fileInfo.Name == ".stn" || (_ignoreFile != null && _ignoreFile.IsEntryIgnored(relativePath))) continue;
+                            if (fileInfo.Name == ".stn" || _ignoreFile != null && _ignoreFile.IsEntryIgnored(relativePath)) continue;
 
                             _files.Add(new FileBrowserEntry
                             {
@@ -71,7 +71,7 @@ namespace Stn.Core.IO
                                 LastModified = fileInfo.LastWriteTimeUtc,
                                 Type = fileInfo.Extension,
                                 Size = fileInfo.Length,
-                                RelativePath = String.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, file),
+                                RelativePath = string.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, file),
                                 IsFile = true
                             });
                         }

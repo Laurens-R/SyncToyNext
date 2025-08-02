@@ -27,7 +27,7 @@ namespace Stn.Core.Synchronizers
         /// </summary>
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="relativeOrDestPath">The relative path (for zip) or destination file path (for folder).</param>
-        public abstract void SynchronizeFile(string srcFilePath, string relativeOrDestPath, string? oldDestFilePath = null);
+        public abstract bool SynchronizeFile(string srcFilePath, string relativeOrDestPath, string? oldDestFilePath = null);
 
         protected void DetectRemovedFiles(string sourceDirectory, List<SyncPointEntry> syncPointFiles, IEnumerable<string> localFiles, SyncPoint syncPoint)
         {

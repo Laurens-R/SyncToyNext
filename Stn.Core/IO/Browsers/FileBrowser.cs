@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Stn.Core.IO
+namespace Stn.Core.IO.Browsers
 {
     public enum FileBrowserMode
     {
@@ -51,7 +51,7 @@ namespace Stn.Core.IO
 
         protected bool IsPartOfRoot(string path)
         {
-            if (String.IsNullOrWhiteSpace(_rootPath)) return true;
+            if (string.IsNullOrWhiteSpace(_rootPath)) return true;
             if (path.StartsWith(_rootPath)) return true;
             return false;
         }

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 namespace Stn.Core.Synchronizers
@@ -60,7 +61,8 @@ namespace Stn.Core.Synchronizers
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
                 var destFilePath = Path.Combine(_destination, relativePath);
 
-                SynchronizeFile(srcFilePath, destFilePath);
+                var succes = SynchronizeFile(srcFilePath, destFilePath);
+                if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
 
                 progressCounter++;
 
@@ -100,7 +102,8 @@ namespace Stn.Core.Synchronizers
                     if (existingEntry.EntryType == SyncPointEntryType.Deleted)
                     {
                         newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.AddOrChanged);
-                        SynchronizeFile(srcFilePath, destFilePath);
+                        var succes = SynchronizeFile(srcFilePath, destFilePath);
+                        if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                         continue;
                     }
 
@@ -113,7 +116,8 @@ namespace Stn.Core.Synchronizers
                         {
                             // replicate file into the new sync point location
                             newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.AddOrChanged);
-                            SynchronizeFile(srcFilePath, destFilePath);
+                            bool succes = SynchronizeFile(srcFilePath, destFilePath);
+                            if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                             continue;
                         }
                     }
@@ -123,7 +127,8 @@ namespace Stn.Core.Synchronizers
                     // replicate file into the new sync point location
                     var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativeSourcePath);
                     newSyncPoint.AddEntry(relativeSourcePath, relativeSourcePath);
-                    SynchronizeFile(srcFilePath, destFilePath);
+                    bool succes = SynchronizeFile(srcFilePath, destFilePath);
+                    if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                 }
 
                 progressCounter++;
@@ -150,7 +155,7 @@ namespace Stn.Core.Synchronizers
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="destFilePath">The full path to the destination file.</param>
         /// <param name="oldDestFilePath">The old destination file path to delete (optional, for renames).</param>
-        public override void SynchronizeFile(string srcFilePath, string destFilePath, string? oldDestFilePath = null)
+        public override bool SynchronizeFile(string srcFilePath, string destFilePath, string? oldDestFilePath = null)
         {
             if (!string.IsNullOrEmpty(oldDestFilePath) && File.Exists(oldDestFilePath))
             {
@@ -192,32 +197,20 @@ namespace Stn.Core.Synchronizers
                         Directory.CreateDirectory(destDir);
                     }
 
-                    const int maxRetries = 10;
-                    const int delayMs = 1000;
-                    int attempt = 0;
+                    bool succes = FileSystem.Copy(srcFilePath, destFilePath);
 
-                    while (true)
+                    if(!succes)
                     {
-                        try
-                        {
-                            File.Copy(srcFilePath, destFilePath, true);
-                            UserIO.Message($"{action} - {destFilePath}");
-                            break;
-                        }
-                        catch (IOException)
-                        {
-                            UserIO.Error($"File locked when trying to sync from '{srcFilePath}' to '{destFilePath}'. Retrying {attempt + 1}/{maxRetries}...");
-                            attempt++;
-                            if (attempt >= maxRetries) throw new IOException($"Failed to copy file after {maxRetries} attempts.");
-                            Thread.Sleep(delayMs);
-                        }
+                        return false;
                     }
                 }
             }
             catch (Exception ex)
             {
-                UserIO.Error($"Failed to sync file '{srcFilePath}' to '{destFilePath}'", ex);
+                return false;
             }
+
+            return true;
         }
 
         public override void OpenTarget()
