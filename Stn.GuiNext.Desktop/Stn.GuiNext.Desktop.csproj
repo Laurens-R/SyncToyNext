@@ -7,12 +7,16 @@
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<ApplicationIcon>stn.ico</ApplicationIcon>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<PublishTrimmed>true</PublishTrimmed>
 		<PublishAot>false</PublishAot>
 		<AssemblyName>stngui</AssemblyName>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Content Include="stn.ico" />
+	</ItemGroup>
 
 
 	<ItemGroup>
