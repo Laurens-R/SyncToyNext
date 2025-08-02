@@ -236,7 +236,7 @@ namespace Stn.Core.IO.Browsers
             var pathParts = CurrentPath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
             if(pathParts.Length > 1)
             {
-                CurrentPath = string.Concat(pathParts.Take(pathParts.Length - 1).ToArray());
+                CurrentPath = string.Join('\\', pathParts.Take(pathParts.Length - 1).ToArray());
             } else
             {
                 CurrentPath = string.Empty;

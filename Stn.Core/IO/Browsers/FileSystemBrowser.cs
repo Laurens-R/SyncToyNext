@@ -13,6 +13,7 @@ namespace Stn.Core.IO.Browsers
         private HashSet<string> _allFiles = new HashSet<string>();
         private List<FileSystemEventArgs> _filesSystemChanges = new List<FileSystemEventArgs>();
         private IgnoreFile _ignoreFile;
+        
         private void Repopulate(string path)
         {
             if (Directory.Exists(path))
