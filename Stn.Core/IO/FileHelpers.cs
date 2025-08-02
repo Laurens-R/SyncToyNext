@@ -1,11 +1,9 @@
-﻿using Stn.Core.SyncPoints;
+﻿using ICSharpCode.SharpZipLib.Core;
+using Stn.Core.SyncPoints;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
@@ -156,6 +154,17 @@ namespace Stn.Core.IO
             acceptedTextExtensions.Add(".rs");
         }
 
+        public static void WriteZipEntryToDisk(string fullTargetPath, ZipLib.ZipFile archive, ZipLib.ZipEntry zipEntry)
+        {
+            var fileStream = archive.GetInputStream(zipEntry);
+            var fileWriter = new FileStream(fullTargetPath, FileMode.Create, FileAccess.Write);
+            fileWriter.Write(fileStream.ReadBytes((int)zipEntry.Size));
+            fileWriter.Flush();
+            fileStream.Dispose();
+            fileWriter.Dispose();
+            File.SetLastWriteTimeUtc(fullTargetPath, zipEntry.DateTime);
+        }
+
         public static bool IsAcceptedTextExtension(string extension)
         {
             if (string.IsNullOrWhiteSpace(extension)) return false;
@@ -222,65 +231,12 @@ namespace Stn.Core.IO
             return false;
         }
 
-        public static bool IsFileDifferent(string localFilePath, ZipArchiveEntry? remoteZipEntry)
-        {
-            if (remoteZipEntry == null) throw new InvalidOperationException("Zip file entry should not be null");
-
-            var srcLastWrite = File.GetLastWriteTimeUtc(localFilePath);
-            // ZIP entries store time as UTC, but DateTime.Kind is Unspecified - force it to UTC
-            var entryLastWrite = DateTime.SpecifyKind(remoteZipEntry.LastWriteTime.DateTime, DateTimeKind.Utc);
-
-            // Truncate to whole seconds for both to handle ZIP format precision issues
-            srcLastWrite = srcLastWrite.AddTicks(-(srcLastWrite.Ticks % TimeSpan.TicksPerSecond));
-            entryLastWrite = entryLastWrite.AddTicks(-(entryLastWrite.Ticks % TimeSpan.TicksPerSecond));
-            var secondsDifference = Math.Abs((srcLastWrite - entryLastWrite).TotalSeconds);
-
-            if (secondsDifference > 2) // ZIP format is only precise to 2 seconds
-            {
-                return true;
-            }
-            else
-            {
-                long srcSize = new FileInfo(localFilePath).Length;
-                long entrySize = remoteZipEntry.Length;
-                if (srcSize != entrySize)
-                {
-                    return true;
-                }
-                else
-                {
-                    using var sourceFileStream = File.OpenRead(localFilePath);
-                    using var zipEntryStream = remoteZipEntry.Open();
-
-                    bool areDifferent = AreFirst4KDifferent(sourceFileStream, zipEntryStream);
-
-                    if (areDifferent)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        zipEntryStream.Seek(0, SeekOrigin.Begin);
-                        var srcHash = ComputeSHA256(localFilePath);
-                        string destHash = ComputeSHA256(zipEntryStream);
-
-                        if (!srcHash.Equals(destHash, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
         public static bool IsFileDifferent(string localFilePath, ZipLib.ZipEntry? remoteZipEntry, ZipLib.ZipFile? archive)
         {
             if (remoteZipEntry == null || archive == null) throw new InvalidOperationException("Zip file entry should not be null");
 
             var srcLastWrite = File.GetLastWriteTimeUtc(localFilePath);
-            // ZIP entries store time as UTC, but DateTime.Kind is Unspecified - force it to UTC
+            
             var entryLastWrite = remoteZipEntry.DateTime;
 
             // Truncate to whole seconds for both to handle ZIP format precision issues

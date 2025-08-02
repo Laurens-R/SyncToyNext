@@ -1,13 +1,10 @@
 ﻿using Stn.Core.SyncPoints;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net.WebSockets;
-using System.Text;
-using System.Threading.Tasks;
+
+using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.IO
 {
@@ -184,14 +181,14 @@ namespace Stn.Core.IO
                     {
                         archivePath = Path.Combine(_repository.RemotePath, remotePathParts[1]);
                         using var stream = new FileStream(archivePath, FileMode.Open, FileAccess.Read);
-                        using var zipFile = new ZipArchive(stream, ZipArchiveMode.Read);
-                        ZipArchiveEntry? entry = zipFile.GetEntry(file.SourcePath.Replace('\\', '/'));
+                        using var zipFile = new ZipLib.ZipFile(stream, false);
+                        var entry = zipFile.GetEntry(file.SourcePath.Replace('\\', '/'));
 
                         if (entry != null)
                         {
-                            size = entry.Length;
-                            created = entry.LastWriteTime.DateTime;
-                            modified = entry.LastWriteTime.DateTime;
+                            size = entry.Size;
+                            created = entry.DateTime;
+                            modified = entry.DateTime;
                         }
                         else
                         {

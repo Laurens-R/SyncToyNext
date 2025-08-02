@@ -3,12 +3,9 @@ using Stn.Core.Execution;
 using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.SyncPoints
 {
@@ -392,7 +389,7 @@ namespace Stn.Core.SyncPoints
 
                 var zipPath = Path.Combine(remoteFolderPath, pathParts[1]);
                 using var zip = new FileStream(zipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
+                using var archive = new ZipLib.ZipFile(zip, false);
                 var entryPath = relativePath.Replace("\\", "/");
                 var zipEntry = archive.GetEntry(entryPath);
 
@@ -402,7 +399,7 @@ namespace Stn.Core.SyncPoints
 
                 if (zipEntry != null)
                 {
-                    zipEntry.ExtractToFile(tempPath, true);
+                    FileHelpers.WriteZipEntryToDisk(tempPath, archive, zipEntry);
                     return tempPath;
                 }
             }
@@ -437,13 +434,13 @@ namespace Stn.Core.SyncPoints
                 //file is a zip.
                 var zipPath = Path.Combine(RemotePath, remotePathParts[1]);
                 using var zip = new FileStream(zipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                using var archive = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: false);
+                using var archive = new ZipLib.ZipFile(zip, false);
                 var entryPath = relativePath.Replace("\\", "/");
                 var zipEntry = archive.GetEntry(entryPath);
 
                 if(zipEntry == null) return string.Empty;
 
-                using var entryStream = zipEntry.Open();
+                using var entryStream = archive.GetInputStream(zipEntry);
                 using var reader = new StreamReader(entryStream);
                 var remoteTextContent = reader.ReadToEnd();
                 return remoteTextContent;

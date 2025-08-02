@@ -1,13 +1,10 @@
 ﻿using ICSharpCode.SharpZipLib.Core;
+using Stn.Core.IO;
 using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.SyncPoints
@@ -187,15 +184,8 @@ namespace Stn.Core.SyncPoints
                     Directory.CreateDirectory(restoreDirectory);
                 }
 
-                var fileStream = archive.GetInputStream(zipEntry);
-                var fileWriter = new FileStream(fullTargetPath, FileMode.Create, FileAccess.Write);
-                fileWriter.Write(fileStream.ReadBytes((int)zipEntry.Size));
-                fileWriter.Flush();
-                fileStream.Dispose();
-                fileWriter.Dispose();
+                FileHelpers.WriteZipEntryToDisk(fullTargetPath, archive, zipEntry);        
 
-                File.SetLastWriteTimeUtc(fullTargetPath, zipEntry.DateTime);
-                                
                 UserIO.Message($"Restored single file '{requestedFile}' from sync point '{syncPointID}' to '{fullTargetPath}' from zip.");
             }
             else
@@ -254,8 +244,6 @@ namespace Stn.Core.SyncPoints
                     }
                     
                     if(currentZipArchive != null) {
-
-
                         var entryPath = relativeEntry.Replace("\\", "/");
                         var zipEntry = currentZipArchive.GetEntry(entryPath);
 
@@ -297,15 +285,7 @@ namespace Stn.Core.SyncPoints
                             }
                         }
 
-                        var fileStream = currentZipArchive.GetInputStream(zipEntry);
-                        var fileWriter = new FileStream(restorePath, FileMode.Create, FileAccess.Write);
-                        fileWriter.Write(fileStream.ReadBytes((int)zipEntry.Size));
-                        fileWriter.Flush();
-                        fileStream.Dispose();
-                        fileWriter.Dispose();
-
-                        File.SetLastWriteTimeUtc(restorePath, zipEntry.DateTime);
-
+                        FileHelpers.WriteZipEntryToDisk(restorePath, currentZipArchive, zipEntry);
                     }
                 }
                 else
@@ -342,7 +322,6 @@ namespace Stn.Core.SyncPoints
             }
 
             currentZipArchive?.Close();
-
 
             UserIO.Message("Cleaning up files not part of the sync point...");
 

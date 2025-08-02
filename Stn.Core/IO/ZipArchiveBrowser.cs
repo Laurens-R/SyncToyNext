@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
+
+using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.IO
 {
     public class ZipArchiveBrowser : FileBrowser, IDisposable
     {
-        private ZipArchive _archive;
+        private ZipLib.ZipFile _archive;
         private FileStream _fileStream;
         private FileBrowserEntry? _currentDirectory = null;
 
@@ -40,7 +41,7 @@ namespace Stn.Core.IO
         private bool HasEntriesWithBasePath(string basePath)
         {
             if (string.IsNullOrEmpty(basePath)) return true;
-            return _archive.Entries.Any(entry => entry.FullName.StartsWith(basePath));
+            return _archive.Any(entry => entry.Name.StartsWith(basePath));
         }
 
         private void PopulateEntriesAtPath(string path)
@@ -50,12 +51,12 @@ namespace Stn.Core.IO
             //first process files
             if (BrowserMode == FileBrowserMode.FoldersAndFiles)
             {
-                var filesAtLevel = _archive.Entries.Where(entry =>
+                var filesAtLevel = _archive.Where(entry =>
                 {
-                    bool isRootedInPath = entry.FullName.StartsWith(path);
+                    bool isRootedInPath = entry.Name.StartsWith(path);
                     if (!isRootedInPath) return false;
 
-                    string strippedPath = entry.FullName.Replace(path, string.Empty);
+                    string strippedPath = entry.Name.Replace(path, string.Empty);
                     var pathParts = strippedPath.Split('/');
 
                     if (pathParts.Length != 1) return false;
@@ -69,13 +70,13 @@ namespace Stn.Core.IO
                 {
                     _files.Add(new FileBrowserEntry
                     {
-                        Name = file.Name,
-                        Path = file.FullName,
-                        Created = file.LastWriteTime.UtcDateTime,
-                        LastModified = file.LastWriteTime.UtcDateTime,
-                        Type = Path.GetExtension(file.FullName),
-                        RelativePath = file.FullName,
-                        Size = file.Length,
+                        Name = Path.GetFileName(file.Name),
+                        Path = file.Name,
+                        Created = file.DateTime,
+                        LastModified = file.DateTime,
+                        Type = Path.GetExtension(file.Name),
+                        RelativePath = file.Name,
+                        Size = file.Size,
                         IsFile = true
                     });
 
@@ -84,12 +85,12 @@ namespace Stn.Core.IO
             }
 
             //then process directories.
-            var childEntriesAtLevel = _archive.Entries.Where(entry =>
+            var childEntriesAtLevel = _archive.Where(entry =>
             {
-                bool isRootedInPath = entry.FullName.StartsWith(path);
+                bool isRootedInPath = entry.Name.StartsWith(path);
                 if (!isRootedInPath) return false;
 
-                string strippedPath = entry.FullName.Replace(path, string.Empty);
+                string strippedPath = entry.Name.Replace(path, string.Empty);
                 var pathParts = strippedPath.Split('/');
 
                 if (pathParts.Length > 1) return false;
@@ -102,7 +103,7 @@ namespace Stn.Core.IO
 
             foreach (var entry in childEntriesAtLevel)
             {
-                string strippedPath = entry.FullName.Replace(path, string.Empty);
+                string strippedPath = entry.Name.Replace(path, string.Empty);
                 var pathParts = strippedPath.Split('/');
                 if(directoriesAtLevel.Contains(pathParts[0]))
                 {
@@ -128,7 +129,7 @@ namespace Stn.Core.IO
             if (!Directory.Exists(directoryOfArchive)) Directory.CreateDirectory(directoryOfArchive);
 
             _fileStream = new FileStream(zipArchivePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-            _archive = new ZipArchive(_fileStream, ZipArchiveMode.Update);
+            _archive = new ZipLib.ZipFile(_fileStream, false);
         }
 
         public override void NavigateTo(FileBrowserEntry directory)
@@ -161,8 +162,7 @@ namespace Stn.Core.IO
 
         public void Dispose()
         {
-            _archive.Dispose();
-            _fileStream.Dispose();
+            _archive.Close();
         }
     }
 }

@@ -2502,7 +2502,7 @@ namespace ICSharpCode.SharpZipLib.Zip
 			var buffer = GetBuffer();
 
 			// Copy the first 4 bytes of the descriptor
-			source.Read(buffer, 0, sizeof(int));
+			source.ReadExactly(buffer, 0, sizeof(int));
 			dest.Write(buffer, 0, sizeof(int));
 
 			if (BitConverter.ToUInt32(buffer, 0) != ZipConstants.DataDescriptorSignature)
@@ -2603,7 +2603,7 @@ namespace ICSharpCode.SharpZipLib.Zip
 			var buffer = GetBuffer(); ;
 
 			stream.Position = sourcePosition;
-			stream.Read(buffer, 0, sizeof(int));
+			stream.ReadExactly(buffer, 0, sizeof(int));
 			var sourceHasSignature = BitConverter.ToUInt32(buffer, 0) == ZipConstants.DataDescriptorSignature;
 
 			var bytesToCopy = GetDescriptorSize(update, sourceHasSignature);

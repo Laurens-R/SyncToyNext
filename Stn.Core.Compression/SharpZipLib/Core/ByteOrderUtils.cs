@@ -8,7 +8,7 @@ using CT = System.Threading.CancellationToken;
 
 namespace ICSharpCode.SharpZipLib.Core
 {
-	internal static class ByteOrderStreamExtensions
+	public static class ByteOrderStreamExtensions
 	{
 		internal static byte[] SwappedBytes(ushort value) => new[] {(byte)value, (byte)(value >> 8)};
 		internal static byte[] SwappedBytes(short  value) => new[] {(byte)value, (byte)(value >> 8)};
@@ -47,7 +47,7 @@ namespace ICSharpCode.SharpZipLib.Core
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static ushort SwappedU16(byte[] bytes) => (ushort) SwappedS16(bytes);
 
-		internal static byte[] ReadBytes(this Stream stream, int count)
+		public static byte[] ReadBytes(this Stream stream, int count)
 		{
 			var bytes = new byte[count];
 			var remaining = count;

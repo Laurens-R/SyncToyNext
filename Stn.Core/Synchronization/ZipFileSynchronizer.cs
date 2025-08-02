@@ -4,10 +4,7 @@ using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Xml.Schema;
 
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
 

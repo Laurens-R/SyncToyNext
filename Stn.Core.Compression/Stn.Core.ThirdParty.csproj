@@ -3,25 +3,17 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <IsTrimmable>False</IsTrimmable>
     <IsAotCompatible>False</IsAotCompatible>
+    <IsTrimmable>False</IsTrimmable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <IsTrimmable>False</IsTrimmable>
     <IsAotCompatible>False</IsAotCompatible>
+    <IsTrimmable>False</IsTrimmable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Stn.Core.Compression\Stn.Core.ThirdParty.csproj" />
-  </ItemGroup>
 
 </Project>

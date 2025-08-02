@@ -12,6 +12,9 @@ namespace ICSharpCode.SharpZipLib
 	[Serializable]
 	public class SharpZipBaseException : Exception
 	{
+		public SerializationInfo Info { get; set; }
+		public StreamingContext Context { get; set; }
+
 		/// <summary>
 		/// Initializes a new instance of the SharpZipBaseException class.
 		/// </summary>
@@ -51,8 +54,10 @@ namespace ICSharpCode.SharpZipLib
 		/// about the source or destination.
 		/// </param>
 		protected SharpZipBaseException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
+			: base("Something went wrong while working with the archive.") //base(info, context)
 		{
-		}
+			this.Info = info;
+			this.Context = context;
+        }
 	}
 }

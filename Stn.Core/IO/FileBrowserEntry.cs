@@ -38,7 +38,7 @@ namespace Stn.Core.IO
             {
                 if(IsFile) 
                 { 
-                    return LastModified.ToString();
+                    return LastModified.ToLocalTime().ToString();
                 } else
                 {
                     return string.Empty;

@@ -10,7 +10,7 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<PublishTrimmed>true</PublishTrimmed>
-		<PublishAot>true</PublishAot>
+		<PublishAot>false</PublishAot>
 		<AssemblyName>stngui</AssemblyName>
 	</PropertyGroup>
 
