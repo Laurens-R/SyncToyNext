@@ -39,7 +39,7 @@ namespace Stn.Core.SyncPoints
             RestorePath = currentPath;
         }
 
-        public static void Run(string syncpointId, string remotePath = "", string singleFile = "")
+        public static void Run(string syncpointId, IEnumerable<string> filesystemItemSelection, string remotePath = "")
         {
             bool hasManualRemotePath = !string.IsNullOrWhiteSpace(remotePath);
 
@@ -126,9 +126,9 @@ namespace Stn.Core.SyncPoints
 
             allEntriesInRestoreLocation = allEntriesInRestoreLocation.Concat(Directory.GetDirectories(RestorePath, "*", SearchOption.AllDirectories));
 
-            if (!string.IsNullOrWhiteSpace(singleFile))
+            if (filesystemItemSelection.Count() > 0)
             {
-                SingleItemRestore(singleFile, syncpointId, isZipped, allSyncPointFiles);
+                RestoreItems(filesystemItemSelection, syncpointId, isZipped, allSyncPointFiles);
             }
             else
             {
@@ -136,96 +136,91 @@ namespace Stn.Core.SyncPoints
             }
         }
 
-        private static bool SingleItemRestore(string requestedItem, string syncPointID,  bool isZipped, IEnumerable<SyncPointEntry> allSyncPointFiles)
+        private static bool RestoreItems(IEnumerable<string> requestedItems, string syncPointID,  bool isZipped, IEnumerable<SyncPointEntry> allSyncPointFiles)
         {
-            if (string.IsNullOrWhiteSpace(requestedItem))
+            IEnumerable<SyncPointEntry> itemsForRestore = [];
+
+            foreach (var item in requestedItems)
             {
-                throw new ArgumentException("The 'file' argument cannot be null or empty when restoring a specific file.");
-            }
-
-            if(requestedItem.StartsWith('/') || requestedItem.StartsWith('\\'))
-            {
-                //because all paths in the syncpoint files are stored without a leading
-                //path seperator character.
-                requestedItem = requestedItem.Substring(1);
-            }
-
-            //assume the provided file is relative to the sync point root and so create a full path to it
-            var fullTargetPath = Path.Combine(RestorePath, requestedItem);
-
-            var itemToRestore = allSyncPointFiles.FirstOrDefault(f => f.SourcePath.Equals(requestedItem, StringComparison.OrdinalIgnoreCase)
-                                                                      || f.SourcePath.Replace('\\', '/').Equals(requestedItem, StringComparison.OrdinalIgnoreCase));
-
-            if (itemToRestore == null)
-            {
-                throw new InvalidOperationException($"The file '{requestedItem}' does not exist in the sync point '{syncPointID}'.");
-            }
-
-            if (itemToRestore.EntryType == SyncPointEntryType.Deleted)
-            {
-                //for single file restores, we don't delete the file and skip the operation. Users probably don't have the intent
-                //to delete the file, but rather restore it to the state it was in at some sync point.
-                UserIO.Message($"The file '{requestedItem}' was marked as deleted in the sync point '{syncPointID}'. Nothing to restore.");
-                return false;
-            }
-
-            if (itemToRestore.EntryType == SyncPointEntryType.File)
-            {
-                if (isZipped)
+                itemsForRestore = itemsForRestore.Concat(allSyncPointFiles.Where(spf =>
                 {
-                    var zipFile = itemToRestore.RelativeRemotePath.Split("@")[1];
-                    var fullZipPath = Path.Combine(RemoteDirectory, zipFile);
-                    var relativeEntry = itemToRestore.RelativeRemotePath.Split("@")[0];
+                    var cleanItemPath = item.StartsWith('/') || item.StartsWith('\\') ? item.Substring(1) : item;
+                    if (spf.SourcePath == cleanItemPath) return true;
+                    if (spf.SourcePath.StartsWith(cleanItemPath) && spf.SourcePath != cleanItemPath) return true;
 
-                    using var zip = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                    using var archive = new ZipLib.ZipFile(zip, false);
-                    var entryPath = relativeEntry.Replace("\\", "/");
-                    var zipEntry = archive.GetEntry(entryPath);
+                    return false;
+                }));
+            }
 
-                    if (zipEntry == null)
-                    {
-                        throw new InvalidOperationException($"The zip entry '{entryPath}' does not exist in the zip file '{zipFile}'.");
-                    }
+            int totalFiles = itemsForRestore.Count();
+            int currentFileIndex = 0;
 
-                    var restoreDirectory = Path.GetDirectoryName(fullTargetPath);
-
-                    if (restoreDirectory != null && !Directory.Exists(restoreDirectory))
-                    {
-                        Directory.CreateDirectory(restoreDirectory);
-                    }
-
-                    FileSystemHelpers.WriteZipEntryToDisk(fullTargetPath, archive, zipEntry);
-
-                    UserIO.Message($"Restored single file '{requestedItem}' from sync point '{syncPointID}' to '{fullTargetPath}' from zip.");
-                }
-                else
-                {
-                    var fullSyncPointPath = Path.Combine(RemoteDirectory, syncPointID, itemToRestore.RelativeRemotePath);
-
-                    if (!File.Exists(fullSyncPointPath))
-                    {
-                        throw new InvalidOperationException($"The sync point file '{fullSyncPointPath}' does not exist.");
-                    }
-
-                    FileSystem.Copy(fullSyncPointPath, fullTargetPath);
-
-                    UserIO.Message($"Restored single file '{requestedItem}' from sync point '{syncPointID}' to '{fullTargetPath}'.");
-                }
-            } 
-            else if (itemToRestore.EntryType == SyncPointEntryType.Directory)
+            foreach (var item in itemsForRestore)
             {
-                if (!Directory.Exists(fullTargetPath))
+                currentFileIndex++;
+
+                Repository.UpdateProgressHandler?.Invoke(currentFileIndex, totalFiles, $"Restoring {item}");
+
+                var itemToRestore = item;
+                var fullTargetPath = Path.Combine(RestorePath, itemToRestore.SourcePath);
+
+                if (itemToRestore.EntryType == SyncPointEntryType.Deleted)
                 {
-                    Directory.CreateDirectory(fullTargetPath);
+                    //for single file restores, we don't delete the file and skip the operation. Users probably don't have the intent
+                    //to delete the file, but rather restore it to the state it was in at some sync point.
+                    UserIO.Message($"The file '{itemToRestore.SourcePath}' was marked as deleted in the sync point '{syncPointID}'. Nothing to restore.");
+                    return false;
                 }
 
-                //first find all entries that start with this directory.
-                var childItems = allSyncPointFiles.Where(sp => sp.SourcePath != itemToRestore.SourcePath
-                                                                && sp.SourcePath.StartsWith(itemToRestore.SourcePath));
-
-                foreach (var childItem in childItems)
+                if (itemToRestore.EntryType == SyncPointEntryType.File)
                 {
-                    SingleItemRestore(childItem.SourcePath, childItem.SyncpointID, isZipped, childItems);
+                    if (isZipped)
+                    {
+                        var zipFile = itemToRestore.RelativeRemotePath.Split("@")[1];
+                        var fullZipPath = Path.Combine(RemoteDirectory, zipFile);
+                        var relativeEntry = itemToRestore.RelativeRemotePath.Split("@")[0];
+
+                        using var zip = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                        using var archive = new ZipLib.ZipFile(zip, false);
+                        var entryPath = relativeEntry.Replace("\\", "/");
+                        var zipEntry = archive.GetEntry(entryPath);
+
+                        if (zipEntry == null)
+                        {
+                            throw new InvalidOperationException($"The zip entry '{entryPath}' does not exist in the zip file '{zipFile}'.");
+                        }
+
+                        var restoreDirectory = Path.GetDirectoryName(fullTargetPath);
+
+                        if (restoreDirectory != null && !Directory.Exists(restoreDirectory))
+                        {
+                            Directory.CreateDirectory(restoreDirectory);
+                        }
+
+                        FileSystemHelpers.WriteZipEntryToDisk(fullTargetPath, archive, zipEntry);
+
+                        UserIO.Message($"Restored single file '{itemToRestore.SourcePath}' from sync point '{syncPointID}' to '{fullTargetPath}' from zip.");
+                    }
+                    else
+                    {
+                        var fullSyncPointPath = Path.Combine(RemoteDirectory, syncPointID, itemToRestore.RelativeRemotePath);
+
+                        if (!File.Exists(fullSyncPointPath))
+                        {
+                            throw new InvalidOperationException($"The sync point file '{fullSyncPointPath}' does not exist.");
+                        }
+
+                        FileSystem.Copy(fullSyncPointPath, fullTargetPath);
+
+                        UserIO.Message($"Restored single file '{itemToRestore.SourcePath}' from sync point '{syncPointID}' to '{fullTargetPath}'.");
+                    }
+                }
+                else if (itemToRestore.EntryType == SyncPointEntryType.Directory)
+                {
+                    if (!Directory.Exists(fullTargetPath))
+                    {
+                        Directory.CreateDirectory(fullTargetPath);
+                    }
                 }
             }
 

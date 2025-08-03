@@ -284,7 +284,7 @@ namespace Stn.Core.SyncPoints
             {
                 SyncPointRestorer.RestorePath = repository.LocalPath;
                 SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
-                SyncPointRestorer.Run(latestSyncPoint.SyncPointId, otherRemotePath);
+                SyncPointRestorer.Run(latestSyncPoint.SyncPointId, [], otherRemotePath);
 
                 //we use exactly the same syncpoint id as the latest syncpoint id from the remote which was cloned
                 //so we can refer back to it when merging.
@@ -333,7 +333,7 @@ namespace Stn.Core.SyncPoints
         {
             SyncPointRestorer.RestorePath = LocalPath;
             SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
-            SyncPointRestorer.Run(syncPointID, RemotePath);
+            SyncPointRestorer.Run(syncPointID, [], RemotePath);
 
             if (_remoteConfig == null) throw new InvalidOperationException("Trying to work with remote config which is null.");
             _remoteConfig.CurrentSyncPoint = syncPointID;
@@ -344,28 +344,17 @@ namespace Stn.Core.SyncPoints
         {
             SyncPointRestorer.RestorePath = LocalPath;
             SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
-            SyncPointRestorer.Run(syncPointID, RemotePath, relativeFilePath);
+            SyncPointRestorer.Run(syncPointID, [relativeFilePath], RemotePath);
         }
 
-        public void RestoreMultipleEntriesFromSyncPoint(IEnumerable<SyncPointEntry> remoteSelectedItems, SyncPoint? currentSyncPoint)
+        public void RestoreMultipleEntriesFromSyncPoint(IEnumerable<string> remoteSelectedItems, SyncPoint? currentSyncPoint)
         {
             SyncPointRestorer.RestorePath = LocalPath;
             SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
 
-            bool isZipped = Path.HasExtension(RemotePath) && Path.GetExtension(RemotePath) == ".zip";
-
             if (remoteSelectedItems.Count() > 0 && currentSyncPoint != null)
             {
-                foreach (var entry in remoteSelectedItems)
-                {
-                    if (entry != null)
-                    {
-                        var entryParts = entry.RelativeRemotePath.Split(new char[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
-                        var relativeEntryPath = entryParts[0];
-
-                        SyncPointRestorer.Run(currentSyncPoint.SyncPointId, string.Empty, relativeEntryPath);
-                    }
-                }
+                SyncPointRestorer.Run(currentSyncPoint.SyncPointId, remoteSelectedItems, string.Empty);
             }
         }
 

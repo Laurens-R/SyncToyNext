@@ -138,14 +138,17 @@ public partial class RepositoryView : UserControl
 
     private async void ButtonRestoreSingle_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
+        var selectedItems = remoteFileBrowser.SelectedItems;
+
+        if (selectedItems?.Count() == 0) return;
+
         var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to restore the selected files from this syncpoint? It will undo all your local changes since that syncpoint to the files that you have selected.", "Are you sure?", MessageBoxOptions.YesNo);
 
         if (result == PopupControlResult.Yes)
         {
             var repository = ViewModel.Repository;
             var selectedSyncPoint = comboRemoteSyncpoints.SelectedItem as SyncPoint;
-            var selectedItems = remoteFileBrowser.SelectedItems;
-
+            
             if (repository != null && selectedSyncPoint != null && selectedItems != null)
             {
                 progressDialog.Title = "Restoring files to local";
@@ -153,10 +156,7 @@ public partial class RepositoryView : UserControl
 
                 var task = Task.Run(() =>
                 {
-                    foreach (var item in selectedItems)
-                    {
-                        repository.RestoreSingleFile(selectedSyncPoint.SyncPointId, item.RelativePath);
-                    }
+                    repository.RestoreMultipleEntriesFromSyncPoint(selectedItems.Select(item => item.RelativePath), selectedSyncPoint);
                 
                     Dispatcher.UIThread.InvokeAsync(() =>
                     {
