@@ -43,7 +43,7 @@ namespace Stn.Core.IO.Browsers
                     {
                         Name = directoryInfo.Name,
                         Path = directoryInfo.FullName,
-                        Type = "[ FOLDER ]",
+                        Type = string.Empty,
                         Created = directoryInfo.CreationTimeUtc,
                         LastModified = directoryInfo.LastWriteTimeUtc,
                         RelativePath = string.IsNullOrWhiteSpace(_rootPath) ? string.Empty : Path.GetRelativePath(_rootPath, directoryInfo.FullName)

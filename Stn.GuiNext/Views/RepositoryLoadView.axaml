@@ -4,7 +4,8 @@
              x:Class="Stn.GuiNext.RepositoryLoadView">
 	<Grid x:Name="mainRepoLoadGrid">
 		<Grid VerticalAlignment="Center">
-			<Border Background="#ccc" BoxShadow="0 0 30 0 #888888"  BorderBrush="#666" Width="800" BorderThickness="1" CornerRadius="8">
+			<Image Source="/Assets/background.jpg" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.4" Stretch="UniformToFill"/>
+			<Border Background="#fff" BoxShadow="0 0 30 0 #888888"  BorderBrush="#666" Width="800" BorderThickness="1" CornerRadius="8" Height="170">
 				<StackPanel Orientation="Vertical" Width="800"  Margin="0 20 0 20">
 					<Border Padding="20 0 20 0">
 						<StackPanel Orientation="Horizontal">

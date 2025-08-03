@@ -217,7 +217,7 @@ namespace Stn.Core
         /// <param name="syncPointID">The syncpoint ID to check</param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public List<SyncPointEntry> GetFileEntriesAtSyncpoint(string syncPointID)
+        public List<SyncPointEntry> GetEntriesAtSyncPoint(string syncPointID)
         {
             var requestedSyncPoint = GetSyncPoint(syncPointID);
 

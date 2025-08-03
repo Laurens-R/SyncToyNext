@@ -39,7 +39,7 @@ namespace Stn.Core.Synchronizers
             if (!Directory.Exists(_destination))
                 Directory.CreateDirectory(_destination);
 
-            var allFilesInSourcePath = FileHelpers.GetFilesInPath(sourcePath);
+            var allFilesInSourcePath = FileSystemHelpers.GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
             {
@@ -75,7 +75,17 @@ namespace Stn.Core.Synchronizers
 
         private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
         {
-            var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
+            //First get the state of all the directories.
+            var directories = FileSystemHelpers.GetDirectoriesInPath(sourceDirectory);
+
+            foreach (var directory in directories)
+            {
+                var relativePath = Path.GetRelativePath(sourceDirectory, directory);
+                newSyncPoint.AddEntry(relativePath, relativePath, SyncPointEntryType.Directory);
+            }
+
+            //Now process all files.
+            var allFilesPartOfSyncPoint = syncPointManager.GetEntriesAtSyncPoint(newSyncPoint.SyncPointId);
 
             int progressCounter = 0;
             int totalFileCount = allSourceLocationFiles.Count();
@@ -139,7 +149,7 @@ namespace Stn.Core.Synchronizers
                 }
             }
 
-            var updatedFileListOfSyncpoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
+            var updatedFileListOfSyncpoint = syncPointManager.GetEntriesAtSyncPoint(newSyncPoint.SyncPointId);
 
             // Now we need to check for files that were deleted since the last sync point
             DetectRemovedFiles(sourceDirectory, updatedFileListOfSyncpoint, allSourceLocationFiles, newSyncPoint);
@@ -178,7 +188,7 @@ namespace Stn.Core.Synchronizers
             }
             else
             {
-                shouldCopy = FileHelpers.IsFileDifferent(srcFilePath, destFilePath);
+                shouldCopy = FileSystemHelpers.IsFileDifferent(srcFilePath, destFilePath);
 
                 if (shouldCopy)
                 {

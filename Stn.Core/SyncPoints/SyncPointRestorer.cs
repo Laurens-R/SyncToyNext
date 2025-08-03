@@ -115,7 +115,7 @@ namespace Stn.Core.SyncPoints
 
             bool isZipped = syncPointManager.IsZipped;
 
-            var allSyncPointFiles = syncPointManager.GetFileEntriesAtSyncpoint(syncpointId);
+            var allSyncPointFiles = syncPointManager.GetEntriesAtSyncPoint(syncpointId);
             var allFilesInRestoreLocation = Directory.GetFiles(RestorePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
@@ -184,7 +184,7 @@ namespace Stn.Core.SyncPoints
                     Directory.CreateDirectory(restoreDirectory);
                 }
 
-                FileHelpers.WriteZipEntryToDisk(fullTargetPath, archive, zipEntry);        
+                FileSystemHelpers.WriteZipEntryToDisk(fullTargetPath, archive, zipEntry);        
 
                 UserIO.Message($"Restored single file '{requestedFile}' from sync point '{syncPointID}' to '{fullTargetPath}' from zip.");
             }
@@ -285,7 +285,7 @@ namespace Stn.Core.SyncPoints
                             }
                         }
 
-                        FileHelpers.WriteZipEntryToDisk(restorePath, currentZipArchive, zipEntry);
+                        FileSystemHelpers.WriteZipEntryToDisk(restorePath, currentZipArchive, zipEntry);
                     }
                 }
                 else

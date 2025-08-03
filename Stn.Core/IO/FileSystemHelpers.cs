@@ -9,12 +9,12 @@ using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.IO
 {
-    public class FileHelpers
+    public class FileSystemHelpers
     {
         private static List<string> acceptedTextExtensions = new List<string>();
         private static List<string> knownCompressedExtensions = new List<string>();
 
-        static FileHelpers()
+        static FileSystemHelpers()
         {
             InitializeKnownTextExtensions();
             InitializeKnownCompressedExtension();
@@ -184,6 +184,18 @@ namespace Stn.Core.IO
         public static IEnumerable<string> GetFilesInPath(string sourcePath, IgnoreFile? ignoreFile = null)
         {
             var files = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories)
+                    .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));
+
+            ignoreFile = ignoreFile == null ? new IgnoreFile() : ignoreFile;
+            ignoreFile.TryLoadIgnoreFile(sourcePath);
+            return files.Where(file => !ignoreFile.IsEntryIgnored(file));
+        }
+
+        public static IEnumerable<string> GetDirectoriesInPath(string sourcePath, IgnoreFile? ignoreFile = null)
+        {
+            var files = Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase));

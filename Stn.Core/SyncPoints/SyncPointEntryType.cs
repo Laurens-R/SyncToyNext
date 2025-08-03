@@ -3,6 +3,7 @@
     public enum SyncPointEntryType
     {
         AddOrChanged,
-        Deleted
+        Deleted,
+        Directory
     }
 }

@@ -45,5 +45,42 @@ namespace Stn.Core.IO.Browsers
                 }
             }
         }
+
+        public string DisplayValueForSize
+        {
+            get
+            {
+                if (IsFile)
+                {
+                    if (Size < 1000)
+                    {
+                        return "1 KB";
+                    }
+                    else
+                    {
+                        //to be frank, this is modelled after how Windows rounds the sizes in explorer.
+                        //not sure if that is universal across linux and macos, so I might
+                        //need to align this calculation later with every platform.
+                        var kbSize = (Size / 1024) + (Size % 1024 > 0 ? 1 : 0);
+                        return kbSize.ToString("N0") + " KB";
+                    }
+                }
+                else
+                {
+                    return string.Empty;
+                }
+            }
+        }
+
+        public string IconPath
+        {
+            get
+            {
+                if (IsFile)
+                    return "/Assets/file.png";
+                else
+                    return "/Assets/folder.png";
+            }
+        }
     }
 }

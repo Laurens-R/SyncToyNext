@@ -617,8 +617,8 @@ namespace Stn.Core.SyncPoints.Merging
 
             UserIO.Message($"Starting actual file merging between source and target location.");
 
-            var sourceFiles = FileHelpers.GetFilesInPath(sourcePath);
-            var targetFiles = FileHelpers.GetFilesInPath(targetPath);
+            var sourceFiles = FileSystemHelpers.GetFilesInPath(sourcePath);
+            var targetFiles = FileSystemHelpers.GetFilesInPath(targetPath);
             var mergeSuccessful = true;
             int totalFiles = sourceFiles.Count();
             int processedFiles = 0;
@@ -635,11 +635,11 @@ namespace Stn.Core.SyncPoints.Merging
 
                     if (targetExists)
                     {
-                        bool areFilesDifferent = FileHelpers.IsFileDifferent(sourceEntryPath, targetEntryPath);
+                        bool areFilesDifferent = FileSystemHelpers.IsFileDifferent(sourceEntryPath, targetEntryPath);
 
                         if (areFilesDifferent)
                         {
-                            bool isTextFile = FileHelpers.IsAcceptedTextExtension(Path.GetExtension(sourceEntryPath));
+                            bool isTextFile = FileSystemHelpers.IsAcceptedTextExtension(Path.GetExtension(sourceEntryPath));
                             if (isTextFile)
                             {
                                 //we use two-way merge instead of 3-way merge, because on a file system it is hard
@@ -732,11 +732,11 @@ namespace Stn.Core.SyncPoints.Merging
 
                     if (targetExists)
                     {
-                        bool areFilesDifferent = FileHelpers.IsFileDifferent(sourceEntryPath, targetEntryPath);
+                        bool areFilesDifferent = FileSystemHelpers.IsFileDifferent(sourceEntryPath, targetEntryPath);
 
                         if (areFilesDifferent)
                         {
-                            bool isTextFile = FileHelpers.IsAcceptedTextExtension(Path.GetExtension(sourceEntryPath));
+                            bool isTextFile = FileSystemHelpers.IsAcceptedTextExtension(Path.GetExtension(sourceEntryPath));
                             if (isTextFile)
                             {
                                 //we use two-way merge instead of 3-way merge, because on a file system it is hard

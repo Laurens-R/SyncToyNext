@@ -83,7 +83,7 @@ namespace Stn.Core.Synchronizers
                 }
                 else if (entry != null)
                 {
-                    shouldCopy = FileHelpers.IsFileDifferent(srcFilePath, entry, _archive);
+                    shouldCopy = FileSystemHelpers.IsFileDifferent(srcFilePath, entry, _archive);
 
                     if (shouldCopy)
                     {
@@ -95,7 +95,7 @@ namespace Stn.Core.Synchronizers
                 {
                     if (entry != null) _archive.Delete(entry);
                     _archive.BeginUpdate();
-                    bool knownCompressedFormat = FileHelpers.IsCompressedExtension(Path.GetExtension(srcFilePath));
+                    bool knownCompressedFormat = FileSystemHelpers.IsCompressedExtension(Path.GetExtension(srcFilePath));
                     _archive.Add(srcFilePath, entryPath, knownCompressedFormat ? ZipLib.CompressionMethod.Stored : ZipLib.CompressionMethod.Deflated); //_archive.CreateEntry(entryPath, CompressionLevel.SmallestSize);
                     _archive.CommitUpdate();
 
@@ -120,7 +120,7 @@ namespace Stn.Core.Synchronizers
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
 
-            var allFilesInSourcePath = FileHelpers.GetFilesInPath(sourcePath);
+            var allFilesInSourcePath = FileSystemHelpers.GetFilesInPath(sourcePath);
 
             if (syncPoint != null && syncPointManager != null)
             {
@@ -134,7 +134,17 @@ namespace Stn.Core.Synchronizers
 
         private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
         {
-            var allFilesPartOfSyncPoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
+            //First get the state of all the directories.
+            var directories = FileSystemHelpers.GetDirectoriesInPath(sourceDirectory);
+
+            foreach (var directory in directories)
+            {
+                var relativePath = Path.GetRelativePath(sourceDirectory, directory);
+                newSyncPoint.AddEntry(relativePath, relativePath, SyncPointEntryType.Directory);
+            }
+
+            //proceed with processing the files.
+            var allFilesPartOfSyncPoint = syncPointManager.GetEntriesAtSyncPoint(newSyncPoint.SyncPointId);
 
             //update zip path according to sync point
             var zipParentFolder = syncPointManager.RemotePath;
@@ -263,7 +273,7 @@ namespace Stn.Core.Synchronizers
                 spArchive.Close();
             }
             
-            var updatedFileListOfSyncpoint = syncPointManager.GetFileEntriesAtSyncpoint(newSyncPoint.SyncPointId);
+            var updatedFileListOfSyncpoint = syncPointManager.GetEntriesAtSyncPoint(newSyncPoint.SyncPointId);
 
             // Now we need to check for files that were deleted since the last sync point
             DetectRemovedFiles(sourceDirectory, updatedFileListOfSyncpoint, allSourceLocationFiles, newSyncPoint);

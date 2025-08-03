@@ -124,7 +124,7 @@ namespace Stn.Core.IO.Browsers
                         Name = folderName,
                         Path = _currentPath + '/' + folderName,
                         RelativePath = _currentPath + "/" + folderName,
-                        Type = "[ FOLDER ]"
+                        Type = string.Empty
                     });
                     _allEntries.Add(_directories.Last());
                 }

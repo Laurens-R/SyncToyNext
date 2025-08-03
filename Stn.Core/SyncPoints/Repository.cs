@@ -184,7 +184,7 @@ namespace Stn.Core.SyncPoints
                     var latestSyncPoint = LatestSyncPoint?.SyncPointId ?? String.Empty;
                     if(!String.IsNullOrWhiteSpace(latestSyncPoint))
                     {
-                        if (_manager.GetFileEntriesAtSyncpoint(latestSyncPoint).Count() > 0)
+                        if (_manager.GetEntriesAtSyncPoint(latestSyncPoint).Count() > 0)
                         {
                             Restore(latestSyncPoint);
                         }
@@ -321,12 +321,12 @@ namespace Stn.Core.SyncPoints
 
         public IEnumerable<string> GetLocalFiles()
         {
-            return FileHelpers.GetFilesInPath(LocalPath, _ignoreFile);
+            return FileSystemHelpers.GetFilesInPath(LocalPath, _ignoreFile);
         }
 
         public IEnumerable<SyncPointEntry> GetRemoteFiles(string syncpointId)
         {
-            return _manager.GetFileEntriesAtSyncpoint(syncpointId);
+            return _manager.GetEntriesAtSyncPoint(syncpointId);
         }
 
         public void Restore(string syncPointID)
@@ -399,7 +399,7 @@ namespace Stn.Core.SyncPoints
 
                 if (zipEntry != null)
                 {
-                    FileHelpers.WriteZipEntryToDisk(tempPath, archive, zipEntry);
+                    FileSystemHelpers.WriteZipEntryToDisk(tempPath, archive, zipEntry);
                     return tempPath;
                 }
             }
@@ -422,7 +422,7 @@ namespace Stn.Core.SyncPoints
 
         public string ReadAllTextRemote(string relativePath, string syncPointID)
         {
-            var filesAtSyncPoint = _manager.GetFileEntriesAtSyncpoint(syncPointID);
+            var filesAtSyncPoint = _manager.GetEntriesAtSyncPoint(syncPointID);
             var fileEntry = filesAtSyncPoint.FirstOrDefault(f => f.SourcePath == relativePath);
 
             if (fileEntry == null) return string.Empty;

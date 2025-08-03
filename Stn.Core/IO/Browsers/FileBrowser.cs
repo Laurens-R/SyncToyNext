@@ -64,7 +64,7 @@ namespace Stn.Core.IO.Browsers
                 {
                     Name = "..",
                     IsFile = false,
-                    Type = "[ FOLDER ]"
+                    Type = string.Empty
                 });
             }
         }
