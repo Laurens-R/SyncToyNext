@@ -246,6 +246,9 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
             fsBrowser.OnFileCreatedHandler += FsBrowser_OnFileCreatedHandler;
             fsBrowser.OnFileRemovedHandler += FsBrowser_OnFileRemovedHandler;
             fsBrowser.OnFileRenamedHandler += FsBrowser_OnFileRenamedHandler;
+            fsBrowser.OnDirectoryCreatedHandler += FsBrowser_OnDirectoryCreatedHandler;
+            fsBrowser.OnDirectoryRemovedHandler += FsBrowser_OnDirectoryRemovedHandler;
+            fsBrowser.OnDirectoryRenamedHandler += FsBrowser_OnDirectoryRenamedHandler;
         }
         else if (BrowserType == FileBrowserControlType.CompressedArchive)
         {
@@ -264,6 +267,30 @@ public partial class FileBrowserControl : UserControl, INotifyPropertyChanged
         _browser.BrowserMode = BrowserMode;
 
         OnPropertyChanged(nameof(Entries));
+    }
+
+    private void FsBrowser_OnDirectoryRenamedHandler(object? sender, System.IO.RenamedEventArgs e)
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _browser?.Refresh();
+        });
+    }
+
+    private void FsBrowser_OnDirectoryRemovedHandler(object? sender, System.IO.FileSystemEventArgs e)
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _browser?.Refresh();
+        });
+    }
+
+    private void FsBrowser_OnDirectoryCreatedHandler(object? sender, System.IO.FileSystemEventArgs e)
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _browser?.Refresh();
+        });
     }
 
     private void FsBrowser_OnFileRenamedHandler(object? sender, System.IO.RenamedEventArgs e)

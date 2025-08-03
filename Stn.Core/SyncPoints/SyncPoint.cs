@@ -50,7 +50,7 @@ namespace Stn.Core
             File.WriteAllText(filePath, json);
         }
 
-        public void AddEntry(string sourcePath, string relativeDestinationPath, SyncPointEntryType type = SyncPointEntryType.AddOrChanged)
+        public void AddEntry(string sourcePath, string relativeDestinationPath, SyncPointEntryType type = SyncPointEntryType.File)
         {
             var entry = new SyncPointEntry
             {

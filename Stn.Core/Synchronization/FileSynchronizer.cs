@@ -111,7 +111,7 @@ namespace Stn.Core.Synchronizers
                     // If the sync point entry is deleted, we need to add it back
                     if (existingEntry.EntryType == SyncPointEntryType.Deleted)
                     {
-                        newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.AddOrChanged);
+                        newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.File);
                         var succes = SynchronizeFile(srcFilePath, destFilePath);
                         if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                         continue;
@@ -125,7 +125,7 @@ namespace Stn.Core.Synchronizers
                         if (sourceFileInfo.Length != targetFileInfo.Length)
                         {
                             // replicate file into the new sync point location
-                            newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.AddOrChanged);
+                            newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.File);
                             bool succes = SynchronizeFile(srcFilePath, destFilePath);
                             if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                             continue;
@@ -152,7 +152,7 @@ namespace Stn.Core.Synchronizers
             var updatedFileListOfSyncpoint = syncPointManager.GetEntriesAtSyncPoint(newSyncPoint.SyncPointId);
 
             // Now we need to check for files that were deleted since the last sync point
-            DetectRemovedFiles(sourceDirectory, updatedFileListOfSyncpoint, allSourceLocationFiles, newSyncPoint);
+            DetectRemovedEntries(sourceDirectory, updatedFileListOfSyncpoint, newSyncPoint);
             
             //now save the sync point
             newSyncPoint.Save(Path.Combine(_destination, newSyncPoint.SyncPointId, newSyncPoint.SyncPointId + ".syncpoint.json"));

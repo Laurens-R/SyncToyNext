@@ -91,7 +91,7 @@ namespace Stn.Core.IO.Browsers
                                        .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
                 }
 
-                if (pathParts.Length > 1) return true;
+                if (pathParts.Length == 1 && file.EntryType == SyncPointEntryType.Directory) return true;
 
                 return false;
             }).OrderBy(entry => entry.SourcePath);
@@ -100,21 +100,7 @@ namespace Stn.Core.IO.Browsers
 
             foreach (var subFolderEntry in subfolderEntriesInPath)
             {
-                var pathParts = new string[] { };
-
-                if (string.IsNullOrWhiteSpace(path))
-                {
-                    pathParts = subFolderEntry.SourcePath
-                                        .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-                }
-                else
-                {
-                    pathParts = subFolderEntry.SourcePath
-                                       .Replace(path, string.Empty).Replace(path.Replace('\\', '/'), string.Empty)
-                                       .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-                }
-
-                var folderName = pathParts[0];
+                var folderName = Path.GetFileName(subFolderEntry.SourcePath);
                 if (!subfolders.Contains(folderName))
                 {
                     subfolders.Add(folderName);

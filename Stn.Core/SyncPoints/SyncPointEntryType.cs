@@ -2,7 +2,7 @@
 {
     public enum SyncPointEntryType
     {
-        AddOrChanged,
+        File,
         Deleted,
         Directory
     }

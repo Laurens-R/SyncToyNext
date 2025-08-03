@@ -29,13 +29,13 @@ namespace Stn.Core.Synchronizers
         /// <param name="relativeOrDestPath">The relative path (for zip) or destination file path (for folder).</param>
         public abstract bool SynchronizeFile(string srcFilePath, string relativeOrDestPath, string? oldDestFilePath = null);
 
-        protected void DetectRemovedFiles(string sourceDirectory, List<SyncPointEntry> syncPointFiles, IEnumerable<string> localFiles, SyncPoint syncPoint)
+        protected void DetectRemovedEntries(string sourceDirectory, List<SyncPointEntry> syncPointEntries, SyncPoint syncPoint)
         {
-            int fileCount = syncPointFiles.Count();
+            int fileCount = syncPointEntries.Count();
             int currentFile = 1;
 
             // Now we need to check for files that were deleted since the last sync point
-            foreach (var entry in syncPointFiles)
+            foreach (var entry in syncPointEntries)
             {
                 if(UpdateProgressHandler != null) UpdateProgressHandler(currentFile, fileCount, $"Check {entry.SourcePath}");
 
@@ -43,7 +43,7 @@ namespace Stn.Core.Synchronizers
                 var relativePath = entry.RelativeRemotePath;
 
                 // If the file no longer exists in the source, mark it as deleted
-                var fileExistsInSource = File.Exists(Path.Combine(sourceDirectory, relativeSourcePath));
+                var fileExistsInSource = Path.Exists(Path.Combine(sourceDirectory, relativeSourcePath));
 
                 if (!fileExistsInSource)
                 {

@@ -276,7 +276,7 @@ namespace Stn.Core.Synchronizers
             var updatedFileListOfSyncpoint = syncPointManager.GetEntriesAtSyncPoint(newSyncPoint.SyncPointId);
 
             // Now we need to check for files that were deleted since the last sync point
-            DetectRemovedFiles(sourceDirectory, updatedFileListOfSyncpoint, allSourceLocationFiles, newSyncPoint);
+            DetectRemovedEntries(sourceDirectory, updatedFileListOfSyncpoint, newSyncPoint);
 
             newSyncPoint.Save(Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, $"{newSyncPoint.SyncPointId}.syncpoint.json"));
         }
