@@ -94,7 +94,7 @@ public partial class RepositoryLoadView : UserControl
                             
                             var task = Task.Run(async () =>
                             {
-                                var newRepository = Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
+                                var newRepository = await Repository.Initialize(localPath, dialogResult.RemotePath, dialogResult.IsCompressed);
 
                                 await Dispatcher.UIThread.InvokeAsync(() =>
                                 {

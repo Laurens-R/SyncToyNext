@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
+using System.Threading.Tasks;
 
 namespace Stn.Core.SyncPoints
 {
@@ -16,14 +17,13 @@ namespace Stn.Core.SyncPoints
         private RemoteConfig? _remoteConfig;
         private FileSystemWatcher _localFileSystemWatcher;
 
-        public string LocalPath { get; set; }
-        public string RemotePath { get; set; }
-
-        public SyncPointManager Manager => _manager;
-        public RemoteConfig? Config => _remoteConfig;
-
         public static Action<int, int, string>? UpdateProgressHandler { get; set; } = null;
 
+        public string LocalPath { get; set; }
+        public string RemotePath { get; set; }
+        
+        public SyncPointManager Manager => _manager;
+        public RemoteConfig? Config => _remoteConfig;
         public IgnoreFile IgnoreFile => _ignoreFile;
 
         public IReadOnlyList<SyncPoint> SyncPoints
@@ -173,7 +173,7 @@ namespace Stn.Core.SyncPoints
         /// If the remote doesn't contain syncpoints but the local folder does contain files already
         /// we push it to create an initial syncpoint.
         /// </summary>
-        protected void InitializeContent()
+        protected async Task InitializeContent()
         {
             if(_manager!= null)
             {
@@ -186,14 +186,15 @@ namespace Stn.Core.SyncPoints
                     {
                         if (_manager.GetEntriesAtSyncPoint(latestSyncPoint).Count() > 0)
                         {
-                            Restore(latestSyncPoint);
+                            await Restore(latestSyncPoint);
                         }
                     }
-                } else if(GetLocalFiles().Count() > 0)
+                } 
+                else if(GetLocalFiles().Any())
                 {
                     //if no remote syncpoints exist but there are already files present in the
                     //local location, push a reference syncpoint.
-                    Push("INIT", "Init of a new local/remote pair", true);
+                    await Push("INIT", "Init of a new local/remote pair", true);
                 }
             }
         }
@@ -218,7 +219,7 @@ namespace Stn.Core.SyncPoints
         /// <param name="remotePath"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public static Repository Initialize(string localPath, string remotePath, bool compressedRemote)
+        public static async Task<Repository> Initialize(string localPath, string remotePath, bool compressedRemote)
         {
             if (!Directory.Exists(localPath))
             {
@@ -243,7 +244,7 @@ namespace Stn.Core.SyncPoints
                 repository._manager = new SyncPointManager(repository.RemotePath, compressedRemote ? CompressionMode.Compressed : CompressionMode.Uncompressed);
             }
 
-            repository.InitializeContent();
+            await repository.InitializeContent();
 
             return repository;
         }
@@ -256,7 +257,7 @@ namespace Stn.Core.SyncPoints
         /// <param name="otherRemotePath"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public static Repository CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath, bool isCompressed)
+        public static async Task<Repository> CloneFromOtherRemote(string localPath, string newRemotePath, string otherRemotePath, bool isCompressed)
         {
             if (!Directory.Exists(localPath))
             {
@@ -276,7 +277,7 @@ namespace Stn.Core.SyncPoints
             var config = new RemoteConfig(newRemotePath, localPath);
             config.Save(localPath);
 
-            var repository = Repository.Initialize(localPath, newRemotePath, isCompressed);
+            var repository = await Repository.Initialize(localPath, newRemotePath, isCompressed);
             var otherRemoteManager = new SyncPointManager(otherRemotePath);
             var latestSyncPoint = otherRemoteManager.SyncPoints.Count > 0 ? otherRemoteManager.SyncPoints[0] : null;
 
@@ -284,11 +285,11 @@ namespace Stn.Core.SyncPoints
             {
                 SyncPointRestorer.RestorePath = repository.LocalPath;
                 SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
-                SyncPointRestorer.Run(latestSyncPoint.SyncPointId, [], otherRemotePath);
-
+                await SyncPointRestorer.Run(latestSyncPoint.SyncPointId, [], otherRemotePath);
+                
                 //we use exactly the same syncpoint id as the latest syncpoint id from the remote which was cloned
                 //so we can refer back to it when merging.
-                repository.Push(latestSyncPoint.SyncPointId, $"Init push after clone from {otherRemotePath}", true);
+                await repository.Push(latestSyncPoint.SyncPointId, $"Init push after clone from {otherRemotePath}", true);
             }
             else
             {
@@ -298,7 +299,7 @@ namespace Stn.Core.SyncPoints
             return repository;
         }
 
-        public void ChangeRemote(string newRemotePath, bool isCompressed)
+        public async Task ChangeRemote(string newRemotePath, bool isCompressed)
         {
             if(String.IsNullOrWhiteSpace(newRemotePath) || !Path.Exists(newRemotePath))
             {
@@ -311,7 +312,7 @@ namespace Stn.Core.SyncPoints
             _remoteConfig.Save(LocalPath);
 
             _manager = new SyncPointManager(newRemotePath, isCompressed ? CompressionMode.Compressed : CompressionMode.Uncompressed);
-            InitializeContent();
+            await InitializeContent();
         }
 
         public bool HasSyncPointID(string syncPointID)
@@ -329,32 +330,32 @@ namespace Stn.Core.SyncPoints
             return _manager.GetEntriesAtSyncPoint(syncpointId);
         }
 
-        public void Restore(string syncPointID)
+        public async Task Restore(string syncPointID)
         {
             SyncPointRestorer.RestorePath = LocalPath;
             SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
-            SyncPointRestorer.Run(syncPointID, [], RemotePath);
+            await SyncPointRestorer.Run(syncPointID, [], RemotePath);
 
             if (_remoteConfig == null) throw new InvalidOperationException("Trying to work with remote config which is null.");
             _remoteConfig.CurrentSyncPoint = syncPointID;
             _remoteConfig.Save(LocalPath);
         }
 
-        public void RestoreSingleFile(string syncPointID, string relativeFilePath)
+        public async Task RestoreSingleFile(string syncPointID, string relativeFilePath)
         {
             SyncPointRestorer.RestorePath = LocalPath;
             SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
-            SyncPointRestorer.Run(syncPointID, [relativeFilePath], RemotePath);
+            await SyncPointRestorer.Run(syncPointID, [relativeFilePath], RemotePath);
         }
 
-        public void RestoreMultipleEntriesFromSyncPoint(IEnumerable<string> remoteSelectedItems, SyncPoint? currentSyncPoint)
+        public async Task RestoreMultipleEntriesFromSyncPoint(IEnumerable<string> remoteSelectedItems, SyncPoint? currentSyncPoint)
         {
             SyncPointRestorer.RestorePath = LocalPath;
             SyncPointRestorer.UpdateProgressHandler = UpdateProgressHandler;
 
             if (remoteSelectedItems.Count() > 0 && currentSyncPoint != null)
             {
-                SyncPointRestorer.Run(currentSyncPoint.SyncPointId, remoteSelectedItems, string.Empty);
+                await SyncPointRestorer.Run(currentSyncPoint.SyncPointId, remoteSelectedItems, string.Empty);
             }
         }
 
@@ -449,21 +450,34 @@ namespace Stn.Core.SyncPoints
             }
         }
 
-        public void Push()
+        public async Task Push()
         {
             //fyi: forwarding empty values will cause the actual manualrunner to generate id's itself.
-            Push(string.Empty, string.Empty, false);
+            await Push(string.Empty, string.Empty, false);
         }
 
-        public void Push(string newSyncPointID, string newDescription, bool isReferencePoint = false)
+        public async Task Push(string newSyncPointID, string newDescription, bool isReferencePoint = false)
         {
             ManualRunner.UpdateProgressHandler = UpdateProgressHandler;
-            ManualRunner.Run(LocalPath, RemotePath, true, newSyncPointID, newDescription, isReferencePoint);
+            await ManualRunner.Run(LocalPath, RemotePath, true, newSyncPointID, newDescription, isReferencePoint);
             _manager.RefreshSyncPoints();
 
             if (_remoteConfig == null || LatestSyncPoint == null) return;
             _remoteConfig.CurrentSyncPoint = LatestSyncPoint.SyncPointId;
             _remoteConfig.Save(LocalPath);
+        }
+
+        public async Task RevertToSyncpoint(string syncpointID)
+        {
+            if(_manager != null)
+            {
+                _manager.RevertToSyncPoint(syncpointID);
+                
+                if(LatestSyncPoint != null )
+                {
+                    await Restore(LatestSyncPoint.SyncPointId);
+                }
+            }
         }
 
         public void Dispose()

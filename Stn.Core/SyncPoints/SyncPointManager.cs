@@ -1,10 +1,12 @@
-﻿using System;
+﻿using LibGit2Sharp;
+using Stn.Core.IO;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace Stn.Core
+namespace Stn.Core.SyncPoints
 {
     public enum SyncPointRootLoadResult
     {
@@ -67,6 +69,27 @@ namespace Stn.Core
 
         public IReadOnlyList<SyncPoint> SyncPoints => _syncPoints.AsReadOnly();
 
+        private bool IsRemoteOnNetwork
+        {
+            get
+            {
+                if (_remotePath.StartsWith(@"\\")) return true;
+
+                //this is windows specfic... we need to fix this when porting to macos and linux
+                var drives = DriveInfo.GetDrives();
+                var drive = drives.FirstOrDefault(drive => _remotePath.StartsWith(drive.Name, StringComparison.OrdinalIgnoreCase));
+                if(drive != null)
+                {
+                    if (drive.DriveType == DriveType.Network) return true;
+                    return false;
+                } else
+                {
+                    //better safe than sorry if we cannot determine where the remote location is.
+                    return true;
+                }
+            }
+        }
+
         private SyncPointRootLoadResult LoadSyncPointRoot()
         {
             var rootFilePath = Path.Combine(_remotePath, "syncpointroot.json");
@@ -81,12 +104,15 @@ namespace Stn.Core
 
             // we need this retry logic for networks shares. Sometimes it seems to
             // fail and I suspect the readiness of the remote filesystem to be the issue.
-            while (!fileExists && retryLoadCount < 5)
+            if (IsRemoteOnNetwork)
             {
-                // Retry loading the sync point root file if it doesn't exist yet
-                System.Threading.Thread.Sleep(1000); // Wait for a second before retrying
-                fileExists = Path.Exists(rootFilePath);
-                retryLoadCount++;
+                while (!fileExists && retryLoadCount < 5)
+                {
+                    // Retry loading the sync point root file if it doesn't exist yet
+                    System.Threading.Thread.Sleep(1000); // Wait for a second before retrying
+                    fileExists = Path.Exists(rootFilePath);
+                    retryLoadCount++;
+                }
             }
 
             if (fileExists)
@@ -268,6 +294,32 @@ namespace Stn.Core
             }
 
             return result;
+        }
+
+        public bool RevertToSyncPoint(string syncPointID)
+        {
+            var revertToRepo = _syncPoints.SingleOrDefault(sp => sp.SyncPointId == syncPointID);
+
+            if (revertToRepo != null)
+            {
+                var newerSyncPoints = _syncPoints.Where(sp => sp.LastSyncTime > revertToRepo.LastSyncTime);
+
+                int totalNewerSyncPoints = newerSyncPoints.Count();
+                int currentNewerSyncPointCount = 0;
+
+                foreach(var syncPoint in newerSyncPoints)
+                {
+                    currentNewerSyncPointCount++;
+
+                    var spPath = Path.Combine(RemotePath, syncPoint.SyncPointId);
+
+                    FileSystem.RemoveDirectory(spPath, Repository.UpdateProgressHandler, currentNewerSyncPointCount, totalNewerSyncPoints);
+                }
+
+                RefreshSyncPoints();
+            }
+
+            return false;
         }
     }
 }

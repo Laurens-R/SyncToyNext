@@ -1,5 +1,6 @@
 using Stn.Core.IO;
 using Stn.Core.Synchronization;
+using Stn.Core.SyncPoints;
 using Stn.Core.UX;
 using System;
 using System.Collections;
@@ -8,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Stn.Core.Synchronizers
 {
@@ -31,7 +33,7 @@ namespace Stn.Core.Synchronizers
         /// Synchronizes all files and subdirectories from the source path to the destination directory.
         /// </summary>
         /// <param name="sourcePath">The root directory to copy files from.</param>
-        public override void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
+        public override async Task FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
         {
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
@@ -43,15 +45,15 @@ namespace Stn.Core.Synchronizers
 
             if (syncPoint != null && syncPointManager != null)
             {
-                ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFilesInSourcePath);
+                await ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFilesInSourcePath);
             }
             else
             {
-                ProcessStraightSync(sourcePath, allFilesInSourcePath);
+                await ProcessStraightSync(sourcePath, allFilesInSourcePath);
             }
         }
 
-        private void ProcessStraightSync(string sourcePath, IEnumerable<string> allFilesInSourcePath)
+        private async Task ProcessStraightSync(string sourcePath, IEnumerable<string> allFilesInSourcePath)
         {
             int progressCounter = 0;
             int totalFileCount = allFilesInSourcePath.Count();
@@ -61,7 +63,7 @@ namespace Stn.Core.Synchronizers
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
                 var destFilePath = Path.Combine(_destination, relativePath);
 
-                var succes = SynchronizeFile(srcFilePath, destFilePath);
+                var succes = await SynchronizeFile(srcFilePath, destFilePath);
                 if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
 
                 progressCounter++;
@@ -73,7 +75,7 @@ namespace Stn.Core.Synchronizers
             }
         }
 
-        private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
+        private async Task ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
         {
             //First get the state of all the directories.
             var directories = FileSystemHelpers.GetDirectoriesInPath(sourceDirectory);
@@ -112,8 +114,9 @@ namespace Stn.Core.Synchronizers
                     if (existingEntry.EntryType == SyncPointEntryType.Deleted)
                     {
                         newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.File);
-                        var succes = SynchronizeFile(srcFilePath, destFilePath);
-                        if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
+                        var succes = await SynchronizeFile(srcFilePath, destFilePath);
+                        if (!succes) 
+                            throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                         continue;
                     }
 
@@ -126,8 +129,9 @@ namespace Stn.Core.Synchronizers
                         {
                             // replicate file into the new sync point location
                             newSyncPoint.AddEntry(relativeSourcePath, destEntryPath, SyncPointEntryType.File);
-                            bool succes = SynchronizeFile(srcFilePath, destFilePath);
-                            if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
+                            bool succes = await SynchronizeFile(srcFilePath, destFilePath);
+                            if (!succes) 
+                                throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                             continue;
                         }
                     }
@@ -137,16 +141,14 @@ namespace Stn.Core.Synchronizers
                     // replicate file into the new sync point location
                     var destFilePath = Path.Combine(Path.Combine(_destination, newSyncPoint.SyncPointId), relativeSourcePath);
                     newSyncPoint.AddEntry(relativeSourcePath, relativeSourcePath);
-                    bool succes = SynchronizeFile(srcFilePath, destFilePath);
-                    if (!succes) throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
+                    bool succes = await SynchronizeFile(srcFilePath, destFilePath);
+                    if (!succes) 
+                        throw new IOException($"Could not transfer file from {srcFilePath} to {destFilePath}.");
                 }
 
                 progressCounter++;
 
-                if (UpdateProgressHandler != null)
-                {
-                    UpdateProgressHandler(progressCounter, totalFileCount, srcFilePath);
-                }
+                UpdateProgressHandler?.Invoke(progressCounter, totalFileCount, srcFilePath);
             }
 
             var updatedFileListOfSyncpoint = syncPointManager.GetEntriesAtSyncPoint(newSyncPoint.SyncPointId);
@@ -165,7 +167,7 @@ namespace Stn.Core.Synchronizers
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="destFilePath">The full path to the destination file.</param>
         /// <param name="oldDestFilePath">The old destination file path to delete (optional, for renames).</param>
-        public override bool SynchronizeFile(string srcFilePath, string destFilePath, string? oldDestFilePath = null)
+        public override async Task<bool> SynchronizeFile(string srcFilePath, string destFilePath, string? oldDestFilePath = null)
         {
             if (!string.IsNullOrEmpty(oldDestFilePath) && File.Exists(oldDestFilePath))
             {
@@ -207,7 +209,7 @@ namespace Stn.Core.Synchronizers
                         Directory.CreateDirectory(destDir);
                     }
 
-                    bool succes = FileSystem.Copy(srcFilePath, destFilePath);
+                    bool succes = await FileSystem.Copy(srcFilePath, destFilePath);
 
                     if(!succes)
                     {
@@ -215,7 +217,7 @@ namespace Stn.Core.Synchronizers
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }

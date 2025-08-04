@@ -1,11 +1,12 @@
 using Stn.Core.IO;
 using Stn.Core.Synchronization;
+using Stn.Core.SyncPoints;
 using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
+using System.Threading.Tasks;
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.Synchronizers
@@ -50,7 +51,7 @@ namespace Stn.Core.Synchronizers
         /// </summary>
         /// <param name="srcFilePath">The full path to the source file.</param>
         /// <param name="relativePath">The relative path inside the zip archive.</param>
-        public override bool SynchronizeFile(string srcFilePath, string relativePath, string? oldDestFilePath = null)
+        public override async Task<bool> SynchronizeFile(string srcFilePath, string relativePath, string? oldDestFilePath = null)
         {
             try
             {
@@ -115,7 +116,7 @@ namespace Stn.Core.Synchronizers
         /// Synchronizes all files and subdirectories from the source path into the zip archive.
         /// </summary>
         /// <param name="sourcePath">The root directory to copy files from.</param>
-        public override void FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
+        public override async Task FullSynchronization(string sourcePath, SyncPoint? syncPoint = null, SyncPointManager? syncPointManager = null)
         {
             if (!Directory.Exists(sourcePath))
                 throw new DirectoryNotFoundException($"Source directory not found: {sourcePath}");
@@ -124,15 +125,15 @@ namespace Stn.Core.Synchronizers
 
             if (syncPoint != null && syncPointManager != null)
             {
-                ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFilesInSourcePath);
+                await ProcessSyncPoint(sourcePath, syncPoint, syncPointManager, allFilesInSourcePath);
             }
             else
             {
-                ProcessStraightSync(sourcePath, allFilesInSourcePath);
+                await ProcessStraightSync(sourcePath, allFilesInSourcePath);
             }
         }
 
-        private void ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
+        private async Task ProcessSyncPoint(string sourceDirectory, SyncPoint newSyncPoint, SyncPointManager syncPointManager, IEnumerable<string> allSourceLocationFiles)
         {
             //First get the state of all the directories.
             var directories = FileSystemHelpers.GetDirectoriesInPath(sourceDirectory);
@@ -210,7 +211,7 @@ namespace Stn.Core.Synchronizers
                 {
                     // If the entry was marked as deleted, we need to re-add it
                     newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
-                    var succes = SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                    var succes = await SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
                     if (!succes) throw new IOException($"Could not transfer file from {entry.SourceFile} to {entry.RelativeSourcePath}.");
                     continue;
                 }
@@ -249,7 +250,7 @@ namespace Stn.Core.Synchronizers
                         if (secondsDifference > 2 || zipEntry.Size != sourceFileInfo.Length) // ZIP format is only precise to 2 seconds
                         {
                             newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
-                            var succes = SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                            var succes = await SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
                             if (!succes) throw new IOException($"Could not transfer file from {entry.SourceFile} to {entry.RelativeSourcePath}.");
                             continue;
                         }
@@ -261,7 +262,7 @@ namespace Stn.Core.Synchronizers
                 else
                 {
                     newSyncPoint.AddEntry(entry.RelativeSourcePath, relativeDestinationPath);
-                    var succes = SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
+                    var succes = await SynchronizeFile(entry.SourceFile, entry.RelativeSourcePath);
                     if (!succes) throw new IOException($"Could not transfer file from {entry.SourceFile} to {entry.RelativeSourcePath}.");
 
                     _archiveStream?.Flush();
@@ -281,7 +282,7 @@ namespace Stn.Core.Synchronizers
             newSyncPoint.Save(Path.Combine(zipParentFolder, newSyncPoint.SyncPointId, $"{newSyncPoint.SyncPointId}.syncpoint.json"));
         }
 
-        private void ProcessStraightSync(string sourcePath, IEnumerable<string> allFiles)
+        private async Task ProcessStraightSync(string sourcePath, IEnumerable<string> allFiles)
         {
             int progressCounter = 0;
             int totalFileCount = allFiles.Count();
@@ -289,7 +290,7 @@ namespace Stn.Core.Synchronizers
             foreach (var srcFilePath in allFiles)
             {
                 var relativePath = Path.GetRelativePath(sourcePath, srcFilePath);
-                SynchronizeFile(srcFilePath, relativePath);
+                var succes = await SynchronizeFile(srcFilePath, relativePath);
 
                 progressCounter++;
 

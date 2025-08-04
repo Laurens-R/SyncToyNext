@@ -20,31 +20,36 @@ namespace Stn.Core.IO
         const int KILOBYTE = 1024;
         const int BUFFER_SIZE_LOW = KILOBYTE * 128;
         const int BUFFER_SIZE_HIGH = KILOBYTE * 512;
-        const int FLUSH_THRESHOLD = KILOBYTE * KILOBYTE;
+        const int FLUSH_THRESHOLD = KILOBYTE * KILOBYTE * 2;
 
         private static DriveInfo[]? drives = null;
 
-        private static int DetermineBufferSize(string path)
+        private static bool IsNetworkLocation(string path)
         {
             //first check if the path is on a local or network drive.
-            if (path.StartsWith(@"\\")) return BUFFER_SIZE_LOW;
+            if (path.StartsWith(@"\\")) return true;
 
-            if(drives == null)
+            if (drives == null)
             {
-                drives =  DriveInfo.GetDrives();
+                drives = DriveInfo.GetDrives();
             }
 
             var driveInfo = drives.FirstOrDefault(d => path.StartsWith(d.Name, StringComparison.OrdinalIgnoreCase));
 
-            if(driveInfo != null)
+            if (driveInfo != null)
             {
-                if(driveInfo.DriveType == DriveType.Network || driveInfo.DriveType == DriveType.CDRom) return BUFFER_SIZE_LOW;
+                if (driveInfo.DriveType == DriveType.Network || driveInfo.DriveType == DriveType.CDRom) return true;
             }
 
-            return BUFFER_SIZE_HIGH;
+            return false;
         }
 
-        public static bool Copy(string source, string target)
+        private static int DetermineBufferSize(string path)
+        {
+            return IsNetworkLocation(path) ? BUFFER_SIZE_LOW : BUFFER_SIZE_HIGH;
+        }
+
+        public async static Task<bool> Copy(string source, string target)
         {
             bool copySuccess = true;
             FileStream? sourceStream = null;
@@ -71,7 +76,10 @@ namespace Stn.Core.IO
                         var offset = currentChunk * bufferSize;
 
                         //flush every at every flush threshold so we have a safe point to return to if we need to retry.
-                        if (offset != 0 && (offset % FLUSH_THRESHOLD == 0)) targetStream.Flush(true);
+                        if (offset != 0 && (offset % FLUSH_THRESHOLD == 0))
+                        {
+                            targetStream.Flush(true);
+                        }
 
                         var bytesRead = 0;
                         var readSucces = false;
@@ -90,12 +98,12 @@ namespace Stn.Core.IO
                                 }
 
                                 sourceStream.Seek(offset, SeekOrigin.Begin);
-                                bytesRead = sourceStream.Read(buffer, 0, bufferSize);
+                                bytesRead = await sourceStream.ReadAsync(buffer, 0, bufferSize);
                                 readSucces = true;
                             }
                             catch (IOException)
                             {
-                                Thread.Sleep(WAIT_TIME_UNIT * readTryCount);
+                                await Task.Delay(WAIT_TIME_UNIT * readTryCount);
                                 readSucces = false;
                                 readTryCount++;
                             }
@@ -116,14 +124,15 @@ namespace Stn.Core.IO
                                     targetStream = File.Open(target, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
                                 }
 
+
                                 targetStream.Seek(offset, SeekOrigin.Begin);
-                                targetStream.Write(buffer, 0, bytesRead);
+                                await targetStream.WriteAsync(buffer, 0, bytesRead);
                                 
                                 writeSucces = true;
                             } 
                             catch (IOException)
                             {
-                                Thread.Sleep(WAIT_TIME_UNIT * writeTryCount);
+                                await Task.Delay(WAIT_TIME_UNIT * writeTryCount);
 
                                 //we want to reposition our offset to the latest flush threshold point because would probably be the safest point
                                 //this is really only usefull for files above 1MB. Below that it basically means a complete retry of the file copy.
@@ -194,6 +203,36 @@ namespace Stn.Core.IO
             }
 
             targetStream = File.Open(target, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+        }
+
+        public static void RemoveDirectory(string path, Action<int, int, string>? OnUpdateHandler, int index = -1, int fromTotal = -1)
+        {
+            var files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+            var directories = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+
+            var currentCount = 0;
+            var totalCount = files.Count() + directories.Count();
+
+            foreach( var file in files)
+            {
+                currentCount++;
+                File.Delete(file);
+
+                var indexMessage = (index >= 0 && fromTotal > index) ? $"({index}/{fromTotal})" : String.Empty;
+                OnUpdateHandler?.Invoke(currentCount, totalCount, $"{indexMessage} Removing {file}");
+            }
+
+            foreach(var directory in directories)
+            {
+                currentCount++;
+
+                Directory.Delete(directory, false);
+
+                var indexMessage = (index >= 0 && fromTotal > index) ? $"({index}/{fromTotal})" : String.Empty;
+                OnUpdateHandler?.Invoke(currentCount, totalCount, $"{indexMessage} Removing {directory}");
+            }
+
+            Directory.Delete(path);
         }
     }
 }

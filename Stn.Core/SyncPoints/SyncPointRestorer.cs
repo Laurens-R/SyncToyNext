@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using ZipLib = ICSharpCode.SharpZipLib.Zip;
 
 namespace Stn.Core.SyncPoints
@@ -39,7 +40,7 @@ namespace Stn.Core.SyncPoints
             RestorePath = currentPath;
         }
 
-        public static void Run(string syncpointId, IEnumerable<string> filesystemItemSelection, string remotePath = "")
+        public static async Task Run(string syncpointId, IEnumerable<string> filesystemItemSelection, string remotePath = "")
         {
             bool hasManualRemotePath = !string.IsNullOrWhiteSpace(remotePath);
 
@@ -120,26 +121,31 @@ namespace Stn.Core.SyncPoints
             var allSyncPointFiles = syncPointManager.GetEntriesAtSyncPoint(syncpointId);
             var allEntriesInRestoreLocation = Directory.GetFiles(RestorePath, "*", SearchOption.AllDirectories)
                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase)
+                        &&      !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !    f.TrimEnd(Path.DirectorySeparatorChar).EndsWith($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase)
                         && !ignoreFile.IsEntryIgnored(f));
 
-            allEntriesInRestoreLocation = allEntriesInRestoreLocation.Concat(Directory.GetDirectories(RestorePath, "*", SearchOption.AllDirectories));
+            allEntriesInRestoreLocation = allEntriesInRestoreLocation.Concat(Directory.GetDirectories(RestorePath, "*", SearchOption.AllDirectories)
+                .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.stn", StringComparison.OrdinalIgnoreCase)
+                            && !f.Contains("{Path.DirectorySeparatorChar}.git", StringComparison.OrdinalIgnoreCase)
+
+                ));
 
             if (filesystemItemSelection.Count() > 0)
             {
-                RestoreItems(filesystemItemSelection, syncpointId, isZipped, allSyncPointFiles);
+                await RestoreItems(filesystemItemSelection, syncpointId, isZipped, allSyncPointFiles);
             }
             else
             {
-                FullSyncPointRestore(syncpointId, isZipped, allSyncPointFiles, allEntriesInRestoreLocation);
+                await FullSyncPointRestore(syncpointId, isZipped, allSyncPointFiles, allEntriesInRestoreLocation);
             }
         }
 
-        private static bool RestoreItems(IEnumerable<string> requestedItems, string syncPointID,  bool isZipped, IEnumerable<SyncPointEntry> allSyncPointFiles)
+        private async static Task<bool> RestoreItems(IEnumerable<string> requestedItems, string syncPointID,  bool isZipped, IEnumerable<SyncPointEntry> allSyncPointFiles)
         {
             IEnumerable<SyncPointEntry> itemsForRestore = [];
 
+            //prepare the items to be restored.
             foreach (var item in requestedItems)
             {
                 itemsForRestore = itemsForRestore.Concat(allSyncPointFiles.Where(spf =>
@@ -149,11 +155,28 @@ namespace Stn.Core.SyncPoints
                     if (spf.SourcePath.StartsWith(cleanItemPath) && spf.SourcePath != cleanItemPath) return true;
 
                     return false;
-                }));
+                })).OrderBy(spf =>
+                {
+                    var parts = spf.RelativeRemotePath.Split("@", StringSplitOptions.RemoveEmptyEntries);
+                    if(parts.Length == 2)
+                    {
+                        //sort by zip file if present (so we can optimize the Zip file streams better, reducing the amount
+                        //of open/closing of streams.
+                        return parts[1];
+                    } else
+                    {
+                        return parts[0];
+                    }
+                });
             }
 
+            //now restore the prepared items.
             int totalFiles = itemsForRestore.Count();
             int currentFileIndex = 0;
+
+            FileStream? archiveStream = null;
+            ZipLib.ZipFile? archive = null;
+            var currentArchive = string.Empty;
 
             foreach (var item in itemsForRestore)
             {
@@ -180,8 +203,17 @@ namespace Stn.Core.SyncPoints
                         var fullZipPath = Path.Combine(RemoteDirectory, zipFile);
                         var relativeEntry = itemToRestore.RelativeRemotePath.Split("@")[0];
 
-                        using var zip = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
-                        using var archive = new ZipLib.ZipFile(zip, false);
+                        if(currentArchive != fullZipPath)
+                        {
+                            archive?.Close();
+
+                            archiveStream = new FileStream(fullZipPath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.None);
+                            archive = new ZipLib.ZipFile(archiveStream, false);
+                            currentArchive = fullZipPath;
+                        }
+
+                        if (archive == null) throw new InvalidOperationException("Archive cannot be null at restoration stage.");
+
                         var entryPath = relativeEntry.Replace("\\", "/");
                         var zipEntry = archive.GetEntry(entryPath);
 
@@ -210,7 +242,7 @@ namespace Stn.Core.SyncPoints
                             throw new InvalidOperationException($"The sync point file '{fullSyncPointPath}' does not exist.");
                         }
 
-                        FileSystem.Copy(fullSyncPointPath, fullTargetPath);
+                        await FileSystem.Copy(fullSyncPointPath, fullTargetPath);
 
                         UserIO.Message($"Restored single file '{itemToRestore.SourcePath}' from sync point '{syncPointID}' to '{fullTargetPath}'.");
                     }
@@ -227,7 +259,7 @@ namespace Stn.Core.SyncPoints
             return true;
         }
 
-        private static void FullSyncPointRestore(string syncPointID, bool isZipped, List<SyncPointEntry> allSyncpointEntries, IEnumerable<string> allFileSystemEntriesInRestoreLocation)
+        private static async Task FullSyncPointRestore(string syncPointID, bool isZipped, List<SyncPointEntry> allSyncpointEntries, IEnumerable<string> allFileSystemEntriesInRestoreLocation)
         {
             var sortedByZipFile = allSyncpointEntries.AsParallel().OrderBy(f => { 
                 var parts = f.RelativeRemotePath.Split("@", StringSplitOptions.RemoveEmptyEntries);
@@ -347,7 +379,7 @@ namespace Stn.Core.SyncPoints
                         }
                     }
 
-                    FileSystem.Copy(syncPointPath, restorePath);
+                    await FileSystem.Copy(syncPointPath, restorePath);
                 }
             }
 
@@ -384,7 +416,9 @@ namespace Stn.Core.SyncPoints
                     }
                     catch (Exception ex)
                     {
-                        UserIO.Message($"Error removing file '{restoreLocationEntry}': {ex.Message}");
+                        var message = $"Error removing file '{restoreLocationEntry}': {ex.Message}";
+                        UserIO.Message(message);
+                        throw new IOException(message, ex);
                     }
                 }
             }

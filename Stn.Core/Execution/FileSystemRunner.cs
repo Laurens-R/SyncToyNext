@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Stn.Core.Execution
 {
@@ -128,7 +129,7 @@ namespace Stn.Core.Execution
             }
         }
 
-        private void OnChangedOrCreated(object sender, FileSystemEventArgs e)
+        private async void OnChangedOrCreated(object sender, FileSystemEventArgs e)
         {
             try
             {
@@ -153,9 +154,9 @@ namespace Stn.Core.Execution
                     if (_syncInterval == SyncInterval.Realtime)
                     {
                         if (_destinationIsZip)
-                            _synchronizer.SynchronizeFile(e.FullPath, relativePath);
+                            await _synchronizer.SynchronizeFile(e.FullPath, relativePath);
                         else
-                            _synchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath));
+                            await _synchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath));
                     }
                     else if(_syncMode == SyncMode.Incremental)
                     {
@@ -195,7 +196,7 @@ namespace Stn.Core.Execution
             }
         }
 
-        private void OnRenamed(object sender, RenamedEventArgs e)
+        private async void OnRenamed(object sender, RenamedEventArgs e)
         {
             try
             {
@@ -217,9 +218,9 @@ namespace Stn.Core.Execution
 
                         //TODO: add support fo renames in destination files (no mattr if destination is zip or folder)
                         if (_destinationIsZip)
-                            _synchronizer.SynchronizeFile(e.FullPath, relativePath, oldDestPath);
+                            await _synchronizer.SynchronizeFile(e.FullPath, relativePath, oldDestPath);
                         else
-                            _synchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath), oldDestPath);
+                            await _synchronizer.SynchronizeFile(e.FullPath, Path.Combine(_destinationPath, relativePath), oldDestPath);
                     }
                 }
                 else if (_syncMode == SyncMode.Incremental)
@@ -281,20 +282,26 @@ namespace Stn.Core.Execution
         /// <summary>
         /// Processes all queued changes and executes the synchronization for each.
         /// </summary>
-        public void ProcessQueuedChanges()
+        public async void ProcessQueuedChanges()
         {
+            //TODO: We've rewritten this for async support... test thoroughly before actuall supporting service.
             if (_pendingChanges == null) return;
+            IEnumerable<FileSyncAction>? queueItems;
             lock (_queueLock)
             {
-                HashSet<string> processedFiles = new HashSet<string>();
+                queueItems = _pendingChanges.Select(action => action);
+                _pendingChanges.Clear();
+            }
+            
+            HashSet<string> processedFiles = new HashSet<string>();
+            _isProcessingQueue = true;
 
-                _isProcessingQueue = true;
+            if (queueItems != null)
+            {
                 try
                 {
-                    while (_pendingChanges.Count > 0)
+                    foreach (var queueItem in queueItems)
                     {
-                        var queueItem = _pendingChanges.Pop();
-
                         //as we are processing a stack the newest operations are on top
                         //so if the file was already processed, skip it. We already copied
                         //the latest version of the file in the previous iteration
@@ -310,14 +317,14 @@ namespace Stn.Core.Execution
                             {
                                 var oldRelativePath = Path.GetRelativePath(_sourcePath, queueItem.OldDestinationPath);
                                 var oldDestPath = _destinationIsZip ? oldRelativePath : Path.Combine(_destinationPath, oldRelativePath);
-                                _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath, queueItem.OldDestinationPath);
+                                await _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath, queueItem.OldDestinationPath);
 
                                 processedFiles.Add(queueItem.SourcePath);
                                 processedFiles.Add(queueItem.OldFullSourcePath);
                             }
                             else
                             {
-                                _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath);
+                                await _synchronizer.SynchronizeFile(queueItem.SourcePath, queueItem.DestinationPath);
                                 processedFiles.Add(queueItem.SourcePath);
                             }
                         }
@@ -328,9 +335,10 @@ namespace Stn.Core.Execution
                 {
                     _isProcessingQueue = false;
                 }
-
-                processedFiles.Clear();
             }
+
+            processedFiles.Clear();
+           
         }
 
         /// <summary>

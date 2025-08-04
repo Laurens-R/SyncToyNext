@@ -21,6 +21,7 @@ using Stn.Cli.Helpers;
 using Stn.Core.Execution;
 using Stn.Core.UX;
 using System;
+using System.Threading.Tasks;
 
 namespace Stn.Cli.ExecutionModes
 {
@@ -29,7 +30,7 @@ namespace Stn.Cli.ExecutionModes
         /// <summary>
         /// Runs a manual synchronization between two specified paths.
         /// </summary>
-        public static void RunManual(CommandLineArguments cmdArgs)
+        public static async Task RunManual(CommandLineArguments cmdArgs)
         {
             var fromPath = cmdArgs.Get("from");
             var toPath = cmdArgs.Get("to");
@@ -43,7 +44,7 @@ namespace Stn.Cli.ExecutionModes
                 return;
             }
 
-            ManualRunner.Run(fromPath, toPath, useSyncPoint, syncpointId, syncpointDescription);
+            await ManualRunner.Run(fromPath, toPath, useSyncPoint, syncpointId, syncpointDescription);
         }
     }
 }

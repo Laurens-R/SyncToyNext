@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Stn.Core.UX;
 using Stn.Core.Synchronization;
+using System.Threading.Tasks;
 
 namespace Stn.Core.Execution
 {
@@ -61,20 +62,20 @@ namespace Stn.Core.Execution
             }
         }
 
-        private static void InitializeProfile(bool strictMode, SyncProfile profile)
+        private static async void InitializeProfile(bool strictMode, SyncProfile profile)
         {
             var overwriteOption = profile.OverwriteOption;
             if (profile.DestinationIsZip)
             {
                 var zipSync = new ZipFileSynchronizer(profile.DestinationPath, overwriteOption, strictMode);
                 zipSync.OpenTarget();
-                zipSync.FullSynchronization(profile.SourcePath);
+                await zipSync.FullSynchronization(profile.SourcePath);
                 zipSync.CloseTarget();
             }
             else
             {
                 var fileSync = new FileSynchronizer(profile.DestinationPath, overwriteOption, strictMode);
-                fileSync.FullSynchronization(profile.SourcePath);
+                await fileSync.FullSynchronization(profile.SourcePath);
             }
         }
 
@@ -172,7 +173,7 @@ namespace Stn.Core.Execution
         /// <param name="profileIdOrName">The ID or Name of the profile to sync.</param>
         /// <param name="overwriteOption">Optional overwrite option (default: OnlyOverwriteIfNewer).</param>
         /// <param name="toZip">If true, sync to a zip file; otherwise, to a directory.</param>
-        public void ManualSyncProfile(string profileIdOrName)
+        public async Task ManualSyncProfile(string profileIdOrName)
         {
             var profile = Configuration.Profiles.FirstOrDefault(p => string.Equals(p.Id, profileIdOrName, StringComparison.OrdinalIgnoreCase));
             if (profile == null)
@@ -184,13 +185,13 @@ namespace Stn.Core.Execution
             {
                 var zipSync = new ZipFileSynchronizer(profile.DestinationPath, profile.OverwriteOption);
                 zipSync.OpenTarget();
-                zipSync.FullSynchronization(profile.SourcePath);
+                await zipSync.FullSynchronization(profile.SourcePath);
                 zipSync.CloseTarget();
             }
             else
             {
                 var fileSync = new FileSynchronizer(profile.DestinationPath, profile.OverwriteOption);
-                fileSync.FullSynchronization(profile.SourcePath);
+                await fileSync.FullSynchronization(profile.SourcePath);
             }
         }
 

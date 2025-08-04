@@ -159,7 +159,7 @@ namespace Stn.Core.IO
             var fileStream = archive.GetInputStream(zipEntry);
             var fileWriter = new FileStream(fullTargetPath, FileMode.Create, FileAccess.Write);
             fileWriter.Write(fileStream.ReadBytes((int)zipEntry.Size));
-            fileWriter.Flush();
+            fileWriter.Flush(true);
             fileStream.Dispose();
             fileWriter.Dispose();
             File.SetLastWriteTimeUtc(fullTargetPath, zipEntry.DateTime);

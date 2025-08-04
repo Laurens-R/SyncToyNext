@@ -22,13 +22,14 @@ using Stn.Core.SyncPoints;
 using Stn.Core.UX;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Stn.Cli.ExecutionModes
 {
     internal class RepositoryMode
     {
 
-        public static void Init(CommandLineArguments cmdArgs)
+        public static async Task Init(CommandLineArguments cmdArgs)
         {
             try
             {
@@ -38,7 +39,7 @@ namespace Stn.Cli.ExecutionModes
 
                 if (String.IsNullOrEmpty(remotePath) || !Path.Exists(remotePath)) throw new InvalidOperationException("Provided remote path not valid");
 
-                Repository.Initialize(localFolder, remotePath, compressed);
+                await Repository.Initialize(localFolder, remotePath, compressed);
             }
             catch (Exception ex)
             {
@@ -46,7 +47,7 @@ namespace Stn.Cli.ExecutionModes
             }
         }
 
-        public static void Clone(CommandLineArguments cmdArgs)
+        public static async Task Clone(CommandLineArguments cmdArgs)
         {
             try
             {
@@ -68,7 +69,7 @@ namespace Stn.Cli.ExecutionModes
                     Directory.CreateDirectory(localDirectory);
                 }
 
-                Repository.CloneFromOtherRemote(localDirectory, newRemotePath, clonePath, isCompressed);
+                await Repository.CloneFromOtherRemote(localDirectory, newRemotePath, clonePath, isCompressed);
             }
             catch (Exception ex)
             {
@@ -111,7 +112,7 @@ namespace Stn.Cli.ExecutionModes
             }
         }
 
-        public static void RunPushCommand(CommandLineArguments cmdArgs)
+        public static async Task RunPushCommand(CommandLineArguments cmdArgs)
         {
             try
             {
@@ -120,7 +121,7 @@ namespace Stn.Cli.ExecutionModes
                 var syncPointID = cmdArgs.Get("id") ?? string.Empty;
                 var syncPointDesc = cmdArgs.Get("desc") ?? string.Empty;
 
-                repo.Push(syncPointID, syncPointDesc);
+                await repo.Push(syncPointID, syncPointDesc);
             }
             catch (Exception)
             {
@@ -128,7 +129,7 @@ namespace Stn.Cli.ExecutionModes
             }
         }
 
-        public static void RunRestoreSyncPoint(CommandLineArguments cmdArgs)
+        public static async Task RunRestoreSyncPoint(CommandLineArguments cmdArgs)
         {
             var synpointId = cmdArgs.Get("restore");
             var singleFilename = cmdArgs.Get("file") ?? string.Empty;
@@ -143,7 +144,7 @@ namespace Stn.Cli.ExecutionModes
 
             if(!String.IsNullOrEmpty(singleFilename))
             {
-                repo.RestoreSingleFile(synpointId, singleFilename);
+                await repo.RestoreSingleFile(synpointId, singleFilename);
             }
         }
     }

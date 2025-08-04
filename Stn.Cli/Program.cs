@@ -44,27 +44,27 @@ try
     }
     if(cmdArgs.EnsureValidCombination("init", "remote", "compressed")
         && cmdArgs.RequiredPresent("init", "remote")) {
-        RepositoryMode.Init(cmdArgs);
+        await RepositoryMode.Init(cmdArgs);
     }
     if (cmdArgs.EnsureValidCombination("clone", "local", "remote", "compressed")
         && cmdArgs.RequiredPresent("clone", "local", "remote"))
     {
-        RepositoryMode.Clone(cmdArgs);
+        await RepositoryMode.Clone(cmdArgs);
     }
     else if (cmdArgs.EnsureValidCombination("from", "to", "syncpoint")
         && cmdArgs.RequiredPresent("from", "to"))
     {
-        ManualMode.RunManual(cmdArgs);
+        await ManualMode.RunManual(cmdArgs);
     }
     else if (cmdArgs.EnsureValidCombination("restore", "from", "file")
         && cmdArgs.RequiredPresent("restore"))
     {
-        RepositoryMode.RunRestoreSyncPoint(cmdArgs);
+        await RepositoryMode.RunRestoreSyncPoint(cmdArgs);
     }
     else if (cmdArgs.EnsureValidCombination("push", "id", "desc")
         && cmdArgs.RequiredPresent("push"))
     {
-        RepositoryMode.RunPushCommand(cmdArgs);
+        await RepositoryMode.RunPushCommand(cmdArgs);
     }
     else if (cmdArgs.EnsureValidCombination("list")
         && cmdArgs.RequiredPresent("list"))

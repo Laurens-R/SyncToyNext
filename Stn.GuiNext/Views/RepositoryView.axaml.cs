@@ -20,6 +20,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using DynamicData;
+using DynamicData.Kernel;
 using Stn.Core;
 using Stn.Core.SyncPoints;
 using Stn.GuiNext.ViewModels;
@@ -54,6 +56,7 @@ public partial class RepositoryView : UserControl
         buttonPush.Tapped += ButtonPush_Tapped;
         buttonRestore.Tapped += ButtonRestore_Tapped;
         buttonRestoreSingle.Tapped += ButtonRestoreSingle_Tapped;
+        buttonRevertToSyncpoint.Tapped += ButtonRevertToSyncpoint_Tapped;
         comboRemoteSyncpoints.SelectionChanged += ComboRemoteSyncpoints_SelectionChanged;
     }
 
@@ -106,28 +109,66 @@ public partial class RepositoryView : UserControl
         }
     }
 
-    private void RefreshLocalSyncPointLabel()
+    private async void RefreshLocalSyncPointLabel()
     {
         if (ViewModel != null && ViewModel.Repository != null)
         {
-            if(!ViewModel.Repository.Manager.RefreshSyncPoints())
+            if (!ViewModel.Repository.Manager.RefreshSyncPoints())
             {
                 throw new InvalidOperationException("Failed to refresh sync points.");
             }
 
-            localSyncPointLabel.Content = ViewModel.Repository.SyncPoints.Single(sp => sp.SyncPointId == ViewModel.Repository.LocalSyncPointID);
+            if (ViewModel.Repository.SyncPoints.Count > 0)
+            {
+                var sp  = ViewModel.Repository.SyncPoints.SingleOrDefault(sp => sp.SyncPointId == ViewModel.Repository.LocalSyncPointID);
+
+                if (sp != null)
+                {
+                    localSyncPointLabel.Content = sp;
+                }
+                else
+                {
+                    await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Local syncpoint is longer available on the remote. This can happen if the remote syncpoint has been deleted outside of this program or if something went wrong earlier. The program will now perform a push to ensure that no local progress will be lost and that the local and remote are aligned again.", "Oops", MessageBoxOptions.OK);
+                    await PushLocalChanges();
+                }
+            }
         }
     }
 
-    private void RefreshRemoteSyncPoints()
+    private async void RefreshRemoteSyncPoints()
     {
-        if (ViewModel != null && ViewModel.Repository != null)
+        try
         {
-            comboRemoteSyncpoints.ItemsSource = ViewModel.Repository.SyncPoints;
-            if (comboRemoteSyncpoints.Items.Count > 0)
+            //ok this is ugly, but the eventhandler handles the source collection which is used here for the datasource
+            //which in turns causes the data collection not to be ready by the time we set the item source here. So...
+            //as a hack we temporarily detach the event handler, change the data source and then set Selected Index.
+            //this is super ugly and must be fixed in the future.
+            comboRemoteSyncpoints.SelectionChanged -= ComboRemoteSyncpoints_SelectionChanged;
+
+            if (ViewModel != null && ViewModel.Repository != null)
             {
-                comboRemoteSyncpoints.SelectedIndex = 0;
+                var syncPointToBeSelected = ViewModel.Repository.SyncPoints.SingleOrDefault(sp => sp.SyncPointId == ViewModel.Repository.LocalSyncPointID);
+
+                var syncpoints = ViewModel.Repository.SyncPoints;
+                comboRemoteSyncpoints.ItemsSource = syncpoints;
+                comboRemoteSyncpoints.SelectionChanged += ComboRemoteSyncpoints_SelectionChanged;
+
+                if (syncPointToBeSelected != null)
+                {                    
+                    var currentIndex = ViewModel.Repository.SyncPoints.IndexOf(syncPointToBeSelected);
+
+                    if (comboRemoteSyncpoints.Items.Count > 0)
+                    {
+                        comboRemoteSyncpoints.SelectedIndex = currentIndex;
+                    }
+                }
             }
+        } catch (Exception ex)
+        {
+            await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, $"Something went wrong while refreshing the syncpoints.", "Oops", MessageBoxOptions.OK);
+        } finally
+        {
+            
         }
     }
 
@@ -154,11 +195,20 @@ public partial class RepositoryView : UserControl
                 progressDialog.Title = "Restoring files to local";
                 progressDialog.IsVisible = true;
 
-                var task = Task.Run(() =>
+                var task = Task.Run(async () =>
                 {
-                    repository.RestoreMultipleEntriesFromSyncPoint(selectedItems.Select(item => item.RelativePath), selectedSyncPoint);
-                
-                    Dispatcher.UIThread.InvokeAsync(() =>
+                    try { 
+                        await repository.RestoreMultipleEntriesFromSyncPoint(selectedItems.Select(item => item.RelativePath), selectedSyncPoint);
+                    }
+                    catch (Exception ex)
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, $"Something went wrong while restoring the selected files from the syncpoint: {ex.Message}", "Oops", MessageBoxOptions.OK);
+                        });
+                    }
+                    
+                    await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         RefreshLocalSyncPointLabel();
                         progressDialog.IsVisible = false;
@@ -182,11 +232,20 @@ public partial class RepositoryView : UserControl
                 progressDialog.Title = "Restoring to local";
                 progressDialog.IsVisible = true;
 
-                var task = Task.Run(() =>
+                var task = Task.Run(async () =>
                 {
-                    repository.Restore(selectedSyncPoint.SyncPointId);
+                    try
+                    {
+                        await repository.Restore(selectedSyncPoint.SyncPointId);
+                    } catch (Exception ex) 
+                    { 
+                        await Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, $"Something went wrong while restoring the syncpoint: {ex.Message}", "Oops", MessageBoxOptions.OK);
+                        });
+                    }
 
-                    Dispatcher.UIThread.InvokeAsync(() =>
+                    await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         RefreshLocalSyncPointLabel();
                         progressDialog.IsVisible = false;
@@ -198,19 +257,35 @@ public partial class RepositoryView : UserControl
 
     private async void ButtonPush_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
+        await PushLocalChanges();
+    }
+
+    private async Task PushLocalChanges()
+    {
         var result = await PushDialogControl.ShowDialogAsync(mainRepositoryViewGrid);
 
-        if (result.Outcome == PushDialogOutcome.OK && ViewModel != null && ViewModel.Repository != null) {
+        if (result.Outcome == PushDialogOutcome.OK && ViewModel != null && ViewModel.Repository != null)
+        {
             progressDialog.Title = "Pusing to remote";
             progressDialog.IsVisible = true;
 
             var repository = ViewModel.Repository; //needed because of threading.
 
-            var task = Task.Run(() =>
+            var task = Task.Run(async () =>
             {
-                repository.Push(string.Empty, result.ChangeDescription);
+                try
+                {
+                    await repository.Push(string.Empty, result.ChangeDescription);
+                }
+                catch (Exception ex)
+                {
+                    await Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, $"Something went wrong while pusing the changes to the remote: {ex.Message}", "Oops", MessageBoxOptions.OK);
+                    });
+                }
 
-                Dispatcher.UIThread.InvokeAsync(() =>
+                await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     RefreshLocalSyncPointLabel();
                     RefreshRemoteSyncPoints();
@@ -218,6 +293,44 @@ public partial class RepositoryView : UserControl
                     progressDialog.IsVisible = false;
                 });
             });
+        }
+    }
+
+    private async void ButtonRevertToSyncpoint_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        var result = await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, "Are you sure you want to revert back to this syncpoint? This means that all syncpoints that came after it will be permanently removed.", "Are you sure?", MessageBoxOptions.YesNo);
+
+        if (result == PopupControlResult.Yes)
+        {
+            var repository = ViewModel.Repository;
+            var selectedSyncPoint = comboRemoteSyncpoints.SelectedItem as SyncPoint;
+
+            if (repository != null && selectedSyncPoint != null)
+            {
+                progressDialog.Title = "Restoring to local";
+                progressDialog.IsVisible = true;
+
+                var task = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await repository.RevertToSyncpoint(selectedSyncPoint.SyncPointId);
+                    }
+                    catch (Exception ex)
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            await MessageBoxControl.ShowDialogAsync(mainRepositoryViewGrid, $"Something went wrong while restoring the syncpoint: {ex.Message}", "Oops", MessageBoxOptions.OK);
+                        });
+                    }
+
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        RefreshRemoteSyncPoints();
+                        progressDialog.IsVisible = false;
+                    });
+                });
+            }
         }
     }
 }

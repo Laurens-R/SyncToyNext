@@ -12,7 +12,7 @@ namespace Stn.Core.SyncPoints
 {
     public class SyncPointMerger
     {
-        public static void Merge(string sourceLocalPath, string targetLocalPath)
+        public static async Task Merge(string sourceLocalPath, string targetLocalPath)
         {
             //to be clear both the source local path and the target local path are both local versions of their respective remotes.
             //
@@ -32,7 +32,7 @@ namespace Stn.Core.SyncPoints
 
             string newSyncPointID = SyncPoint.GenerateSyncpointID();
 
-            if (!MergePreparation(sourceRepo, targetRepo, newSyncPointID))
+            if (!await MergePreparation(sourceRepo, targetRepo, newSyncPointID))
             {
                 return;
             }
@@ -48,16 +48,16 @@ namespace Stn.Core.SyncPoints
             UserIO.Message("No merge conflicts detected. Resuming post merge synchronization activities.");
 
             //perform step 3, 4 and 5
-            PostMergeSynchronization(sourceRepo, targetRepo, newSyncPointID);
+            await PostMergeSynchronization(sourceRepo, targetRepo, newSyncPointID);
         }
 
-        private static bool MergePreparation(Repository sourceRepo, Repository targetRepo, string newSyncPointID)
+        private static async Task<bool> MergePreparation(Repository sourceRepo, Repository targetRepo, string newSyncPointID)
         {
             newSyncPointID = "PREMERGE-" + newSyncPointID;
             string newSyncPointDesc = "Pre-Merge Syncpoint";
 
-            sourceRepo.Push(newSyncPointID, newSyncPointDesc);
-            targetRepo.Push(newSyncPointID, newSyncPointDesc);
+            await sourceRepo.Push(newSyncPointID, newSyncPointDesc);
+            await targetRepo.Push(newSyncPointID, newSyncPointDesc);
 
             if (sourceRepo.LatestSyncPoint?.SyncPointId != newSyncPointID || targetRepo.LatestSyncPoint?.SyncPointId == null)
             {
@@ -69,22 +69,22 @@ namespace Stn.Core.SyncPoints
             return true;
         }
 
-        private static void PostMergeSynchronization(Repository sourceRepo, Repository targetRepo, string newSyncPointID)
+        private static async Task PostMergeSynchronization(Repository sourceRepo, Repository targetRepo, string newSyncPointID)
         {
             newSyncPointID = "POSTMERGE-" + newSyncPointID;
             string newSyncPointDesc = "Post-Merge Syncpoint";
 
             //if we get hear we assume we can proceed with step 3: creating a syncpoint for the target.
             UserIO.Message("Creating new post-merge syncpoint for target");
-            targetRepo.Push(newSyncPointID, newSyncPointDesc, true);
+            await targetRepo.Push(newSyncPointID, newSyncPointDesc, true);
 
             //step 4: sync the contents of the target back to the source. (to receive back all the merged stuff as well).
             UserIO.Message("Synching changes in target back to source");
-            ManualRunner.Run(targetRepo.LocalPath, sourceRepo.LocalPath);
+            await ManualRunner.Run(targetRepo.LocalPath, sourceRepo.LocalPath);
 
             //step 5: create a syncpoint for the source location.
             UserIO.Message("Creating new post-merge syncpoint for source");
-            sourceRepo.Push(newSyncPointID, newSyncPointDesc, true);
+            await sourceRepo.Push(newSyncPointID, newSyncPointDesc, true);
 
             UserIO.Message("Merge process completed!");
         }

@@ -1,5 +1,6 @@
 ﻿using Stn.Core.Synchronization;
 using Stn.Core.Synchronizers;
+using Stn.Core.SyncPoints;
 using Stn.Core.UX;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace Stn.Core.Execution
     {
         public static Action<int, int, string>? UpdateProgressHandler = null;
 
-        public static void Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "", bool isReferencePoint = false)
+        public static async Task Run(string fromPath, string toPath, bool useSyncPoint = false, string syncpointId = "", string syncpointDescription = "", bool isReferencePoint = false)
         {
             if (string.IsNullOrWhiteSpace(fromPath)
             || string.IsNullOrWhiteSpace(toPath))
@@ -61,14 +62,14 @@ namespace Stn.Core.Execution
                     var zipFileSynchronizer = new ZipFileSynchronizer(zipFilePath, OverwriteOption.OnlyOverwriteIfNewer, false);
                     zipFileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
                     zipFileSynchronizer.OpenTarget();
-                    zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
+                    await zipFileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
                     zipFileSynchronizer.CloseTarget();
                 }
                 else
                 {
                     var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
                     fileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
-                    fileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
+                    await fileSynchronizer.FullSynchronization(fromPath, syncPoint, syncPointManager);
                 }
 
                 return;
@@ -79,13 +80,13 @@ namespace Stn.Core.Execution
                 var zipFileSynchronizer = new ZipFileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
                 zipFileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
                 zipFileSynchronizer.OpenTarget();
-                zipFileSynchronizer.FullSynchronization(fromPath);
+                await zipFileSynchronizer.FullSynchronization(fromPath);
                 zipFileSynchronizer.CloseTarget();
             } else
             {
                 var fileSynchronizer = new FileSynchronizer(toPath, OverwriteOption.OnlyOverwriteIfNewer, false);
                 fileSynchronizer.UpdateProgressHandler = UpdateProgressHandler;
-                fileSynchronizer.FullSynchronization(fromPath);
+                await fileSynchronizer.FullSynchronization(fromPath);
             }
         }
     }
